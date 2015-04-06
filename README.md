@@ -6,3 +6,4 @@ and it checks the message's JSON format and validity according to the Signalk K 
 
 Furthermore it generates the Signal K tree data model from the delta message.
 
+![image](https://cloud.githubusercontent.com/assets/1049678/7012310/0992ce3c-dcb9-11e4-9746-4dfb16ec9d71.png)
