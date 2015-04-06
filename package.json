@@ -1,0 +1,29 @@
+{
+  "name": "signalk-playground",
+  "version": "0.0.1",
+  "description": "Web ui to play with Signal K stuff",
+  "main": "index.js",
+  "dependencies": {
+    "react": "^0.12.2",
+    "react-bootstrap": "^0.13.2",
+    "signalk-schema": "SignalK/specification"
+  },
+  "devDependencies": {
+    "babelify": "^6.0.1",
+    "browserify": "^8.0.3",
+    "minifyify": "^6.1.0",
+    "reactify": "^0.17.1",
+    "watchify": "^2.2.1"
+  },
+  "browserify": {
+    "transform": [
+      "babelify"
+    ]
+  },
+  "scripts": {
+    "watch": "watchify -t reactify lib/main.js -o dist/ui.js --debug --verbose",
+    "dist": "browserify lib/main.js -t reactify -d -p [minifyify --map ui.map.json --output dist/ui.map.json] > dist/ui.js"
+  },
+  "author": "teppo.kurki@iki.fi",
+  "license": "Apache 2"
+}

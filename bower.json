@@ -1,0 +1,20 @@
+{
+  "name": "signalk-playground",
+  "version": "0.0.1",
+  "authors": [
+    "Teppo Kurki"
+  ],
+  "description": "Standalone web ui for playing with Signal K stuff",
+  "main": "index.html",
+  "moduleType": [
+    "node"
+  ],
+  "license": "Apache 2",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
