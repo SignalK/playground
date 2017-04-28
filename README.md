@@ -1,4 +1,6 @@
 # playground
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/SignalK/playground.svg)](https://greenkeeper.io/)
 Signal K Playground: a serverless ui to see what Signal K messages look like.
 
 This version presents an input field where you can input a Signal K delta message 
