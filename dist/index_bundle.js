@@ -1933,7 +1933,7 @@ function loadLocale(name) {
             module && module.exports) {
         try {
             oldLocale = globalLocale._abbr;
-            __webpack_require__(399)("./" + name);
+            __webpack_require__(395)("./" + name);
             // because defineLocale currently also sets the global locale, we
             // want to undo that for lazy loaded locales
             getSetGlobalLocale(oldLocale);
@@ -4744,6 +4744,10 @@ process.off = noop;
 process.removeListener = noop;
 process.removeAllListeners = noop;
 process.emit = noop;
+process.prependListener = noop;
+process.prependOnceListener = noop;
+
+process.listeners = function (name) { return [] }
 
 process.binding = function (name) {
     throw new Error('process.binding is not supported');
@@ -5500,7 +5504,7 @@ var _curry2 = __webpack_require__(0);
 var _dispatchable = __webpack_require__(10);
 var _map = __webpack_require__(66);
 var _reduce = __webpack_require__(19);
-var _xmap = __webpack_require__(491);
+var _xmap = __webpack_require__(487);
 var curryN = __webpack_require__(14);
 var keys = __webpack_require__(24);
 
@@ -6027,7 +6031,7 @@ module.exports = (function() {
 var debugTool = null;
 
 if (process.env.NODE_ENV !== 'production') {
-  var ReactDebugTool = __webpack_require__(626);
+  var ReactDebugTool = __webpack_require__(622);
   debugTool = ReactDebugTool;
 }
 
@@ -6076,7 +6080,7 @@ module.exports = function _concat(set1, set2) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
-var _equals = __webpack_require__(466);
+var _equals = __webpack_require__(462);
 
 
 /**
@@ -6288,7 +6292,7 @@ var _prodInvariant = __webpack_require__(8),
 var CallbackQueue = __webpack_require__(324);
 var PooledClass = __webpack_require__(34);
 var ReactFeatureFlags = __webpack_require__(329);
-var ReactReconciler = __webpack_require__(40);
+var ReactReconciler = __webpack_require__(41);
 var Transaction = __webpack_require__(76);
 
 var invariant = __webpack_require__(5);
@@ -7644,499 +7648,6 @@ module.exports = reactProdInvariant;
 
 /***/ }),
 /* 37 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var _curry1 = __webpack_require__(4);
-
-
-/**
- * Returns a function that always returns the given value. Note that for
- * non-primitives the value returned is a reference to the original value.
- *
- * This function is known as `const`, `constant`, or `K` (for K combinator) in
- * other languages and libraries.
- *
- * @func
- * @memberOf R
- * @since v0.1.0
- * @category Function
- * @sig a -> (* -> a)
- * @param {*} val The value to wrap in a function
- * @return {Function} A Function :: * -> val.
- * @example
- *
- *      var t = R.always('Tee');
- *      t(); //=> 'Tee'
- */
-module.exports = _curry1(function always(val) {
-  return function() {
-    return val;
-  };
-});
-
-
-/***/ }),
-/* 38 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var _curry2 = __webpack_require__(0);
-
-
-/**
- * Returns the larger of its two arguments.
- *
- * @func
- * @memberOf R
- * @since v0.1.0
- * @category Relation
- * @sig Ord a => a -> a -> a
- * @param {*} a
- * @param {*} b
- * @return {*}
- * @see R.maxBy, R.min
- * @example
- *
- *      R.max(789, 123); //=> 789
- *      R.max('a', 'b'); //=> 'b'
- */
-module.exports = _curry2(function max(a, b) { return b > a ? b : a; });
-
-
-/***/ }),
-/* 39 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Copyright 2015-present, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
- *
- */
-
-
-
-var DOMNamespaces = __webpack_require__(99);
-var setInnerHTML = __webpack_require__(78);
-
-var createMicrosoftUnsafeLocalFunction = __webpack_require__(106);
-var setTextContent = __webpack_require__(342);
-
-var ELEMENT_NODE_TYPE = 1;
-var DOCUMENT_FRAGMENT_NODE_TYPE = 11;
-
-/**
- * In IE (8-11) and Edge, appending nodes with no children is dramatically
- * faster than appending a full subtree, so we essentially queue up the
- * .appendChild calls here and apply them so each node is added to its parent
- * before any children are added.
- *
- * In other browsers, doing so is slower or neutral compared to the other order
- * (in Firefox, twice as slow) so we only do this inversion in IE.
- *
- * See https://github.com/spicyj/innerhtml-vs-createelement-vs-clonenode.
- */
-var enableLazy = typeof document !== 'undefined' && typeof document.documentMode === 'number' || typeof navigator !== 'undefined' && typeof navigator.userAgent === 'string' && /\bEdge\/\d/.test(navigator.userAgent);
-
-function insertTreeChildren(tree) {
-  if (!enableLazy) {
-    return;
-  }
-  var node = tree.node;
-  var children = tree.children;
-  if (children.length) {
-    for (var i = 0; i < children.length; i++) {
-      insertTreeBefore(node, children[i], null);
-    }
-  } else if (tree.html != null) {
-    setInnerHTML(node, tree.html);
-  } else if (tree.text != null) {
-    setTextContent(node, tree.text);
-  }
-}
-
-var insertTreeBefore = createMicrosoftUnsafeLocalFunction(function (parentNode, tree, referenceNode) {
-  // DocumentFragments aren't actually part of the DOM after insertion so
-  // appending children won't update the DOM. We need to ensure the fragment
-  // is properly populated first, breaking out of our lazy approach for just
-  // this level. Also, some <object> plugins (like Flash Player) will read
-  // <param> nodes immediately upon insertion into the DOM, so <object>
-  // must also be populated prior to insertion into the DOM.
-  if (tree.node.nodeType === DOCUMENT_FRAGMENT_NODE_TYPE || tree.node.nodeType === ELEMENT_NODE_TYPE && tree.node.nodeName.toLowerCase() === 'object' && (tree.node.namespaceURI == null || tree.node.namespaceURI === DOMNamespaces.html)) {
-    insertTreeChildren(tree);
-    parentNode.insertBefore(tree.node, referenceNode);
-  } else {
-    parentNode.insertBefore(tree.node, referenceNode);
-    insertTreeChildren(tree);
-  }
-});
-
-function replaceChildWithTree(oldNode, newTree) {
-  oldNode.parentNode.replaceChild(newTree.node, oldNode);
-  insertTreeChildren(newTree);
-}
-
-function queueChild(parentTree, childTree) {
-  if (enableLazy) {
-    parentTree.children.push(childTree);
-  } else {
-    parentTree.node.appendChild(childTree.node);
-  }
-}
-
-function queueHTML(tree, html) {
-  if (enableLazy) {
-    tree.html = html;
-  } else {
-    setInnerHTML(tree.node, html);
-  }
-}
-
-function queueText(tree, text) {
-  if (enableLazy) {
-    tree.text = text;
-  } else {
-    setTextContent(tree.node, text);
-  }
-}
-
-function toString() {
-  return this.node.nodeName;
-}
-
-function DOMLazyTree(node) {
-  return {
-    node: node,
-    children: [],
-    html: null,
-    text: null,
-    toString: toString
-  };
-}
-
-DOMLazyTree.insertTreeBefore = insertTreeBefore;
-DOMLazyTree.replaceChildWithTree = replaceChildWithTree;
-DOMLazyTree.queueChild = queueChild;
-DOMLazyTree.queueHTML = queueHTML;
-DOMLazyTree.queueText = queueText;
-
-module.exports = DOMLazyTree;
-
-/***/ }),
-/* 40 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(process) {/**
- * Copyright 2013-present, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
- *
- */
-
-
-
-var ReactRef = __webpack_require__(640);
-var ReactInstrumentation = __webpack_require__(20);
-
-var warning = __webpack_require__(7);
-
-/**
- * Helper to call ReactRef.attachRefs with this composite component, split out
- * to avoid allocations in the transaction mount-ready queue.
- */
-function attachRefs() {
-  ReactRef.attachRefs(this, this._currentElement);
-}
-
-var ReactReconciler = {
-
-  /**
-   * Initializes the component, renders markup, and registers event listeners.
-   *
-   * @param {ReactComponent} internalInstance
-   * @param {ReactReconcileTransaction|ReactServerRenderingTransaction} transaction
-   * @param {?object} the containing host component instance
-   * @param {?object} info about the host container
-   * @return {?string} Rendered markup to be inserted into the DOM.
-   * @final
-   * @internal
-   */
-  mountComponent: function (internalInstance, transaction, hostParent, hostContainerInfo, context, parentDebugID // 0 in production and for roots
-  ) {
-    if (process.env.NODE_ENV !== 'production') {
-      if (internalInstance._debugID !== 0) {
-        ReactInstrumentation.debugTool.onBeforeMountComponent(internalInstance._debugID, internalInstance._currentElement, parentDebugID);
-      }
-    }
-    var markup = internalInstance.mountComponent(transaction, hostParent, hostContainerInfo, context, parentDebugID);
-    if (internalInstance._currentElement && internalInstance._currentElement.ref != null) {
-      transaction.getReactMountReady().enqueue(attachRefs, internalInstance);
-    }
-    if (process.env.NODE_ENV !== 'production') {
-      if (internalInstance._debugID !== 0) {
-        ReactInstrumentation.debugTool.onMountComponent(internalInstance._debugID);
-      }
-    }
-    return markup;
-  },
-
-  /**
-   * Returns a value that can be passed to
-   * ReactComponentEnvironment.replaceNodeWithMarkup.
-   */
-  getHostNode: function (internalInstance) {
-    return internalInstance.getHostNode();
-  },
-
-  /**
-   * Releases any resources allocated by `mountComponent`.
-   *
-   * @final
-   * @internal
-   */
-  unmountComponent: function (internalInstance, safely) {
-    if (process.env.NODE_ENV !== 'production') {
-      if (internalInstance._debugID !== 0) {
-        ReactInstrumentation.debugTool.onBeforeUnmountComponent(internalInstance._debugID);
-      }
-    }
-    ReactRef.detachRefs(internalInstance, internalInstance._currentElement);
-    internalInstance.unmountComponent(safely);
-    if (process.env.NODE_ENV !== 'production') {
-      if (internalInstance._debugID !== 0) {
-        ReactInstrumentation.debugTool.onUnmountComponent(internalInstance._debugID);
-      }
-    }
-  },
-
-  /**
-   * Update a component using a new element.
-   *
-   * @param {ReactComponent} internalInstance
-   * @param {ReactElement} nextElement
-   * @param {ReactReconcileTransaction} transaction
-   * @param {object} context
-   * @internal
-   */
-  receiveComponent: function (internalInstance, nextElement, transaction, context) {
-    var prevElement = internalInstance._currentElement;
-
-    if (nextElement === prevElement && context === internalInstance._context) {
-      // Since elements are immutable after the owner is rendered,
-      // we can do a cheap identity compare here to determine if this is a
-      // superfluous reconcile. It's possible for state to be mutable but such
-      // change should trigger an update of the owner which would recreate
-      // the element. We explicitly check for the existence of an owner since
-      // it's possible for an element created outside a composite to be
-      // deeply mutated and reused.
-
-      // TODO: Bailing out early is just a perf optimization right?
-      // TODO: Removing the return statement should affect correctness?
-      return;
-    }
-
-    if (process.env.NODE_ENV !== 'production') {
-      if (internalInstance._debugID !== 0) {
-        ReactInstrumentation.debugTool.onBeforeUpdateComponent(internalInstance._debugID, nextElement);
-      }
-    }
-
-    var refsChanged = ReactRef.shouldUpdateRefs(prevElement, nextElement);
-
-    if (refsChanged) {
-      ReactRef.detachRefs(internalInstance, prevElement);
-    }
-
-    internalInstance.receiveComponent(nextElement, transaction, context);
-
-    if (refsChanged && internalInstance._currentElement && internalInstance._currentElement.ref != null) {
-      transaction.getReactMountReady().enqueue(attachRefs, internalInstance);
-    }
-
-    if (process.env.NODE_ENV !== 'production') {
-      if (internalInstance._debugID !== 0) {
-        ReactInstrumentation.debugTool.onUpdateComponent(internalInstance._debugID);
-      }
-    }
-  },
-
-  /**
-   * Flush any dirty changes in a component.
-   *
-   * @param {ReactComponent} internalInstance
-   * @param {ReactReconcileTransaction} transaction
-   * @internal
-   */
-  performUpdateIfNecessary: function (internalInstance, transaction, updateBatchNumber) {
-    if (internalInstance._updateBatchNumber !== updateBatchNumber) {
-      // The component's enqueued batch number should always be the current
-      // batch or the following one.
-      process.env.NODE_ENV !== 'production' ? warning(internalInstance._updateBatchNumber == null || internalInstance._updateBatchNumber === updateBatchNumber + 1, 'performUpdateIfNecessary: Unexpected batch number (current %s, ' + 'pending %s)', updateBatchNumber, internalInstance._updateBatchNumber) : void 0;
-      return;
-    }
-    if (process.env.NODE_ENV !== 'production') {
-      if (internalInstance._debugID !== 0) {
-        ReactInstrumentation.debugTool.onBeforeUpdateComponent(internalInstance._debugID, internalInstance._currentElement);
-      }
-    }
-    internalInstance.performUpdateIfNecessary(transaction);
-    if (process.env.NODE_ENV !== 'production') {
-      if (internalInstance._debugID !== 0) {
-        ReactInstrumentation.debugTool.onUpdateComponent(internalInstance._debugID);
-      }
-    }
-  }
-
-};
-
-module.exports = ReactReconciler;
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
-
-/***/ }),
-/* 41 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(process) {/**
- * Copyright 2013-present, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
- *
- */
-
-
-
-var _assign = __webpack_require__(9);
-
-var ReactChildren = __webpack_require__(670);
-var ReactComponent = __webpack_require__(113);
-var ReactPureComponent = __webpack_require__(675);
-var ReactClass = __webpack_require__(671);
-var ReactDOMFactories = __webpack_require__(672);
-var ReactElement = __webpack_require__(35);
-var ReactPropTypes = __webpack_require__(673);
-var ReactVersion = __webpack_require__(676);
-
-var onlyChild = __webpack_require__(679);
-var warning = __webpack_require__(7);
-
-var createElement = ReactElement.createElement;
-var createFactory = ReactElement.createFactory;
-var cloneElement = ReactElement.cloneElement;
-
-if (process.env.NODE_ENV !== 'production') {
-  var canDefineProperty = __webpack_require__(79);
-  var ReactElementValidator = __webpack_require__(345);
-  var didWarnPropTypesDeprecated = false;
-  createElement = ReactElementValidator.createElement;
-  createFactory = ReactElementValidator.createFactory;
-  cloneElement = ReactElementValidator.cloneElement;
-}
-
-var __spread = _assign;
-
-if (process.env.NODE_ENV !== 'production') {
-  var warned = false;
-  __spread = function () {
-    process.env.NODE_ENV !== 'production' ? warning(warned, 'React.__spread is deprecated and should not be used. Use ' + 'Object.assign directly or another helper function with similar ' + 'semantics. You may be seeing this warning due to your compiler. ' + 'See https://fb.me/react-spread-deprecation for more details.') : void 0;
-    warned = true;
-    return _assign.apply(null, arguments);
-  };
-}
-
-var React = {
-
-  // Modern
-
-  Children: {
-    map: ReactChildren.map,
-    forEach: ReactChildren.forEach,
-    count: ReactChildren.count,
-    toArray: ReactChildren.toArray,
-    only: onlyChild
-  },
-
-  Component: ReactComponent,
-  PureComponent: ReactPureComponent,
-
-  createElement: createElement,
-  cloneElement: cloneElement,
-  isValidElement: ReactElement.isValidElement,
-
-  // Classic
-
-  PropTypes: ReactPropTypes,
-  createClass: ReactClass.createClass,
-  createFactory: createFactory,
-  createMixin: function (mixin) {
-    // Currently a noop. Will be used to validate and trace mixins.
-    return mixin;
-  },
-
-  // This looks DOM specific but these are actually isomorphic helpers
-  // since they are just generating DOM strings.
-  DOM: ReactDOMFactories,
-
-  version: ReactVersion,
-
-  // Deprecated hook for JSX spread, don't use this for anything.
-  __spread: __spread
-};
-
-// TODO: Fix tests so that this deprecation warning doesn't cause failures.
-if (process.env.NODE_ENV !== 'production') {
-  if (canDefineProperty) {
-    Object.defineProperty(React, 'PropTypes', {
-      get: function () {
-        process.env.NODE_ENV !== 'production' ? warning(didWarnPropTypesDeprecated, 'Accessing PropTypes via the main React package is deprecated. Use ' + 'the prop-types package from npm instead.') : void 0;
-        didWarnPropTypesDeprecated = true;
-        return ReactPropTypes;
-      }
-    });
-  }
-}
-
-module.exports = React;
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
-
-/***/ }),
-/* 42 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(process) {/**
- * Copyright (c) 2013-present, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
- *
- */
-
-
-
-var emptyObject = {};
-
-if (process.env.NODE_ENV !== 'production') {
-  Object.freeze(emptyObject);
-}
-
-module.exports = emptyObject;
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
-
-/***/ }),
-/* 43 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -8579,6 +8090,499 @@ function inherit(Derived, Base, fns) {
 
 
 /***/ }),
+/* 38 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var _curry1 = __webpack_require__(4);
+
+
+/**
+ * Returns a function that always returns the given value. Note that for
+ * non-primitives the value returned is a reference to the original value.
+ *
+ * This function is known as `const`, `constant`, or `K` (for K combinator) in
+ * other languages and libraries.
+ *
+ * @func
+ * @memberOf R
+ * @since v0.1.0
+ * @category Function
+ * @sig a -> (* -> a)
+ * @param {*} val The value to wrap in a function
+ * @return {Function} A Function :: * -> val.
+ * @example
+ *
+ *      var t = R.always('Tee');
+ *      t(); //=> 'Tee'
+ */
+module.exports = _curry1(function always(val) {
+  return function() {
+    return val;
+  };
+});
+
+
+/***/ }),
+/* 39 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var _curry2 = __webpack_require__(0);
+
+
+/**
+ * Returns the larger of its two arguments.
+ *
+ * @func
+ * @memberOf R
+ * @since v0.1.0
+ * @category Relation
+ * @sig Ord a => a -> a -> a
+ * @param {*} a
+ * @param {*} b
+ * @return {*}
+ * @see R.maxBy, R.min
+ * @example
+ *
+ *      R.max(789, 123); //=> 789
+ *      R.max('a', 'b'); //=> 'b'
+ */
+module.exports = _curry2(function max(a, b) { return b > a ? b : a; });
+
+
+/***/ }),
+/* 40 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Copyright 2015-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ */
+
+
+
+var DOMNamespaces = __webpack_require__(99);
+var setInnerHTML = __webpack_require__(78);
+
+var createMicrosoftUnsafeLocalFunction = __webpack_require__(106);
+var setTextContent = __webpack_require__(342);
+
+var ELEMENT_NODE_TYPE = 1;
+var DOCUMENT_FRAGMENT_NODE_TYPE = 11;
+
+/**
+ * In IE (8-11) and Edge, appending nodes with no children is dramatically
+ * faster than appending a full subtree, so we essentially queue up the
+ * .appendChild calls here and apply them so each node is added to its parent
+ * before any children are added.
+ *
+ * In other browsers, doing so is slower or neutral compared to the other order
+ * (in Firefox, twice as slow) so we only do this inversion in IE.
+ *
+ * See https://github.com/spicyj/innerhtml-vs-createelement-vs-clonenode.
+ */
+var enableLazy = typeof document !== 'undefined' && typeof document.documentMode === 'number' || typeof navigator !== 'undefined' && typeof navigator.userAgent === 'string' && /\bEdge\/\d/.test(navigator.userAgent);
+
+function insertTreeChildren(tree) {
+  if (!enableLazy) {
+    return;
+  }
+  var node = tree.node;
+  var children = tree.children;
+  if (children.length) {
+    for (var i = 0; i < children.length; i++) {
+      insertTreeBefore(node, children[i], null);
+    }
+  } else if (tree.html != null) {
+    setInnerHTML(node, tree.html);
+  } else if (tree.text != null) {
+    setTextContent(node, tree.text);
+  }
+}
+
+var insertTreeBefore = createMicrosoftUnsafeLocalFunction(function (parentNode, tree, referenceNode) {
+  // DocumentFragments aren't actually part of the DOM after insertion so
+  // appending children won't update the DOM. We need to ensure the fragment
+  // is properly populated first, breaking out of our lazy approach for just
+  // this level. Also, some <object> plugins (like Flash Player) will read
+  // <param> nodes immediately upon insertion into the DOM, so <object>
+  // must also be populated prior to insertion into the DOM.
+  if (tree.node.nodeType === DOCUMENT_FRAGMENT_NODE_TYPE || tree.node.nodeType === ELEMENT_NODE_TYPE && tree.node.nodeName.toLowerCase() === 'object' && (tree.node.namespaceURI == null || tree.node.namespaceURI === DOMNamespaces.html)) {
+    insertTreeChildren(tree);
+    parentNode.insertBefore(tree.node, referenceNode);
+  } else {
+    parentNode.insertBefore(tree.node, referenceNode);
+    insertTreeChildren(tree);
+  }
+});
+
+function replaceChildWithTree(oldNode, newTree) {
+  oldNode.parentNode.replaceChild(newTree.node, oldNode);
+  insertTreeChildren(newTree);
+}
+
+function queueChild(parentTree, childTree) {
+  if (enableLazy) {
+    parentTree.children.push(childTree);
+  } else {
+    parentTree.node.appendChild(childTree.node);
+  }
+}
+
+function queueHTML(tree, html) {
+  if (enableLazy) {
+    tree.html = html;
+  } else {
+    setInnerHTML(tree.node, html);
+  }
+}
+
+function queueText(tree, text) {
+  if (enableLazy) {
+    tree.text = text;
+  } else {
+    setTextContent(tree.node, text);
+  }
+}
+
+function toString() {
+  return this.node.nodeName;
+}
+
+function DOMLazyTree(node) {
+  return {
+    node: node,
+    children: [],
+    html: null,
+    text: null,
+    toString: toString
+  };
+}
+
+DOMLazyTree.insertTreeBefore = insertTreeBefore;
+DOMLazyTree.replaceChildWithTree = replaceChildWithTree;
+DOMLazyTree.queueChild = queueChild;
+DOMLazyTree.queueHTML = queueHTML;
+DOMLazyTree.queueText = queueText;
+
+module.exports = DOMLazyTree;
+
+/***/ }),
+/* 41 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process) {/**
+ * Copyright 2013-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ */
+
+
+
+var ReactRef = __webpack_require__(636);
+var ReactInstrumentation = __webpack_require__(20);
+
+var warning = __webpack_require__(7);
+
+/**
+ * Helper to call ReactRef.attachRefs with this composite component, split out
+ * to avoid allocations in the transaction mount-ready queue.
+ */
+function attachRefs() {
+  ReactRef.attachRefs(this, this._currentElement);
+}
+
+var ReactReconciler = {
+
+  /**
+   * Initializes the component, renders markup, and registers event listeners.
+   *
+   * @param {ReactComponent} internalInstance
+   * @param {ReactReconcileTransaction|ReactServerRenderingTransaction} transaction
+   * @param {?object} the containing host component instance
+   * @param {?object} info about the host container
+   * @return {?string} Rendered markup to be inserted into the DOM.
+   * @final
+   * @internal
+   */
+  mountComponent: function (internalInstance, transaction, hostParent, hostContainerInfo, context, parentDebugID // 0 in production and for roots
+  ) {
+    if (process.env.NODE_ENV !== 'production') {
+      if (internalInstance._debugID !== 0) {
+        ReactInstrumentation.debugTool.onBeforeMountComponent(internalInstance._debugID, internalInstance._currentElement, parentDebugID);
+      }
+    }
+    var markup = internalInstance.mountComponent(transaction, hostParent, hostContainerInfo, context, parentDebugID);
+    if (internalInstance._currentElement && internalInstance._currentElement.ref != null) {
+      transaction.getReactMountReady().enqueue(attachRefs, internalInstance);
+    }
+    if (process.env.NODE_ENV !== 'production') {
+      if (internalInstance._debugID !== 0) {
+        ReactInstrumentation.debugTool.onMountComponent(internalInstance._debugID);
+      }
+    }
+    return markup;
+  },
+
+  /**
+   * Returns a value that can be passed to
+   * ReactComponentEnvironment.replaceNodeWithMarkup.
+   */
+  getHostNode: function (internalInstance) {
+    return internalInstance.getHostNode();
+  },
+
+  /**
+   * Releases any resources allocated by `mountComponent`.
+   *
+   * @final
+   * @internal
+   */
+  unmountComponent: function (internalInstance, safely) {
+    if (process.env.NODE_ENV !== 'production') {
+      if (internalInstance._debugID !== 0) {
+        ReactInstrumentation.debugTool.onBeforeUnmountComponent(internalInstance._debugID);
+      }
+    }
+    ReactRef.detachRefs(internalInstance, internalInstance._currentElement);
+    internalInstance.unmountComponent(safely);
+    if (process.env.NODE_ENV !== 'production') {
+      if (internalInstance._debugID !== 0) {
+        ReactInstrumentation.debugTool.onUnmountComponent(internalInstance._debugID);
+      }
+    }
+  },
+
+  /**
+   * Update a component using a new element.
+   *
+   * @param {ReactComponent} internalInstance
+   * @param {ReactElement} nextElement
+   * @param {ReactReconcileTransaction} transaction
+   * @param {object} context
+   * @internal
+   */
+  receiveComponent: function (internalInstance, nextElement, transaction, context) {
+    var prevElement = internalInstance._currentElement;
+
+    if (nextElement === prevElement && context === internalInstance._context) {
+      // Since elements are immutable after the owner is rendered,
+      // we can do a cheap identity compare here to determine if this is a
+      // superfluous reconcile. It's possible for state to be mutable but such
+      // change should trigger an update of the owner which would recreate
+      // the element. We explicitly check for the existence of an owner since
+      // it's possible for an element created outside a composite to be
+      // deeply mutated and reused.
+
+      // TODO: Bailing out early is just a perf optimization right?
+      // TODO: Removing the return statement should affect correctness?
+      return;
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      if (internalInstance._debugID !== 0) {
+        ReactInstrumentation.debugTool.onBeforeUpdateComponent(internalInstance._debugID, nextElement);
+      }
+    }
+
+    var refsChanged = ReactRef.shouldUpdateRefs(prevElement, nextElement);
+
+    if (refsChanged) {
+      ReactRef.detachRefs(internalInstance, prevElement);
+    }
+
+    internalInstance.receiveComponent(nextElement, transaction, context);
+
+    if (refsChanged && internalInstance._currentElement && internalInstance._currentElement.ref != null) {
+      transaction.getReactMountReady().enqueue(attachRefs, internalInstance);
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      if (internalInstance._debugID !== 0) {
+        ReactInstrumentation.debugTool.onUpdateComponent(internalInstance._debugID);
+      }
+    }
+  },
+
+  /**
+   * Flush any dirty changes in a component.
+   *
+   * @param {ReactComponent} internalInstance
+   * @param {ReactReconcileTransaction} transaction
+   * @internal
+   */
+  performUpdateIfNecessary: function (internalInstance, transaction, updateBatchNumber) {
+    if (internalInstance._updateBatchNumber !== updateBatchNumber) {
+      // The component's enqueued batch number should always be the current
+      // batch or the following one.
+      process.env.NODE_ENV !== 'production' ? warning(internalInstance._updateBatchNumber == null || internalInstance._updateBatchNumber === updateBatchNumber + 1, 'performUpdateIfNecessary: Unexpected batch number (current %s, ' + 'pending %s)', updateBatchNumber, internalInstance._updateBatchNumber) : void 0;
+      return;
+    }
+    if (process.env.NODE_ENV !== 'production') {
+      if (internalInstance._debugID !== 0) {
+        ReactInstrumentation.debugTool.onBeforeUpdateComponent(internalInstance._debugID, internalInstance._currentElement);
+      }
+    }
+    internalInstance.performUpdateIfNecessary(transaction);
+    if (process.env.NODE_ENV !== 'production') {
+      if (internalInstance._debugID !== 0) {
+        ReactInstrumentation.debugTool.onUpdateComponent(internalInstance._debugID);
+      }
+    }
+  }
+
+};
+
+module.exports = ReactReconciler;
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
+
+/***/ }),
+/* 42 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process) {/**
+ * Copyright 2013-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ */
+
+
+
+var _assign = __webpack_require__(9);
+
+var ReactChildren = __webpack_require__(666);
+var ReactComponent = __webpack_require__(113);
+var ReactPureComponent = __webpack_require__(671);
+var ReactClass = __webpack_require__(667);
+var ReactDOMFactories = __webpack_require__(668);
+var ReactElement = __webpack_require__(35);
+var ReactPropTypes = __webpack_require__(669);
+var ReactVersion = __webpack_require__(672);
+
+var onlyChild = __webpack_require__(675);
+var warning = __webpack_require__(7);
+
+var createElement = ReactElement.createElement;
+var createFactory = ReactElement.createFactory;
+var cloneElement = ReactElement.cloneElement;
+
+if (process.env.NODE_ENV !== 'production') {
+  var canDefineProperty = __webpack_require__(79);
+  var ReactElementValidator = __webpack_require__(345);
+  var didWarnPropTypesDeprecated = false;
+  createElement = ReactElementValidator.createElement;
+  createFactory = ReactElementValidator.createFactory;
+  cloneElement = ReactElementValidator.cloneElement;
+}
+
+var __spread = _assign;
+
+if (process.env.NODE_ENV !== 'production') {
+  var warned = false;
+  __spread = function () {
+    process.env.NODE_ENV !== 'production' ? warning(warned, 'React.__spread is deprecated and should not be used. Use ' + 'Object.assign directly or another helper function with similar ' + 'semantics. You may be seeing this warning due to your compiler. ' + 'See https://fb.me/react-spread-deprecation for more details.') : void 0;
+    warned = true;
+    return _assign.apply(null, arguments);
+  };
+}
+
+var React = {
+
+  // Modern
+
+  Children: {
+    map: ReactChildren.map,
+    forEach: ReactChildren.forEach,
+    count: ReactChildren.count,
+    toArray: ReactChildren.toArray,
+    only: onlyChild
+  },
+
+  Component: ReactComponent,
+  PureComponent: ReactPureComponent,
+
+  createElement: createElement,
+  cloneElement: cloneElement,
+  isValidElement: ReactElement.isValidElement,
+
+  // Classic
+
+  PropTypes: ReactPropTypes,
+  createClass: ReactClass.createClass,
+  createFactory: createFactory,
+  createMixin: function (mixin) {
+    // Currently a noop. Will be used to validate and trace mixins.
+    return mixin;
+  },
+
+  // This looks DOM specific but these are actually isomorphic helpers
+  // since they are just generating DOM strings.
+  DOM: ReactDOMFactories,
+
+  version: ReactVersion,
+
+  // Deprecated hook for JSX spread, don't use this for anything.
+  __spread: __spread
+};
+
+// TODO: Fix tests so that this deprecation warning doesn't cause failures.
+if (process.env.NODE_ENV !== 'production') {
+  if (canDefineProperty) {
+    Object.defineProperty(React, 'PropTypes', {
+      get: function () {
+        process.env.NODE_ENV !== 'production' ? warning(didWarnPropTypesDeprecated, 'Accessing PropTypes via the main React package is deprecated. Use ' + 'the prop-types package from npm instead.') : void 0;
+        didWarnPropTypesDeprecated = true;
+        return ReactPropTypes;
+      }
+    });
+  }
+}
+
+module.exports = React;
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
+
+/***/ }),
+/* 43 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(process) {/**
+ * Copyright (c) 2013-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ *
+ */
+
+
+
+var emptyObject = {};
+
+if (process.env.NODE_ENV !== 'production') {
+  Object.freeze(emptyObject);
+}
+
+module.exports = emptyObject;
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
+
+/***/ }),
 /* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -8817,7 +8821,7 @@ module.exports = _curry2(function pluck(p, list) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
-var _toString = __webpack_require__(478);
+var _toString = __webpack_require__(474);
 
 
 /**
@@ -10159,7 +10163,7 @@ module.exports = exports['default'];
 /* 57 */
 /***/ (function(module, exports, __webpack_require__) {
 
-/* WEBPACK VAR INJECTION */(function(global) {/*! Kefir.js v3.7.1
+/* WEBPACK VAR INJECTION */(function(global) {/*! Kefir.js v3.7.2
  *  https://github.com/rpominov/kefir
  */
 
@@ -10167,3568 +10171,3685 @@ module.exports = exports['default'];
 	 true ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
 	(factory((global.Kefir = global.Kefir || {})));
-}(this, function (exports) { 'use strict';
-
-	function createObj(proto) {
-	  var F = function () {};
-	  F.prototype = proto;
-	  return new F();
-	}
-
-	function extend(target /*, mixin1, mixin2...*/) {
-	  var length = arguments.length,
-	      i = void 0,
-	      prop = void 0;
-	  for (i = 1; i < length; i++) {
-	    for (prop in arguments[i]) {
-	      target[prop] = arguments[i][prop];
-	    }
-	  }
-	  return target;
-	}
-
-	function inherit(Child, Parent /*, mixin1, mixin2...*/) {
-	  var length = arguments.length,
-	      i = void 0;
-	  Child.prototype = createObj(Parent.prototype);
-	  Child.prototype.constructor = Child;
-	  for (i = 2; i < length; i++) {
-	    extend(Child.prototype, arguments[i]);
-	  }
-	  return Child;
-	}
-
-	var NOTHING = ['<nothing>'];
-	var END = 'end';
-	var VALUE = 'value';
-	var ERROR = 'error';
-	var ANY = 'any';
-
-	function concat(a, b) {
-	  var result = void 0,
-	      length = void 0,
-	      i = void 0,
-	      j = void 0;
-	  if (a.length === 0) {
-	    return b;
-	  }
-	  if (b.length === 0) {
-	    return a;
-	  }
-	  j = 0;
-	  result = new Array(a.length + b.length);
-	  length = a.length;
-	  for (i = 0; i < length; i++, j++) {
-	    result[j] = a[i];
-	  }
-	  length = b.length;
-	  for (i = 0; i < length; i++, j++) {
-	    result[j] = b[i];
-	  }
-	  return result;
-	}
-
-	function find(arr, value) {
-	  var length = arr.length,
-	      i = void 0;
-	  for (i = 0; i < length; i++) {
-	    if (arr[i] === value) {
-	      return i;
-	    }
-	  }
-	  return -1;
-	}
-
-	function findByPred(arr, pred) {
-	  var length = arr.length,
-	      i = void 0;
-	  for (i = 0; i < length; i++) {
-	    if (pred(arr[i])) {
-	      return i;
-	    }
-	  }
-	  return -1;
-	}
-
-	function cloneArray(input) {
-	  var length = input.length,
-	      result = new Array(length),
-	      i = void 0;
-	  for (i = 0; i < length; i++) {
-	    result[i] = input[i];
-	  }
-	  return result;
-	}
-
-	function remove(input, index) {
-	  var length = input.length,
-	      result = void 0,
-	      i = void 0,
-	      j = void 0;
-	  if (index >= 0 && index < length) {
-	    if (length === 1) {
-	      return [];
-	    } else {
-	      result = new Array(length - 1);
-	      for (i = 0, j = 0; i < length; i++) {
-	        if (i !== index) {
-	          result[j] = input[i];
-	          j++;
-	        }
-	      }
-	      return result;
-	    }
-	  } else {
-	    return input;
-	  }
-	}
-
-	function map(input, fn) {
-	  var length = input.length,
-	      result = new Array(length),
-	      i = void 0;
-	  for (i = 0; i < length; i++) {
-	    result[i] = fn(input[i]);
-	  }
-	  return result;
-	}
-
-	function forEach(arr, fn) {
-	  var length = arr.length,
-	      i = void 0;
-	  for (i = 0; i < length; i++) {
-	    fn(arr[i]);
-	  }
-	}
-
-	function fillArray(arr, value) {
-	  var length = arr.length,
-	      i = void 0;
-	  for (i = 0; i < length; i++) {
-	    arr[i] = value;
-	  }
-	}
-
-	function contains(arr, value) {
-	  return find(arr, value) !== -1;
-	}
-
-	function slide(cur, next, max) {
-	  var length = Math.min(max, cur.length + 1),
-	      offset = cur.length - length + 1,
-	      result = new Array(length),
-	      i = void 0;
-	  for (i = offset; i < length; i++) {
-	    result[i - offset] = cur[i];
-	  }
-	  result[length - 1] = next;
-	  return result;
-	}
-
-	function callSubscriber(type, fn, event) {
-	  if (type === ANY) {
-	    fn(event);
-	  } else if (type === event.type) {
-	    if (type === VALUE || type === ERROR) {
-	      fn(event.value);
-	    } else {
-	      fn();
-	    }
-	  }
-	}
-
-	function Dispatcher() {
-	  this._items = [];
-	  this._spies = [];
-	  this._inLoop = 0;
-	  this._removedItems = null;
-	}
-
-	extend(Dispatcher.prototype, {
-	  add: function (type, fn) {
-	    this._items = concat(this._items, [{ type: type, fn: fn }]);
-	    return this._items.length;
-	  },
-	  remove: function (type, fn) {
-	    var index = findByPred(this._items, function (x) {
-	      return x.type === type && x.fn === fn;
-	    });
-
-	    // if we're currently in a notification loop,
-	    // remember this subscriber was removed
-	    if (this._inLoop !== 0 && index !== -1) {
-	      if (this._removedItems === null) {
-	        this._removedItems = [];
-	      }
-	      this._removedItems.push(this._items[index]);
-	    }
-
-	    this._items = remove(this._items, index);
-	    return this._items.length;
-	  },
-	  addSpy: function (fn) {
-	    this._spies = concat(this._spies, [fn]);
-	    return this._spies.length;
-	  },
-
-
-	  // Because spies are only ever a function that perform logging as
-	  // their only side effect, we don't need the same complicated
-	  // removal logic like in remove()
-	  removeSpy: function (fn) {
-	    this._spies = remove(this._spies, this._spies.indexOf(fn));
-	    return this._spies.length;
-	  },
-	  dispatch: function (event) {
-	    this._inLoop++;
-	    for (var i = 0, spies = this._spies; this._spies !== null && i < spies.length; i++) {
-	      spies[i](event);
-	    }
-
-	    for (var _i = 0, items = this._items; _i < items.length; _i++) {
-
-	      // cleanup was called
-	      if (this._items === null) {
-	        break;
-	      }
-
-	      // this subscriber was removed
-	      if (this._removedItems !== null && contains(this._removedItems, items[_i])) {
-	        continue;
-	      }
-
-	      callSubscriber(items[_i].type, items[_i].fn, event);
-	    }
-	    this._inLoop--;
-	    if (this._inLoop === 0) {
-	      this._removedItems = null;
-	    }
-	  },
-	  cleanup: function () {
-	    this._items = null;
-	    this._spies = null;
-	  }
-	});
-
-	function Observable() {
-	  this._dispatcher = new Dispatcher();
-	  this._active = false;
-	  this._alive = true;
-	  this._activating = false;
-	  this._logHandlers = null;
-	  this._spyHandlers = null;
-	}
-
-	extend(Observable.prototype, {
-
-	  _name: 'observable',
-
-	  _onActivation: function () {},
-	  _onDeactivation: function () {},
-	  _setActive: function (active) {
-	    if (this._active !== active) {
-	      this._active = active;
-	      if (active) {
-	        this._activating = true;
-	        this._onActivation();
-	        this._activating = false;
-	      } else {
-	        this._onDeactivation();
-	      }
-	    }
-	  },
-	  _clear: function () {
-	    this._setActive(false);
-	    this._dispatcher.cleanup();
-	    this._dispatcher = null;
-	    this._logHandlers = null;
-	  },
-	  _emit: function (type, x) {
-	    switch (type) {
-	      case VALUE:
-	        return this._emitValue(x);
-	      case ERROR:
-	        return this._emitError(x);
-	      case END:
-	        return this._emitEnd();
-	    }
-	  },
-	  _emitValue: function (value) {
-	    if (this._alive) {
-	      this._dispatcher.dispatch({ type: VALUE, value: value });
-	    }
-	  },
-	  _emitError: function (value) {
-	    if (this._alive) {
-	      this._dispatcher.dispatch({ type: ERROR, value: value });
-	    }
-	  },
-	  _emitEnd: function () {
-	    if (this._alive) {
-	      this._alive = false;
-	      this._dispatcher.dispatch({ type: END });
-	      this._clear();
-	    }
-	  },
-	  _on: function (type, fn) {
-	    if (this._alive) {
-	      this._dispatcher.add(type, fn);
-	      this._setActive(true);
-	    } else {
-	      callSubscriber(type, fn, { type: END });
-	    }
-	    return this;
-	  },
-	  _off: function (type, fn) {
-	    if (this._alive) {
-	      var count = this._dispatcher.remove(type, fn);
-	      if (count === 0) {
-	        this._setActive(false);
-	      }
-	    }
-	    return this;
-	  },
-	  onValue: function (fn) {
-	    return this._on(VALUE, fn);
-	  },
-	  onError: function (fn) {
-	    return this._on(ERROR, fn);
-	  },
-	  onEnd: function (fn) {
-	    return this._on(END, fn);
-	  },
-	  onAny: function (fn) {
-	    return this._on(ANY, fn);
-	  },
-	  offValue: function (fn) {
-	    return this._off(VALUE, fn);
-	  },
-	  offError: function (fn) {
-	    return this._off(ERROR, fn);
-	  },
-	  offEnd: function (fn) {
-	    return this._off(END, fn);
-	  },
-	  offAny: function (fn) {
-	    return this._off(ANY, fn);
-	  },
-	  observe: function (observerOrOnValue, onError, onEnd) {
-	    var _this = this;
-	    var closed = false;
-
-	    var observer = !observerOrOnValue || typeof observerOrOnValue === 'function' ? { value: observerOrOnValue, error: onError, end: onEnd } : observerOrOnValue;
-
-	    var handler = function (event) {
-	      if (event.type === END) {
-	        closed = true;
-	      }
-	      if (event.type === VALUE && observer.value) {
-	        observer.value(event.value);
-	      } else if (event.type === ERROR && observer.error) {
-	        observer.error(event.value);
-	      } else if (event.type === END && observer.end) {
-	        observer.end(event.value);
-	      }
-	    };
-
-	    this.onAny(handler);
-
-	    return {
-	      unsubscribe: function () {
-	        if (!closed) {
-	          _this.offAny(handler);
-	          closed = true;
-	        }
-	      },
-
-	      get closed() {
-	        return closed;
-	      }
-	    };
-	  },
-
-
-	  // A and B must be subclasses of Stream and Property (order doesn't matter)
-	  _ofSameType: function (A, B) {
-	    return A.prototype.getType() === this.getType() ? A : B;
-	  },
-	  setName: function (sourceObs /* optional */, selfName) {
-	    this._name = selfName ? sourceObs._name + '.' + selfName : sourceObs;
-	    return this;
-	  },
-	  log: function () {
-	    var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.toString();
-
-
-	    var isCurrent = void 0;
-	    var handler = function (event) {
-	      var type = '<' + event.type + (isCurrent ? ':current' : '') + '>';
-	      if (event.type === END) {
-	        console.log(name, type);
-	      } else {
-	        console.log(name, type, event.value);
-	      }
-	    };
-
-	    if (this._alive) {
-	      if (!this._logHandlers) {
-	        this._logHandlers = [];
-	      }
-	      this._logHandlers.push({ name: name, handler: handler });
-	    }
-
-	    isCurrent = true;
-	    this.onAny(handler);
-	    isCurrent = false;
-
-	    return this;
-	  },
-	  offLog: function () {
-	    var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.toString();
-
-
-	    if (this._logHandlers) {
-	      var handlerIndex = findByPred(this._logHandlers, function (obj) {
-	        return obj.name === name;
-	      });
-	      if (handlerIndex !== -1) {
-	        this.offAny(this._logHandlers[handlerIndex].handler);
-	        this._logHandlers.splice(handlerIndex, 1);
-	      }
-	    }
-
-	    return this;
-	  },
-	  spy: function () {
-	    var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.toString();
-
-	    var handler = function (event) {
-	      var type = '<' + event.type + '>';
-	      if (event.type === END) {
-	        console.log(name, type);
-	      } else {
-	        console.log(name, type, event.value);
-	      }
-	    };
-	    if (this._alive) {
-	      if (!this._spyHandlers) {
-	        this._spyHandlers = [];
-	      }
-	      this._spyHandlers.push({ name: name, handler: handler });
-	      this._dispatcher.addSpy(handler);
-	    }
-	    return this;
-	  },
-	  offSpy: function () {
-	    var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.toString();
-
-	    if (this._spyHandlers) {
-	      var handlerIndex = findByPred(this._spyHandlers, function (obj) {
-	        return obj.name === name;
-	      });
-	      if (handlerIndex !== -1) {
-	        this._dispatcher.removeSpy(this._spyHandlers[handlerIndex].handler);
-	        this._spyHandlers.splice(handlerIndex, 1);
-	      }
-	    }
-	    return this;
-	  }
-	});
-
-	// extend() can't handle `toString` in IE8
-	Observable.prototype.toString = function () {
-	  return '[' + this._name + ']';
-	};
-
-	function Stream() {
-	  Observable.call(this);
-	}
-
-	inherit(Stream, Observable, {
-
-	  _name: 'stream',
-
-	  getType: function () {
-	    return 'stream';
-	  }
-	});
-
-	function Property() {
-	  Observable.call(this);
-	  this._currentEvent = null;
-	}
-
-	inherit(Property, Observable, {
-
-	  _name: 'property',
-
-	  _emitValue: function (value) {
-	    if (this._alive) {
-	      this._currentEvent = { type: VALUE, value: value };
-	      if (!this._activating) {
-	        this._dispatcher.dispatch({ type: VALUE, value: value });
-	      }
-	    }
-	  },
-	  _emitError: function (value) {
-	    if (this._alive) {
-	      this._currentEvent = { type: ERROR, value: value };
-	      if (!this._activating) {
-	        this._dispatcher.dispatch({ type: ERROR, value: value });
-	      }
-	    }
-	  },
-	  _emitEnd: function () {
-	    if (this._alive) {
-	      this._alive = false;
-	      if (!this._activating) {
-	        this._dispatcher.dispatch({ type: END });
-	      }
-	      this._clear();
-	    }
-	  },
-	  _on: function (type, fn) {
-	    if (this._alive) {
-	      this._dispatcher.add(type, fn);
-	      this._setActive(true);
-	    }
-	    if (this._currentEvent !== null) {
-	      callSubscriber(type, fn, this._currentEvent);
-	    }
-	    if (!this._alive) {
-	      callSubscriber(type, fn, { type: END });
-	    }
-	    return this;
-	  },
-	  getType: function () {
-	    return 'property';
-	  }
-	});
-
-	var neverS = new Stream();
-	neverS._emitEnd();
-	neverS._name = 'never';
-
-	function never() {
-	  return neverS;
-	}
-
-	function timeBased(mixin) {
-
-	  function AnonymousStream(wait, options) {
-	    var _this = this;
-
-	    Stream.call(this);
-	    this._wait = wait;
-	    this._intervalId = null;
-	    this._$onTick = function () {
-	      return _this._onTick();
-	    };
-	    this._init(options);
-	  }
-
-	  inherit(AnonymousStream, Stream, {
-	    _init: function () {},
-	    _free: function () {},
-	    _onTick: function () {},
-	    _onActivation: function () {
-	      this._intervalId = setInterval(this._$onTick, this._wait);
-	    },
-	    _onDeactivation: function () {
-	      if (this._intervalId !== null) {
-	        clearInterval(this._intervalId);
-	        this._intervalId = null;
-	      }
-	    },
-	    _clear: function () {
-	      Stream.prototype._clear.call(this);
-	      this._$onTick = null;
-	      this._free();
-	    }
-	  }, mixin);
-
-	  return AnonymousStream;
-	}
-
-	var S = timeBased({
-
-	  _name: 'later',
-
-	  _init: function (_ref) {
-	    var x = _ref.x;
-
-	    this._x = x;
-	  },
-	  _free: function () {
-	    this._x = null;
-	  },
-	  _onTick: function () {
-	    this._emitValue(this._x);
-	    this._emitEnd();
-	  }
-	});
-
-	function later(wait, x) {
-	  return new S(wait, { x: x });
-	}
-
-	var S$1 = timeBased({
-
-	  _name: 'interval',
-
-	  _init: function (_ref) {
-	    var x = _ref.x;
-
-	    this._x = x;
-	  },
-	  _free: function () {
-	    this._x = null;
-	  },
-	  _onTick: function () {
-	    this._emitValue(this._x);
-	  }
-	});
-
-	function interval(wait, x) {
-	  return new S$1(wait, { x: x });
-	}
-
-	var S$2 = timeBased({
-
-	  _name: 'sequentially',
-
-	  _init: function (_ref) {
-	    var xs = _ref.xs;
-
-	    this._xs = cloneArray(xs);
-	  },
-	  _free: function () {
-	    this._xs = null;
-	  },
-	  _onTick: function () {
-	    if (this._xs.length === 1) {
-	      this._emitValue(this._xs[0]);
-	      this._emitEnd();
-	    } else {
-	      this._emitValue(this._xs.shift());
-	    }
-	  }
-	});
-
-	function sequentially(wait, xs) {
-	  return xs.length === 0 ? never() : new S$2(wait, { xs: xs });
-	}
-
-	var S$3 = timeBased({
-
-	  _name: 'fromPoll',
-
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	  },
-	  _free: function () {
-	    this._fn = null;
-	  },
-	  _onTick: function () {
-	    var fn = this._fn;
-	    this._emitValue(fn());
-	  }
-	});
-
-	function fromPoll(wait, fn) {
-	  return new S$3(wait, { fn: fn });
-	}
-
-	function emitter(obs) {
-
-	  function value(x) {
-	    obs._emitValue(x);
-	    return obs._active;
-	  }
-
-	  function error(x) {
-	    obs._emitError(x);
-	    return obs._active;
-	  }
-
-	  function end() {
-	    obs._emitEnd();
-	    return obs._active;
-	  }
-
-	  function event(e) {
-	    obs._emit(e.type, e.value);
-	    return obs._active;
-	  }
-
-	  return {
-	    value: value,
-	    error: error,
-	    end: end,
-	    event: event,
-
-	    // legacy
-	    emit: value,
-	    emitEvent: event
-	  };
-	}
-
-	var S$4 = timeBased({
-
-	  _name: 'withInterval',
-
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	    this._emitter = emitter(this);
-	  },
-	  _free: function () {
-	    this._fn = null;
-	    this._emitter = null;
-	  },
-	  _onTick: function () {
-	    var fn = this._fn;
-	    fn(this._emitter);
-	  }
-	});
-
-	function withInterval(wait, fn) {
-	  return new S$4(wait, { fn: fn });
-	}
-
-	function S$5(fn) {
-	  Stream.call(this);
-	  this._fn = fn;
-	  this._unsubscribe = null;
-	}
-
-	inherit(S$5, Stream, {
-
-	  _name: 'stream',
-
-	  _onActivation: function () {
-	    var fn = this._fn;
-	    var unsubscribe = fn(emitter(this));
-	    this._unsubscribe = typeof unsubscribe === 'function' ? unsubscribe : null;
-
-	    // fix https://github.com/rpominov/kefir/issues/35
-	    if (!this._active) {
-	      this._callUnsubscribe();
-	    }
-	  },
-	  _callUnsubscribe: function () {
-	    if (this._unsubscribe !== null) {
-	      this._unsubscribe();
-	      this._unsubscribe = null;
-	    }
-	  },
-	  _onDeactivation: function () {
-	    this._callUnsubscribe();
-	  },
-	  _clear: function () {
-	    Stream.prototype._clear.call(this);
-	    this._fn = null;
-	  }
-	});
-
-	function stream(fn) {
-	  return new S$5(fn);
-	}
-
-	function fromCallback(callbackConsumer) {
-
-	  var called = false;
-
-	  return stream(function (emitter) {
-
-	    if (!called) {
-	      callbackConsumer(function (x) {
-	        emitter.emit(x);
-	        emitter.end();
-	      });
-	      called = true;
-	    }
-	  }).setName('fromCallback');
-	}
-
-	function fromNodeCallback(callbackConsumer) {
-
-	  var called = false;
-
-	  return stream(function (emitter) {
-
-	    if (!called) {
-	      callbackConsumer(function (error, x) {
-	        if (error) {
-	          emitter.error(error);
-	        } else {
-	          emitter.emit(x);
-	        }
-	        emitter.end();
-	      });
-	      called = true;
-	    }
-	  }).setName('fromNodeCallback');
-	}
-
-	function spread(fn, length) {
-	  switch (length) {
-	    case 0:
-	      return function () {
-	        return fn();
-	      };
-	    case 1:
-	      return function (a) {
-	        return fn(a[0]);
-	      };
-	    case 2:
-	      return function (a) {
-	        return fn(a[0], a[1]);
-	      };
-	    case 3:
-	      return function (a) {
-	        return fn(a[0], a[1], a[2]);
-	      };
-	    case 4:
-	      return function (a) {
-	        return fn(a[0], a[1], a[2], a[3]);
-	      };
-	    default:
-	      return function (a) {
-	        return fn.apply(null, a);
-	      };
-	  }
-	}
-
-	function apply(fn, c, a) {
-	  var aLength = a ? a.length : 0;
-	  if (c == null) {
-	    switch (aLength) {
-	      case 0:
-	        return fn();
-	      case 1:
-	        return fn(a[0]);
-	      case 2:
-	        return fn(a[0], a[1]);
-	      case 3:
-	        return fn(a[0], a[1], a[2]);
-	      case 4:
-	        return fn(a[0], a[1], a[2], a[3]);
-	      default:
-	        return fn.apply(null, a);
-	    }
-	  } else {
-	    switch (aLength) {
-	      case 0:
-	        return fn.call(c);
-	      default:
-	        return fn.apply(c, a);
-	    }
-	  }
-	}
-
-	function fromSubUnsub(sub, unsub, transformer /* Function | falsey */) {
-	  return stream(function (emitter) {
-
-	    var handler = transformer ? function () {
-	      emitter.emit(apply(transformer, this, arguments));
-	    } : function (x) {
-	      emitter.emit(x);
-	    };
-
-	    sub(handler);
-	    return function () {
-	      return unsub(handler);
-	    };
-	  }).setName('fromSubUnsub');
-	}
-
-	var pairs = [['addEventListener', 'removeEventListener'], ['addListener', 'removeListener'], ['on', 'off']];
-
-	function fromEvents(target, eventName, transformer) {
-	  var sub = void 0,
-	      unsub = void 0;
-
-	  for (var i = 0; i < pairs.length; i++) {
-	    if (typeof target[pairs[i][0]] === 'function' && typeof target[pairs[i][1]] === 'function') {
-	      sub = pairs[i][0];
-	      unsub = pairs[i][1];
-	      break;
-	    }
-	  }
-
-	  if (sub === undefined) {
-	    throw new Error('target don\'t support any of ' + 'addEventListener/removeEventListener, addListener/removeListener, on/off method pair');
-	  }
-
-	  return fromSubUnsub(function (handler) {
-	    return target[sub](eventName, handler);
-	  }, function (handler) {
-	    return target[unsub](eventName, handler);
-	  }, transformer).setName('fromEvents');
-	}
-
-	// HACK:
-	//   We don't call parent Class constructor, but instead putting all necessary
-	//   properties into prototype to simulate ended Property
-	//   (see Propperty and Observable classes).
-
-	function P(value) {
-	  this._currentEvent = { type: 'value', value: value, current: true };
-	}
-
-	inherit(P, Property, {
-	  _name: 'constant',
-	  _active: false,
-	  _activating: false,
-	  _alive: false,
-	  _dispatcher: null,
-	  _logHandlers: null
-	});
-
-	function constant(x) {
-	  return new P(x);
-	}
-
-	// HACK:
-	//   We don't call parent Class constructor, but instead putting all necessary
-	//   properties into prototype to simulate ended Property
-	//   (see Propperty and Observable classes).
-
-	function P$1(value) {
-	  this._currentEvent = { type: 'error', value: value, current: true };
-	}
-
-	inherit(P$1, Property, {
-	  _name: 'constantError',
-	  _active: false,
-	  _activating: false,
-	  _alive: false,
-	  _dispatcher: null,
-	  _logHandlers: null
-	});
-
-	function constantError(x) {
-	  return new P$1(x);
-	}
-
-	function createConstructor(BaseClass, name) {
-	  return function AnonymousObservable(source, options) {
-	    var _this = this;
-
-	    BaseClass.call(this);
-	    this._source = source;
-	    this._name = source._name + '.' + name;
-	    this._init(options);
-	    this._$handleAny = function (event) {
-	      return _this._handleAny(event);
-	    };
-	  };
-	}
-
-	function createClassMethods(BaseClass) {
-	  return {
-	    _init: function () {},
-	    _free: function () {},
-	    _handleValue: function (x) {
-	      this._emitValue(x);
-	    },
-	    _handleError: function (x) {
-	      this._emitError(x);
-	    },
-	    _handleEnd: function () {
-	      this._emitEnd();
-	    },
-	    _handleAny: function (event) {
-	      switch (event.type) {
-	        case VALUE:
-	          return this._handleValue(event.value);
-	        case ERROR:
-	          return this._handleError(event.value);
-	        case END:
-	          return this._handleEnd();
-	      }
-	    },
-	    _onActivation: function () {
-	      this._source.onAny(this._$handleAny);
-	    },
-	    _onDeactivation: function () {
-	      this._source.offAny(this._$handleAny);
-	    },
-	    _clear: function () {
-	      BaseClass.prototype._clear.call(this);
-	      this._source = null;
-	      this._$handleAny = null;
-	      this._free();
-	    }
-	  };
-	}
-
-	function createStream(name, mixin) {
-	  var S = createConstructor(Stream, name);
-	  inherit(S, Stream, createClassMethods(Stream), mixin);
-	  return S;
-	}
-
-	function createProperty(name, mixin) {
-	  var P = createConstructor(Property, name);
-	  inherit(P, Property, createClassMethods(Property), mixin);
-	  return P;
-	}
-
-	var P$2 = createProperty('toProperty', {
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._getInitialCurrent = fn;
-	  },
-	  _onActivation: function () {
-	    if (this._getInitialCurrent !== null) {
-	      var getInitial = this._getInitialCurrent;
-	      this._emitValue(getInitial());
-	    }
-	    this._source.onAny(this._$handleAny); // copied from patterns/one-source
-	  }
-	});
-
-	function toProperty(obs) {
-	  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
-
-	  if (fn !== null && typeof fn !== 'function') {
-	    throw new Error('You should call toProperty() with a function or no arguments.');
-	  }
-	  return new P$2(obs, { fn: fn });
-	}
-
-	var S$6 = createStream('changes', {
-	  _handleValue: function (x) {
-	    if (!this._activating) {
-	      this._emitValue(x);
-	    }
-	  },
-	  _handleError: function (x) {
-	    if (!this._activating) {
-	      this._emitError(x);
-	    }
-	  }
-	});
-
-	function changes(obs) {
-	  return new S$6(obs);
-	}
-
-	function fromPromise(promise) {
-
-	  var called = false;
-
-	  var result = stream(function (emitter) {
-	    if (!called) {
-	      var onValue = function (x) {
-	        emitter.emit(x);
-	        emitter.end();
-	      };
-	      var onError = function (x) {
-	        emitter.error(x);
-	        emitter.end();
-	      };
-	      var _promise = promise.then(onValue, onError);
-
-	      // prevent libraries like 'Q' or 'when' from swallowing exceptions
-	      if (_promise && typeof _promise.done === 'function') {
-	        _promise.done();
-	      }
-
-	      called = true;
-	    }
-	  });
-
-	  return toProperty(result, null).setName('fromPromise');
-	}
-
-	function getGlodalPromise() {
-	  if (typeof Promise === 'function') {
-	    return Promise;
-	  } else {
-	    throw new Error('There isn\'t default Promise, use shim or parameter');
-	  }
-	}
-
-	function toPromise (obs) {
-	  var Promise = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : getGlodalPromise();
-
-	  var last = null;
-	  return new Promise(function (resolve, reject) {
-	    obs.onAny(function (event) {
-	      if (event.type === END && last !== null) {
-	        (last.type === VALUE ? resolve : reject)(last.value);
-	        last = null;
-	      } else {
-	        last = event;
-	      }
-	    });
-	  });
-	}
-
-	var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {}
-
-	function createCommonjsModule(fn, module) {
-		return module = { exports: {} }, fn(module, module.exports), module.exports;
-	}
-
-	var ponyfill = createCommonjsModule(function (module, exports) {
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-		value: true
-	});
-	exports['default'] = symbolObservablePonyfill;
-	function symbolObservablePonyfill(root) {
-		var result;
-		var _Symbol = root.Symbol;
-
-		if (typeof _Symbol === 'function') {
-			if (_Symbol.observable) {
-				result = _Symbol.observable;
-			} else {
-				result = _Symbol('observable');
-				_Symbol.observable = result;
-			}
+}(this, (function (exports) { 'use strict';
+
+function createObj(proto) {
+  var F = function () {};
+  F.prototype = proto;
+  return new F();
+}
+
+function extend(target /*, mixin1, mixin2...*/) {
+  var length = arguments.length,
+      i = void 0,
+      prop = void 0;
+  for (i = 1; i < length; i++) {
+    for (prop in arguments[i]) {
+      target[prop] = arguments[i][prop];
+    }
+  }
+  return target;
+}
+
+function inherit(Child, Parent /*, mixin1, mixin2...*/) {
+  var length = arguments.length,
+      i = void 0;
+  Child.prototype = createObj(Parent.prototype);
+  Child.prototype.constructor = Child;
+  for (i = 2; i < length; i++) {
+    extend(Child.prototype, arguments[i]);
+  }
+  return Child;
+}
+
+var NOTHING = ['<nothing>'];
+var END = 'end';
+var VALUE = 'value';
+var ERROR = 'error';
+var ANY = 'any';
+
+function concat(a, b) {
+  var result = void 0,
+      length = void 0,
+      i = void 0,
+      j = void 0;
+  if (a.length === 0) {
+    return b;
+  }
+  if (b.length === 0) {
+    return a;
+  }
+  j = 0;
+  result = new Array(a.length + b.length);
+  length = a.length;
+  for (i = 0; i < length; i++, j++) {
+    result[j] = a[i];
+  }
+  length = b.length;
+  for (i = 0; i < length; i++, j++) {
+    result[j] = b[i];
+  }
+  return result;
+}
+
+function find(arr, value) {
+  var length = arr.length,
+      i = void 0;
+  for (i = 0; i < length; i++) {
+    if (arr[i] === value) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function findByPred(arr, pred) {
+  var length = arr.length,
+      i = void 0;
+  for (i = 0; i < length; i++) {
+    if (pred(arr[i])) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function cloneArray(input) {
+  var length = input.length,
+      result = new Array(length),
+      i = void 0;
+  for (i = 0; i < length; i++) {
+    result[i] = input[i];
+  }
+  return result;
+}
+
+function remove(input, index) {
+  var length = input.length,
+      result = void 0,
+      i = void 0,
+      j = void 0;
+  if (index >= 0 && index < length) {
+    if (length === 1) {
+      return [];
+    } else {
+      result = new Array(length - 1);
+      for (i = 0, j = 0; i < length; i++) {
+        if (i !== index) {
+          result[j] = input[i];
+          j++;
+        }
+      }
+      return result;
+    }
+  } else {
+    return input;
+  }
+}
+
+function map(input, fn) {
+  var length = input.length,
+      result = new Array(length),
+      i = void 0;
+  for (i = 0; i < length; i++) {
+    result[i] = fn(input[i]);
+  }
+  return result;
+}
+
+function forEach(arr, fn) {
+  var length = arr.length,
+      i = void 0;
+  for (i = 0; i < length; i++) {
+    fn(arr[i]);
+  }
+}
+
+function fillArray(arr, value) {
+  var length = arr.length,
+      i = void 0;
+  for (i = 0; i < length; i++) {
+    arr[i] = value;
+  }
+}
+
+function contains(arr, value) {
+  return find(arr, value) !== -1;
+}
+
+function slide(cur, next, max) {
+  var length = Math.min(max, cur.length + 1),
+      offset = cur.length - length + 1,
+      result = new Array(length),
+      i = void 0;
+  for (i = offset; i < length; i++) {
+    result[i - offset] = cur[i];
+  }
+  result[length - 1] = next;
+  return result;
+}
+
+function callSubscriber(type, fn, event) {
+  if (type === ANY) {
+    fn(event);
+  } else if (type === event.type) {
+    if (type === VALUE || type === ERROR) {
+      fn(event.value);
+    } else {
+      fn();
+    }
+  }
+}
+
+function Dispatcher() {
+  this._items = [];
+  this._spies = [];
+  this._inLoop = 0;
+  this._removedItems = null;
+}
+
+extend(Dispatcher.prototype, {
+  add: function (type, fn) {
+    this._items = concat(this._items, [{ type: type, fn: fn }]);
+    return this._items.length;
+  },
+  remove: function (type, fn) {
+    var index = findByPred(this._items, function (x) {
+      return x.type === type && x.fn === fn;
+    });
+
+    // if we're currently in a notification loop,
+    // remember this subscriber was removed
+    if (this._inLoop !== 0 && index !== -1) {
+      if (this._removedItems === null) {
+        this._removedItems = [];
+      }
+      this._removedItems.push(this._items[index]);
+    }
+
+    this._items = remove(this._items, index);
+    return this._items.length;
+  },
+  addSpy: function (fn) {
+    this._spies = concat(this._spies, [fn]);
+    return this._spies.length;
+  },
+
+
+  // Because spies are only ever a function that perform logging as
+  // their only side effect, we don't need the same complicated
+  // removal logic like in remove()
+  removeSpy: function (fn) {
+    this._spies = remove(this._spies, this._spies.indexOf(fn));
+    return this._spies.length;
+  },
+  dispatch: function (event) {
+    this._inLoop++;
+    for (var i = 0, spies = this._spies; this._spies !== null && i < spies.length; i++) {
+      spies[i](event);
+    }
+
+    for (var _i = 0, items = this._items; _i < items.length; _i++) {
+      // cleanup was called
+      if (this._items === null) {
+        break;
+      }
+
+      // this subscriber was removed
+      if (this._removedItems !== null && contains(this._removedItems, items[_i])) {
+        continue;
+      }
+
+      callSubscriber(items[_i].type, items[_i].fn, event);
+    }
+    this._inLoop--;
+    if (this._inLoop === 0) {
+      this._removedItems = null;
+    }
+  },
+  cleanup: function () {
+    this._items = null;
+    this._spies = null;
+  }
+});
+
+function Observable() {
+  this._dispatcher = new Dispatcher();
+  this._active = false;
+  this._alive = true;
+  this._activating = false;
+  this._logHandlers = null;
+  this._spyHandlers = null;
+}
+
+extend(Observable.prototype, {
+  _name: 'observable',
+
+  _onActivation: function () {},
+  _onDeactivation: function () {},
+  _setActive: function (active) {
+    if (this._active !== active) {
+      this._active = active;
+      if (active) {
+        this._activating = true;
+        this._onActivation();
+        this._activating = false;
+      } else {
+        this._onDeactivation();
+      }
+    }
+  },
+  _clear: function () {
+    this._setActive(false);
+    this._dispatcher.cleanup();
+    this._dispatcher = null;
+    this._logHandlers = null;
+  },
+  _emit: function (type, x) {
+    switch (type) {
+      case VALUE:
+        return this._emitValue(x);
+      case ERROR:
+        return this._emitError(x);
+      case END:
+        return this._emitEnd();
+    }
+  },
+  _emitValue: function (value) {
+    if (this._alive) {
+      this._dispatcher.dispatch({ type: VALUE, value: value });
+    }
+  },
+  _emitError: function (value) {
+    if (this._alive) {
+      this._dispatcher.dispatch({ type: ERROR, value: value });
+    }
+  },
+  _emitEnd: function () {
+    if (this._alive) {
+      this._alive = false;
+      this._dispatcher.dispatch({ type: END });
+      this._clear();
+    }
+  },
+  _on: function (type, fn) {
+    if (this._alive) {
+      this._dispatcher.add(type, fn);
+      this._setActive(true);
+    } else {
+      callSubscriber(type, fn, { type: END });
+    }
+    return this;
+  },
+  _off: function (type, fn) {
+    if (this._alive) {
+      var count = this._dispatcher.remove(type, fn);
+      if (count === 0) {
+        this._setActive(false);
+      }
+    }
+    return this;
+  },
+  onValue: function (fn) {
+    return this._on(VALUE, fn);
+  },
+  onError: function (fn) {
+    return this._on(ERROR, fn);
+  },
+  onEnd: function (fn) {
+    return this._on(END, fn);
+  },
+  onAny: function (fn) {
+    return this._on(ANY, fn);
+  },
+  offValue: function (fn) {
+    return this._off(VALUE, fn);
+  },
+  offError: function (fn) {
+    return this._off(ERROR, fn);
+  },
+  offEnd: function (fn) {
+    return this._off(END, fn);
+  },
+  offAny: function (fn) {
+    return this._off(ANY, fn);
+  },
+  observe: function (observerOrOnValue, onError, onEnd) {
+    var _this = this;
+    var closed = false;
+
+    var observer = !observerOrOnValue || typeof observerOrOnValue === 'function' ? { value: observerOrOnValue, error: onError, end: onEnd } : observerOrOnValue;
+
+    var handler = function (event) {
+      if (event.type === END) {
+        closed = true;
+      }
+      if (event.type === VALUE && observer.value) {
+        observer.value(event.value);
+      } else if (event.type === ERROR && observer.error) {
+        observer.error(event.value);
+      } else if (event.type === END && observer.end) {
+        observer.end(event.value);
+      }
+    };
+
+    this.onAny(handler);
+
+    return {
+      unsubscribe: function () {
+        if (!closed) {
+          _this.offAny(handler);
+          closed = true;
+        }
+      },
+
+      get closed() {
+        return closed;
+      }
+    };
+  },
+
+
+  // A and B must be subclasses of Stream and Property (order doesn't matter)
+  _ofSameType: function (A, B) {
+    return A.prototype.getType() === this.getType() ? A : B;
+  },
+  setName: function (sourceObs /* optional */, selfName) {
+    this._name = selfName ? sourceObs._name + '.' + selfName : sourceObs;
+    return this;
+  },
+  log: function () {
+    var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.toString();
+
+    var isCurrent = void 0;
+    var handler = function (event) {
+      var type = '<' + event.type + (isCurrent ? ':current' : '') + '>';
+      if (event.type === END) {
+        console.log(name, type);
+      } else {
+        console.log(name, type, event.value);
+      }
+    };
+
+    if (this._alive) {
+      if (!this._logHandlers) {
+        this._logHandlers = [];
+      }
+      this._logHandlers.push({ name: name, handler: handler });
+    }
+
+    isCurrent = true;
+    this.onAny(handler);
+    isCurrent = false;
+
+    return this;
+  },
+  offLog: function () {
+    var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.toString();
+
+    if (this._logHandlers) {
+      var handlerIndex = findByPred(this._logHandlers, function (obj) {
+        return obj.name === name;
+      });
+      if (handlerIndex !== -1) {
+        this.offAny(this._logHandlers[handlerIndex].handler);
+        this._logHandlers.splice(handlerIndex, 1);
+      }
+    }
+
+    return this;
+  },
+  spy: function () {
+    var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.toString();
+
+    var handler = function (event) {
+      var type = '<' + event.type + '>';
+      if (event.type === END) {
+        console.log(name, type);
+      } else {
+        console.log(name, type, event.value);
+      }
+    };
+    if (this._alive) {
+      if (!this._spyHandlers) {
+        this._spyHandlers = [];
+      }
+      this._spyHandlers.push({ name: name, handler: handler });
+      this._dispatcher.addSpy(handler);
+    }
+    return this;
+  },
+  offSpy: function () {
+    var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.toString();
+
+    if (this._spyHandlers) {
+      var handlerIndex = findByPred(this._spyHandlers, function (obj) {
+        return obj.name === name;
+      });
+      if (handlerIndex !== -1) {
+        this._dispatcher.removeSpy(this._spyHandlers[handlerIndex].handler);
+        this._spyHandlers.splice(handlerIndex, 1);
+      }
+    }
+    return this;
+  }
+});
+
+// extend() can't handle `toString` in IE8
+Observable.prototype.toString = function () {
+  return '[' + this._name + ']';
+};
+
+function Stream() {
+  Observable.call(this);
+}
+
+inherit(Stream, Observable, {
+  _name: 'stream',
+
+  getType: function () {
+    return 'stream';
+  }
+});
+
+function Property() {
+  Observable.call(this);
+  this._currentEvent = null;
+}
+
+inherit(Property, Observable, {
+  _name: 'property',
+
+  _emitValue: function (value) {
+    if (this._alive) {
+      this._currentEvent = { type: VALUE, value: value };
+      if (!this._activating) {
+        this._dispatcher.dispatch({ type: VALUE, value: value });
+      }
+    }
+  },
+  _emitError: function (value) {
+    if (this._alive) {
+      this._currentEvent = { type: ERROR, value: value };
+      if (!this._activating) {
+        this._dispatcher.dispatch({ type: ERROR, value: value });
+      }
+    }
+  },
+  _emitEnd: function () {
+    if (this._alive) {
+      this._alive = false;
+      if (!this._activating) {
+        this._dispatcher.dispatch({ type: END });
+      }
+      this._clear();
+    }
+  },
+  _on: function (type, fn) {
+    if (this._alive) {
+      this._dispatcher.add(type, fn);
+      this._setActive(true);
+    }
+    if (this._currentEvent !== null) {
+      callSubscriber(type, fn, this._currentEvent);
+    }
+    if (!this._alive) {
+      callSubscriber(type, fn, { type: END });
+    }
+    return this;
+  },
+  getType: function () {
+    return 'property';
+  }
+});
+
+var neverS = new Stream();
+neverS._emitEnd();
+neverS._name = 'never';
+
+function never() {
+  return neverS;
+}
+
+function timeBased(mixin) {
+  function AnonymousStream(wait, options) {
+    var _this = this;
+
+    Stream.call(this);
+    this._wait = wait;
+    this._intervalId = null;
+    this._$onTick = function () {
+      return _this._onTick();
+    };
+    this._init(options);
+  }
+
+  inherit(AnonymousStream, Stream, {
+    _init: function () {},
+    _free: function () {},
+    _onTick: function () {},
+    _onActivation: function () {
+      this._intervalId = setInterval(this._$onTick, this._wait);
+    },
+    _onDeactivation: function () {
+      if (this._intervalId !== null) {
+        clearInterval(this._intervalId);
+        this._intervalId = null;
+      }
+    },
+    _clear: function () {
+      Stream.prototype._clear.call(this);
+      this._$onTick = null;
+      this._free();
+    }
+  }, mixin);
+
+  return AnonymousStream;
+}
+
+var S = timeBased({
+  _name: 'later',
+
+  _init: function (_ref) {
+    var x = _ref.x;
+
+    this._x = x;
+  },
+  _free: function () {
+    this._x = null;
+  },
+  _onTick: function () {
+    this._emitValue(this._x);
+    this._emitEnd();
+  }
+});
+
+function later(wait, x) {
+  return new S(wait, { x: x });
+}
+
+var S$1 = timeBased({
+  _name: 'interval',
+
+  _init: function (_ref) {
+    var x = _ref.x;
+
+    this._x = x;
+  },
+  _free: function () {
+    this._x = null;
+  },
+  _onTick: function () {
+    this._emitValue(this._x);
+  }
+});
+
+function interval(wait, x) {
+  return new S$1(wait, { x: x });
+}
+
+var S$2 = timeBased({
+  _name: 'sequentially',
+
+  _init: function (_ref) {
+    var xs = _ref.xs;
+
+    this._xs = cloneArray(xs);
+  },
+  _free: function () {
+    this._xs = null;
+  },
+  _onTick: function () {
+    if (this._xs.length === 1) {
+      this._emitValue(this._xs[0]);
+      this._emitEnd();
+    } else {
+      this._emitValue(this._xs.shift());
+    }
+  }
+});
+
+function sequentially(wait, xs) {
+  return xs.length === 0 ? never() : new S$2(wait, { xs: xs });
+}
+
+var S$3 = timeBased({
+  _name: 'fromPoll',
+
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._fn = fn;
+  },
+  _free: function () {
+    this._fn = null;
+  },
+  _onTick: function () {
+    var fn = this._fn;
+    this._emitValue(fn());
+  }
+});
+
+function fromPoll(wait, fn) {
+  return new S$3(wait, { fn: fn });
+}
+
+function emitter(obs) {
+  function value(x) {
+    obs._emitValue(x);
+    return obs._active;
+  }
+
+  function error(x) {
+    obs._emitError(x);
+    return obs._active;
+  }
+
+  function end() {
+    obs._emitEnd();
+    return obs._active;
+  }
+
+  function event(e) {
+    obs._emit(e.type, e.value);
+    return obs._active;
+  }
+
+  return {
+    value: value,
+    error: error,
+    end: end,
+    event: event,
+
+    // legacy
+    emit: value,
+    emitEvent: event
+  };
+}
+
+var S$4 = timeBased({
+  _name: 'withInterval',
+
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._fn = fn;
+    this._emitter = emitter(this);
+  },
+  _free: function () {
+    this._fn = null;
+    this._emitter = null;
+  },
+  _onTick: function () {
+    var fn = this._fn;
+    fn(this._emitter);
+  }
+});
+
+function withInterval(wait, fn) {
+  return new S$4(wait, { fn: fn });
+}
+
+function S$5(fn) {
+  Stream.call(this);
+  this._fn = fn;
+  this._unsubscribe = null;
+}
+
+inherit(S$5, Stream, {
+  _name: 'stream',
+
+  _onActivation: function () {
+    var fn = this._fn;
+    var unsubscribe = fn(emitter(this));
+    this._unsubscribe = typeof unsubscribe === 'function' ? unsubscribe : null;
+
+    // fix https://github.com/rpominov/kefir/issues/35
+    if (!this._active) {
+      this._callUnsubscribe();
+    }
+  },
+  _callUnsubscribe: function () {
+    if (this._unsubscribe !== null) {
+      this._unsubscribe();
+      this._unsubscribe = null;
+    }
+  },
+  _onDeactivation: function () {
+    this._callUnsubscribe();
+  },
+  _clear: function () {
+    Stream.prototype._clear.call(this);
+    this._fn = null;
+  }
+});
+
+function stream(fn) {
+  return new S$5(fn);
+}
+
+function fromCallback(callbackConsumer) {
+  var called = false;
+
+  return stream(function (emitter) {
+    if (!called) {
+      callbackConsumer(function (x) {
+        emitter.emit(x);
+        emitter.end();
+      });
+      called = true;
+    }
+  }).setName('fromCallback');
+}
+
+function fromNodeCallback(callbackConsumer) {
+  var called = false;
+
+  return stream(function (emitter) {
+    if (!called) {
+      callbackConsumer(function (error, x) {
+        if (error) {
+          emitter.error(error);
+        } else {
+          emitter.emit(x);
+        }
+        emitter.end();
+      });
+      called = true;
+    }
+  }).setName('fromNodeCallback');
+}
+
+function spread(fn, length) {
+  switch (length) {
+    case 0:
+      return function () {
+        return fn();
+      };
+    case 1:
+      return function (a) {
+        return fn(a[0]);
+      };
+    case 2:
+      return function (a) {
+        return fn(a[0], a[1]);
+      };
+    case 3:
+      return function (a) {
+        return fn(a[0], a[1], a[2]);
+      };
+    case 4:
+      return function (a) {
+        return fn(a[0], a[1], a[2], a[3]);
+      };
+    default:
+      return function (a) {
+        return fn.apply(null, a);
+      };
+  }
+}
+
+function apply(fn, c, a) {
+  var aLength = a ? a.length : 0;
+  if (c == null) {
+    switch (aLength) {
+      case 0:
+        return fn();
+      case 1:
+        return fn(a[0]);
+      case 2:
+        return fn(a[0], a[1]);
+      case 3:
+        return fn(a[0], a[1], a[2]);
+      case 4:
+        return fn(a[0], a[1], a[2], a[3]);
+      default:
+        return fn.apply(null, a);
+    }
+  } else {
+    switch (aLength) {
+      case 0:
+        return fn.call(c);
+      default:
+        return fn.apply(c, a);
+    }
+  }
+}
+
+function fromSubUnsub(sub, unsub, transformer /* Function | falsey */) {
+  return stream(function (emitter) {
+    var handler = transformer ? function () {
+      emitter.emit(apply(transformer, this, arguments));
+    } : function (x) {
+      emitter.emit(x);
+    };
+
+    sub(handler);
+    return function () {
+      return unsub(handler);
+    };
+  }).setName('fromSubUnsub');
+}
+
+var pairs = [['addEventListener', 'removeEventListener'], ['addListener', 'removeListener'], ['on', 'off']];
+
+function fromEvents(target, eventName, transformer) {
+  var sub = void 0,
+      unsub = void 0;
+
+  for (var i = 0; i < pairs.length; i++) {
+    if (typeof target[pairs[i][0]] === 'function' && typeof target[pairs[i][1]] === 'function') {
+      sub = pairs[i][0];
+      unsub = pairs[i][1];
+      break;
+    }
+  }
+
+  if (sub === undefined) {
+    throw new Error("target don't support any of " + 'addEventListener/removeEventListener, addListener/removeListener, on/off method pair');
+  }
+
+  return fromSubUnsub(function (handler) {
+    return target[sub](eventName, handler);
+  }, function (handler) {
+    return target[unsub](eventName, handler);
+  }, transformer).setName('fromEvents');
+}
+
+// HACK:
+//   We don't call parent Class constructor, but instead putting all necessary
+//   properties into prototype to simulate ended Property
+//   (see Propperty and Observable classes).
+
+function P(value) {
+  this._currentEvent = { type: 'value', value: value, current: true };
+}
+
+inherit(P, Property, {
+  _name: 'constant',
+  _active: false,
+  _activating: false,
+  _alive: false,
+  _dispatcher: null,
+  _logHandlers: null
+});
+
+function constant(x) {
+  return new P(x);
+}
+
+// HACK:
+//   We don't call parent Class constructor, but instead putting all necessary
+//   properties into prototype to simulate ended Property
+//   (see Propperty and Observable classes).
+
+function P$1(value) {
+  this._currentEvent = { type: 'error', value: value, current: true };
+}
+
+inherit(P$1, Property, {
+  _name: 'constantError',
+  _active: false,
+  _activating: false,
+  _alive: false,
+  _dispatcher: null,
+  _logHandlers: null
+});
+
+function constantError(x) {
+  return new P$1(x);
+}
+
+function createConstructor(BaseClass, name) {
+  return function AnonymousObservable(source, options) {
+    var _this = this;
+
+    BaseClass.call(this);
+    this._source = source;
+    this._name = source._name + '.' + name;
+    this._init(options);
+    this._$handleAny = function (event) {
+      return _this._handleAny(event);
+    };
+  };
+}
+
+function createClassMethods(BaseClass) {
+  return {
+    _init: function () {},
+    _free: function () {},
+    _handleValue: function (x) {
+      this._emitValue(x);
+    },
+    _handleError: function (x) {
+      this._emitError(x);
+    },
+    _handleEnd: function () {
+      this._emitEnd();
+    },
+    _handleAny: function (event) {
+      switch (event.type) {
+        case VALUE:
+          return this._handleValue(event.value);
+        case ERROR:
+          return this._handleError(event.value);
+        case END:
+          return this._handleEnd();
+      }
+    },
+    _onActivation: function () {
+      this._source.onAny(this._$handleAny);
+    },
+    _onDeactivation: function () {
+      this._source.offAny(this._$handleAny);
+    },
+    _clear: function () {
+      BaseClass.prototype._clear.call(this);
+      this._source = null;
+      this._$handleAny = null;
+      this._free();
+    }
+  };
+}
+
+function createStream(name, mixin) {
+  var S = createConstructor(Stream, name);
+  inherit(S, Stream, createClassMethods(Stream), mixin);
+  return S;
+}
+
+function createProperty(name, mixin) {
+  var P = createConstructor(Property, name);
+  inherit(P, Property, createClassMethods(Property), mixin);
+  return P;
+}
+
+var P$2 = createProperty('toProperty', {
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._getInitialCurrent = fn;
+  },
+  _onActivation: function () {
+    if (this._getInitialCurrent !== null) {
+      var getInitial = this._getInitialCurrent;
+      this._emitValue(getInitial());
+    }
+    this._source.onAny(this._$handleAny); // copied from patterns/one-source
+  }
+});
+
+function toProperty(obs) {
+  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+
+  if (fn !== null && typeof fn !== 'function') {
+    throw new Error('You should call toProperty() with a function or no arguments.');
+  }
+  return new P$2(obs, { fn: fn });
+}
+
+var S$6 = createStream('changes', {
+  _handleValue: function (x) {
+    if (!this._activating) {
+      this._emitValue(x);
+    }
+  },
+  _handleError: function (x) {
+    if (!this._activating) {
+      this._emitError(x);
+    }
+  }
+});
+
+function changes(obs) {
+  return new S$6(obs);
+}
+
+function fromPromise(promise) {
+  var called = false;
+
+  var result = stream(function (emitter) {
+    if (!called) {
+      var onValue = function (x) {
+        emitter.emit(x);
+        emitter.end();
+      };
+      var onError = function (x) {
+        emitter.error(x);
+        emitter.end();
+      };
+      var _promise = promise.then(onValue, onError);
+
+      // prevent libraries like 'Q' or 'when' from swallowing exceptions
+      if (_promise && typeof _promise.done === 'function') {
+        _promise.done();
+      }
+
+      called = true;
+    }
+  });
+
+  return toProperty(result, null).setName('fromPromise');
+}
+
+function getGlodalPromise() {
+  if (typeof Promise === 'function') {
+    return Promise;
+  } else {
+    throw new Error("There isn't default Promise, use shim or parameter");
+  }
+}
+
+var toPromise = function (obs) {
+  var Promise = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : getGlodalPromise();
+
+  var last = null;
+  return new Promise(function (resolve, reject) {
+    obs.onAny(function (event) {
+      if (event.type === END && last !== null) {
+        (last.type === VALUE ? resolve : reject)(last.value);
+        last = null;
+      } else {
+        last = event;
+      }
+    });
+  });
+};
+
+var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+
+
+
+
+
+function createCommonjsModule(fn, module) {
+	return module = { exports: {} }, fn(module, module.exports), module.exports;
+}
+
+var ponyfill = createCommonjsModule(function (module, exports) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+	value: true
+});
+exports['default'] = symbolObservablePonyfill;
+function symbolObservablePonyfill(root) {
+	var result;
+	var _Symbol = root.Symbol;
+
+	if (typeof _Symbol === 'function') {
+		if (_Symbol.observable) {
+			result = _Symbol.observable;
 		} else {
-			result = '@@observable';
+			result = _Symbol('observable');
+			_Symbol.observable = result;
 		}
-
-		return result;
-	};
-	});
-
-	var require$$0$1 = (ponyfill && typeof ponyfill === 'object' && 'default' in ponyfill ? ponyfill['default'] : ponyfill);
-
-	var index$1 = createCommonjsModule(function (module, exports) {
-	'use strict';
-
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-
-	var _ponyfill = require$$0$1;
-
-	var _ponyfill2 = _interopRequireDefault(_ponyfill);
-
-	function _interopRequireDefault(obj) {
-	  return obj && obj.__esModule ? obj : { 'default': obj };
-	}
-
-	var root; /* global window */
-
-	if (typeof self !== 'undefined') {
-	  root = self;
-	} else if (typeof window !== 'undefined') {
-	  root = window;
-	} else if (typeof commonjsGlobal !== 'undefined') {
-	  root = commonjsGlobal;
-	} else if (typeof module !== 'undefined') {
-	  root = module;
 	} else {
-	  root = Function('return this')();
-	}
-
-	var result = (0, _ponyfill2['default'])(root);
-	exports['default'] = result;
-	});
-
-	var require$$0 = (index$1 && typeof index$1 === 'object' && 'default' in index$1 ? index$1['default'] : index$1);
-
-	var index = createCommonjsModule(function (module) {
-	module.exports = require$$0;
-	});
-
-	var $$observable = (index && typeof index === 'object' && 'default' in index ? index['default'] : index);
-
-	function fromESObservable(_observable) {
-	  var observable = _observable[$$observable] ? _observable[$$observable]() : _observable;
-	  return stream(function (emitter) {
-	    var unsub = observable.subscribe({
-	      error: function (error) {
-	        emitter.error(error);
-	        emitter.end();
-	      },
-	      next: function (value) {
-	        emitter.emit(value);
-	      },
-	      complete: function () {
-	        emitter.end();
-	      }
-	    });
-
-	    if (unsub.unsubscribe) {
-	      return function () {
-	        unsub.unsubscribe();
-	      };
-	    } else {
-	      return unsub;
-	    }
-	  }).setName('fromESObservable');
-	}
-
-	function ESObservable(observable) {
-	  this._observable = observable.takeErrors(1);
-	}
-
-	extend(ESObservable.prototype, {
-	  subscribe: function (observerOrOnNext, onError, onComplete) {
-	    var _this = this;
-
-	    var observer = typeof observerOrOnNext === 'function' ? { next: observerOrOnNext, error: onError, complete: onComplete } : observerOrOnNext;
-
-	    var fn = function (event) {
-	      if (event.type === END) {
-	        closed = true;
-	      }
-
-	      if (event.type === VALUE && observer.next) {
-	        observer.next(event.value);
-	      } else if (event.type === ERROR && observer.error) {
-	        observer.error(event.value);
-	      } else if (event.type === END && observer.complete) {
-	        observer.complete(event.value);
-	      }
-	    };
-
-	    this._observable.onAny(fn);
-	    var closed = false;
-
-	    var subscription = {
-	      unsubscribe: function () {
-	        closed = true;
-	        _this._observable.offAny(fn);
-	      },
-	      get closed() {
-	        return closed;
-	      }
-	    };
-	    return subscription;
-	  }
-	});
-
-	// Need to assign directly b/c Symbols aren't enumerable.
-	ESObservable.prototype[$$observable] = function () {
-	  return this;
-	};
-
-	function toESObservable() {
-	  return new ESObservable(this);
-	}
-
-	function collect(source, keys, values) {
-	  for (var prop in source) {
-	    if (source.hasOwnProperty(prop)) {
-	      keys.push(prop);
-	      values.push(source[prop]);
-	    }
-	  }
-	}
-
-	function defaultErrorsCombinator(errors) {
-	  var latestError = void 0;
-	  for (var i = 0; i < errors.length; i++) {
-	    if (errors[i] !== undefined) {
-	      if (latestError === undefined || latestError.index < errors[i].index) {
-	        latestError = errors[i];
-	      }
-	    }
-	  }
-	  return latestError.error;
-	}
-
-	function Combine(active, passive, combinator) {
-	  var _this = this;
-
-	  Stream.call(this);
-	  this._activeCount = active.length;
-	  this._sources = concat(active, passive);
-	  this._combinator = combinator;
-	  this._aliveCount = 0;
-	  this._latestValues = new Array(this._sources.length);
-	  this._latestErrors = new Array(this._sources.length);
-	  fillArray(this._latestValues, NOTHING);
-	  this._emitAfterActivation = false;
-	  this._endAfterActivation = false;
-	  this._latestErrorIndex = 0;
-
-	  this._$handlers = [];
-
-	  var _loop = function (i) {
-	    _this._$handlers.push(function (event) {
-	      return _this._handleAny(i, event);
-	    });
-	  };
-
-	  for (var i = 0; i < this._sources.length; i++) {
-	    _loop(i);
-	  }
-	}
-
-	inherit(Combine, Stream, {
-
-	  _name: 'combine',
-
-	  _onActivation: function () {
-	    this._aliveCount = this._activeCount;
-
-	    // we need to suscribe to _passive_ sources before _active_
-	    // (see https://github.com/rpominov/kefir/issues/98)
-	    for (var i = this._activeCount; i < this._sources.length; i++) {
-	      this._sources[i].onAny(this._$handlers[i]);
-	    }
-	    for (var _i = 0; _i < this._activeCount; _i++) {
-	      this._sources[_i].onAny(this._$handlers[_i]);
-	    }
-
-	    if (this._emitAfterActivation) {
-	      this._emitAfterActivation = false;
-	      this._emitIfFull();
-	    }
-	    if (this._endAfterActivation) {
-	      this._emitEnd();
-	    }
-	  },
-	  _onDeactivation: function () {
-	    var length = this._sources.length,
-	        i = void 0;
-	    for (i = 0; i < length; i++) {
-	      this._sources[i].offAny(this._$handlers[i]);
-	    }
-	  },
-	  _emitIfFull: function () {
-	    var hasAllValues = true;
-	    var hasErrors = false;
-	    var length = this._latestValues.length;
-	    var valuesCopy = new Array(length);
-	    var errorsCopy = new Array(length);
-
-	    for (var i = 0; i < length; i++) {
-	      valuesCopy[i] = this._latestValues[i];
-	      errorsCopy[i] = this._latestErrors[i];
-
-	      if (valuesCopy[i] === NOTHING) {
-	        hasAllValues = false;
-	      }
-
-	      if (errorsCopy[i] !== undefined) {
-	        hasErrors = true;
-	      }
-	    }
-
-	    if (hasAllValues) {
-	      var combinator = this._combinator;
-	      this._emitValue(combinator(valuesCopy));
-	    }
-	    if (hasErrors) {
-	      this._emitError(defaultErrorsCombinator(errorsCopy));
-	    }
-	  },
-	  _handleAny: function (i, event) {
-
-	    if (event.type === VALUE || event.type === ERROR) {
-
-	      if (event.type === VALUE) {
-	        this._latestValues[i] = event.value;
-	        this._latestErrors[i] = undefined;
-	      }
-	      if (event.type === ERROR) {
-	        this._latestValues[i] = NOTHING;
-	        this._latestErrors[i] = {
-	          index: this._latestErrorIndex++,
-	          error: event.value
-	        };
-	      }
-
-	      if (i < this._activeCount) {
-	        if (this._activating) {
-	          this._emitAfterActivation = true;
-	        } else {
-	          this._emitIfFull();
-	        }
-	      }
-	    } else {
-	      // END
-
-	      if (i < this._activeCount) {
-	        this._aliveCount--;
-	        if (this._aliveCount === 0) {
-	          if (this._activating) {
-	            this._endAfterActivation = true;
-	          } else {
-	            this._emitEnd();
-	          }
-	        }
-	      }
-	    }
-	  },
-	  _clear: function () {
-	    Stream.prototype._clear.call(this);
-	    this._sources = null;
-	    this._latestValues = null;
-	    this._latestErrors = null;
-	    this._combinator = null;
-	    this._$handlers = null;
-	  }
-	});
-
-	function combineAsArray(active) {
-	  var passive = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
-	  var combinator = arguments[2];
-
-	  if (!Array.isArray(passive)) {
-	    throw new Error('Combine can only combine active and passive collections of the same type.');
-	  }
-
-	  combinator = combinator ? spread(combinator, active.length + passive.length) : function (x) {
-	    return x;
-	  };
-	  return active.length === 0 ? never() : new Combine(active, passive, combinator);
-	}
-
-	function combineAsObject(active) {
-	  var passive = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
-	  var combinator = arguments[2];
-
-	  if (typeof passive !== 'object' || Array.isArray(passive)) {
-	    throw new Error('Combine can only combine active and passive collections of the same type.');
-	  }
-
-	  var keys = [],
-	      activeObservables = [],
-	      passiveObservables = [];
-
-	  collect(active, keys, activeObservables);
-	  collect(passive, keys, passiveObservables);
-
-	  var objectify = function (values) {
-	    var event = {};
-	    for (var i = values.length - 1; 0 <= i; i--) {
-	      event[keys[i]] = values[i];
-	    }
-	    return combinator ? combinator(event) : event;
-	  };
-
-	  return activeObservables.length === 0 ? never() : new Combine(activeObservables, passiveObservables, objectify);
-	}
-
-	function combine(active, passive, combinator) {
-	  if (typeof passive === 'function') {
-	    combinator = passive;
-	    passive = undefined;
-	  }
-
-	  return Array.isArray(active) ? combineAsArray(active, passive, combinator) : combineAsObject(active, passive, combinator);
-	}
-
-	var Observable$1 = {
-	  empty: function () {
-	    return never();
-	  },
-
-
-	  // Monoid based on merge() seems more useful than one based on concat().
-	  concat: function (a, b) {
-	    return a.merge(b);
-	  },
-	  of: function (x) {
-	    return constant(x);
-	  },
-	  map: function (fn, obs) {
-	    return obs.map(fn);
-	  },
-	  bimap: function (fnErr, fnVal, obs) {
-	    return obs.mapErrors(fnErr).map(fnVal);
-	  },
-
-
-	  // This ap strictly speaking incompatible with chain. If we derive ap from chain we get
-	  // different (not very useful) behavior. But spec requires that if method can be derived
-	  // it must have the same behavior as hand-written method. We intentionally violate the spec
-	  // in hope that it won't cause many troubles in practice. And in return we have more useful type.
-	  ap: function (obsFn, obsVal) {
-	    return combine([obsFn, obsVal], function (fn, val) {
-	      return fn(val);
-	    });
-	  },
-	  chain: function (fn, obs) {
-	    return obs.flatMap(fn);
-	  }
-	};
-
-
-
-	var staticLand = Object.freeze({
-	  Observable: Observable$1
-	});
-
-	var mixin = {
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	  },
-	  _free: function () {
-	    this._fn = null;
-	  },
-	  _handleValue: function (x) {
-	    var fn = this._fn;
-	    this._emitValue(fn(x));
-	  }
-	};
-
-	var S$7 = createStream('map', mixin);
-	var P$3 = createProperty('map', mixin);
-
-	var id = function (x) {
-	  return x;
-	};
-
-	function map$1(obs) {
-	  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : id;
-
-	  return new (obs._ofSameType(S$7, P$3))(obs, { fn: fn });
-	}
-
-	var mixin$1 = {
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	  },
-	  _free: function () {
-	    this._fn = null;
-	  },
-	  _handleValue: function (x) {
-	    var fn = this._fn;
-	    if (fn(x)) {
-	      this._emitValue(x);
-	    }
-	  }
-	};
-
-	var S$8 = createStream('filter', mixin$1);
-	var P$4 = createProperty('filter', mixin$1);
-
-	var id$1 = function (x) {
-	  return x;
-	};
-
-	function filter(obs) {
-	  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : id$1;
-
-	  return new (obs._ofSameType(S$8, P$4))(obs, { fn: fn });
-	}
-
-	var mixin$2 = {
-	  _init: function (_ref) {
-	    var n = _ref.n;
-
-	    this._n = n;
-	    if (n <= 0) {
-	      this._emitEnd();
-	    }
-	  },
-	  _handleValue: function (x) {
-	    this._n--;
-	    this._emitValue(x);
-	    if (this._n === 0) {
-	      this._emitEnd();
-	    }
-	  }
-	};
-
-	var S$9 = createStream('take', mixin$2);
-	var P$5 = createProperty('take', mixin$2);
-
-	function take(obs, n) {
-	  return new (obs._ofSameType(S$9, P$5))(obs, { n: n });
-	}
-
-	var mixin$3 = {
-	  _init: function (_ref) {
-	    var n = _ref.n;
-
-	    this._n = n;
-	    if (n <= 0) {
-	      this._emitEnd();
-	    }
-	  },
-	  _handleError: function (x) {
-	    this._n--;
-	    this._emitError(x);
-	    if (this._n === 0) {
-	      this._emitEnd();
-	    }
-	  }
-	};
-
-	var S$10 = createStream('takeErrors', mixin$3);
-	var P$6 = createProperty('takeErrors', mixin$3);
-
-	function takeErrors(obs, n) {
-	  return new (obs._ofSameType(S$10, P$6))(obs, { n: n });
-	}
-
-	var mixin$4 = {
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	  },
-	  _free: function () {
-	    this._fn = null;
-	  },
-	  _handleValue: function (x) {
-	    var fn = this._fn;
-	    if (fn(x)) {
-	      this._emitValue(x);
-	    } else {
-	      this._emitEnd();
-	    }
-	  }
-	};
-
-	var S$11 = createStream('takeWhile', mixin$4);
-	var P$7 = createProperty('takeWhile', mixin$4);
-
-	var id$2 = function (x) {
-	  return x;
-	};
-
-	function takeWhile(obs) {
-	  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : id$2;
-
-	  return new (obs._ofSameType(S$11, P$7))(obs, { fn: fn });
-	}
-
-	var mixin$5 = {
-	  _init: function () {
-	    this._lastValue = NOTHING;
-	  },
-	  _free: function () {
-	    this._lastValue = null;
-	  },
-	  _handleValue: function (x) {
-	    this._lastValue = x;
-	  },
-	  _handleEnd: function () {
-	    if (this._lastValue !== NOTHING) {
-	      this._emitValue(this._lastValue);
-	    }
-	    this._emitEnd();
-	  }
-	};
-
-	var S$12 = createStream('last', mixin$5);
-	var P$8 = createProperty('last', mixin$5);
-
-	function last(obs) {
-	  return new (obs._ofSameType(S$12, P$8))(obs);
-	}
-
-	var mixin$6 = {
-	  _init: function (_ref) {
-	    var n = _ref.n;
-
-	    this._n = Math.max(0, n);
-	  },
-	  _handleValue: function (x) {
-	    if (this._n === 0) {
-	      this._emitValue(x);
-	    } else {
-	      this._n--;
-	    }
-	  }
-	};
-
-	var S$13 = createStream('skip', mixin$6);
-	var P$9 = createProperty('skip', mixin$6);
-
-	function skip(obs, n) {
-	  return new (obs._ofSameType(S$13, P$9))(obs, { n: n });
-	}
-
-	var mixin$7 = {
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	  },
-	  _free: function () {
-	    this._fn = null;
-	  },
-	  _handleValue: function (x) {
-	    var fn = this._fn;
-	    if (this._fn !== null && !fn(x)) {
-	      this._fn = null;
-	    }
-	    if (this._fn === null) {
-	      this._emitValue(x);
-	    }
-	  }
-	};
-
-	var S$14 = createStream('skipWhile', mixin$7);
-	var P$10 = createProperty('skipWhile', mixin$7);
-
-	var id$3 = function (x) {
-	  return x;
-	};
-
-	function skipWhile(obs) {
-	  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : id$3;
-
-	  return new (obs._ofSameType(S$14, P$10))(obs, { fn: fn });
-	}
-
-	var mixin$8 = {
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	    this._prev = NOTHING;
-	  },
-	  _free: function () {
-	    this._fn = null;
-	    this._prev = null;
-	  },
-	  _handleValue: function (x) {
-	    var fn = this._fn;
-	    if (this._prev === NOTHING || !fn(this._prev, x)) {
-	      this._prev = x;
-	      this._emitValue(x);
-	    }
-	  }
-	};
-
-	var S$15 = createStream('skipDuplicates', mixin$8);
-	var P$11 = createProperty('skipDuplicates', mixin$8);
-
-	var eq = function (a, b) {
-	  return a === b;
-	};
-
-	function skipDuplicates(obs) {
-	  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : eq;
-
-	  return new (obs._ofSameType(S$15, P$11))(obs, { fn: fn });
-	}
-
-	var mixin$9 = {
-	  _init: function (_ref) {
-	    var fn = _ref.fn,
-	        seed = _ref.seed;
-
-	    this._fn = fn;
-	    this._prev = seed;
-	  },
-	  _free: function () {
-	    this._prev = null;
-	    this._fn = null;
-	  },
-	  _handleValue: function (x) {
-	    if (this._prev !== NOTHING) {
-	      var fn = this._fn;
-	      this._emitValue(fn(this._prev, x));
-	    }
-	    this._prev = x;
-	  }
-	};
-
-	var S$16 = createStream('diff', mixin$9);
-	var P$12 = createProperty('diff', mixin$9);
-
-	function defaultFn(a, b) {
-	  return [a, b];
-	}
-
-	function diff(obs, fn) {
-	  var seed = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : NOTHING;
-
-	  return new (obs._ofSameType(S$16, P$12))(obs, { fn: fn || defaultFn, seed: seed });
-	}
-
-	var P$13 = createProperty('scan', {
-	  _init: function (_ref) {
-	    var fn = _ref.fn,
-	        seed = _ref.seed;
-
-	    this._fn = fn;
-	    this._seed = seed;
-	    if (seed !== NOTHING) {
-	      this._emitValue(seed);
-	    }
-	  },
-	  _free: function () {
-	    this._fn = null;
-	    this._seed = null;
-	  },
-	  _handleValue: function (x) {
-	    var fn = this._fn;
-	    if (this._currentEvent === null || this._currentEvent.type === ERROR) {
-	      this._emitValue(this._seed === NOTHING ? x : fn(this._seed, x));
-	    } else {
-	      this._emitValue(fn(this._currentEvent.value, x));
-	    }
-	  }
-	});
-
-	function scan(obs, fn) {
-	  var seed = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : NOTHING;
-
-	  return new P$13(obs, { fn: fn, seed: seed });
-	}
-
-	var mixin$10 = {
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	  },
-	  _free: function () {
-	    this._fn = null;
-	  },
-	  _handleValue: function (x) {
-	    var fn = this._fn;
-	    var xs = fn(x);
-	    for (var i = 0; i < xs.length; i++) {
-	      this._emitValue(xs[i]);
-	    }
-	  }
-	};
-
-	var S$17 = createStream('flatten', mixin$10);
-
-	var id$4 = function (x) {
-	  return x;
-	};
-
-	function flatten(obs) {
-	  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : id$4;
-
-	  return new S$17(obs, { fn: fn });
-	}
-
-	var END_MARKER = {};
-
-	var mixin$11 = {
-	  _init: function (_ref) {
-	    var _this = this;
-
-	    var wait = _ref.wait;
-
-	    this._wait = Math.max(0, wait);
-	    this._buff = [];
-	    this._$shiftBuff = function () {
-	      var value = _this._buff.shift();
-	      if (value === END_MARKER) {
-	        _this._emitEnd();
-	      } else {
-	        _this._emitValue(value);
-	      }
-	    };
-	  },
-	  _free: function () {
-	    this._buff = null;
-	    this._$shiftBuff = null;
-	  },
-	  _handleValue: function (x) {
-	    if (this._activating) {
-	      this._emitValue(x);
-	    } else {
-	      this._buff.push(x);
-	      setTimeout(this._$shiftBuff, this._wait);
-	    }
-	  },
-	  _handleEnd: function () {
-	    if (this._activating) {
-	      this._emitEnd();
-	    } else {
-	      this._buff.push(END_MARKER);
-	      setTimeout(this._$shiftBuff, this._wait);
-	    }
-	  }
-	};
-
-	var S$18 = createStream('delay', mixin$11);
-	var P$14 = createProperty('delay', mixin$11);
-
-	function delay(obs, wait) {
-	  return new (obs._ofSameType(S$18, P$14))(obs, { wait: wait });
-	}
-
-	var now = Date.now ? function () {
-	  return Date.now();
-	} : function () {
-	  return new Date().getTime();
-	};
-
-	var mixin$12 = {
-	  _init: function (_ref) {
-	    var _this = this;
-
-	    var wait = _ref.wait,
-	        leading = _ref.leading,
-	        trailing = _ref.trailing;
-
-	    this._wait = Math.max(0, wait);
-	    this._leading = leading;
-	    this._trailing = trailing;
-	    this._trailingValue = null;
-	    this._timeoutId = null;
-	    this._endLater = false;
-	    this._lastCallTime = 0;
-	    this._$trailingCall = function () {
-	      return _this._trailingCall();
-	    };
-	  },
-	  _free: function () {
-	    this._trailingValue = null;
-	    this._$trailingCall = null;
-	  },
-	  _handleValue: function (x) {
-	    if (this._activating) {
-	      this._emitValue(x);
-	    } else {
-	      var curTime = now();
-	      if (this._lastCallTime === 0 && !this._leading) {
-	        this._lastCallTime = curTime;
-	      }
-	      var remaining = this._wait - (curTime - this._lastCallTime);
-	      if (remaining <= 0) {
-	        this._cancelTrailing();
-	        this._lastCallTime = curTime;
-	        this._emitValue(x);
-	      } else if (this._trailing) {
-	        this._cancelTrailing();
-	        this._trailingValue = x;
-	        this._timeoutId = setTimeout(this._$trailingCall, remaining);
-	      }
-	    }
-	  },
-	  _handleEnd: function () {
-	    if (this._activating) {
-	      this._emitEnd();
-	    } else {
-	      if (this._timeoutId) {
-	        this._endLater = true;
-	      } else {
-	        this._emitEnd();
-	      }
-	    }
-	  },
-	  _cancelTrailing: function () {
-	    if (this._timeoutId !== null) {
-	      clearTimeout(this._timeoutId);
-	      this._timeoutId = null;
-	    }
-	  },
-	  _trailingCall: function () {
-	    this._emitValue(this._trailingValue);
-	    this._timeoutId = null;
-	    this._trailingValue = null;
-	    this._lastCallTime = !this._leading ? 0 : now();
-	    if (this._endLater) {
-	      this._emitEnd();
-	    }
-	  }
-	};
-
-	var S$19 = createStream('throttle', mixin$12);
-	var P$15 = createProperty('throttle', mixin$12);
-
-	function throttle(obs, wait) {
-	  var _ref2 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-	      _ref2$leading = _ref2.leading,
-	      leading = _ref2$leading === undefined ? true : _ref2$leading,
-	      _ref2$trailing = _ref2.trailing,
-	      trailing = _ref2$trailing === undefined ? true : _ref2$trailing;
-
-	  return new (obs._ofSameType(S$19, P$15))(obs, { wait: wait, leading: leading, trailing: trailing });
-	}
-
-	var mixin$13 = {
-	  _init: function (_ref) {
-	    var _this = this;
-
-	    var wait = _ref.wait,
-	        immediate = _ref.immediate;
-
-	    this._wait = Math.max(0, wait);
-	    this._immediate = immediate;
-	    this._lastAttempt = 0;
-	    this._timeoutId = null;
-	    this._laterValue = null;
-	    this._endLater = false;
-	    this._$later = function () {
-	      return _this._later();
-	    };
-	  },
-	  _free: function () {
-	    this._laterValue = null;
-	    this._$later = null;
-	  },
-	  _handleValue: function (x) {
-	    if (this._activating) {
-	      this._emitValue(x);
-	    } else {
-	      this._lastAttempt = now();
-	      if (this._immediate && !this._timeoutId) {
-	        this._emitValue(x);
-	      }
-	      if (!this._timeoutId) {
-	        this._timeoutId = setTimeout(this._$later, this._wait);
-	      }
-	      if (!this._immediate) {
-	        this._laterValue = x;
-	      }
-	    }
-	  },
-	  _handleEnd: function () {
-	    if (this._activating) {
-	      this._emitEnd();
-	    } else {
-	      if (this._timeoutId && !this._immediate) {
-	        this._endLater = true;
-	      } else {
-	        this._emitEnd();
-	      }
-	    }
-	  },
-	  _later: function () {
-	    var last = now() - this._lastAttempt;
-	    if (last < this._wait && last >= 0) {
-	      this._timeoutId = setTimeout(this._$later, this._wait - last);
-	    } else {
-	      this._timeoutId = null;
-	      if (!this._immediate) {
-	        this._emitValue(this._laterValue);
-	        this._laterValue = null;
-	      }
-	      if (this._endLater) {
-	        this._emitEnd();
-	      }
-	    }
-	  }
-	};
-
-	var S$20 = createStream('debounce', mixin$13);
-	var P$16 = createProperty('debounce', mixin$13);
-
-	function debounce(obs, wait) {
-	  var _ref2 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-	      _ref2$immediate = _ref2.immediate,
-	      immediate = _ref2$immediate === undefined ? false : _ref2$immediate;
-
-	  return new (obs._ofSameType(S$20, P$16))(obs, { wait: wait, immediate: immediate });
-	}
-
-	var mixin$14 = {
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	  },
-	  _free: function () {
-	    this._fn = null;
-	  },
-	  _handleError: function (x) {
-	    var fn = this._fn;
-	    this._emitError(fn(x));
-	  }
-	};
-
-	var S$21 = createStream('mapErrors', mixin$14);
-	var P$17 = createProperty('mapErrors', mixin$14);
-
-	var id$5 = function (x) {
-	  return x;
-	};
-
-	function mapErrors(obs) {
-	  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : id$5;
-
-	  return new (obs._ofSameType(S$21, P$17))(obs, { fn: fn });
-	}
-
-	var mixin$15 = {
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	  },
-	  _free: function () {
-	    this._fn = null;
-	  },
-	  _handleError: function (x) {
-	    var fn = this._fn;
-	    if (fn(x)) {
-	      this._emitError(x);
-	    }
-	  }
-	};
-
-	var S$22 = createStream('filterErrors', mixin$15);
-	var P$18 = createProperty('filterErrors', mixin$15);
-
-	var id$6 = function (x) {
-	  return x;
-	};
-
-	function filterErrors(obs) {
-	  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : id$6;
-
-	  return new (obs._ofSameType(S$22, P$18))(obs, { fn: fn });
-	}
-
-	var mixin$16 = {
-	  _handleValue: function () {}
-	};
-
-	var S$23 = createStream('ignoreValues', mixin$16);
-	var P$19 = createProperty('ignoreValues', mixin$16);
-
-	function ignoreValues(obs) {
-	  return new (obs._ofSameType(S$23, P$19))(obs);
-	}
-
-	var mixin$17 = {
-	  _handleError: function () {}
-	};
-
-	var S$24 = createStream('ignoreErrors', mixin$17);
-	var P$20 = createProperty('ignoreErrors', mixin$17);
-
-	function ignoreErrors(obs) {
-	  return new (obs._ofSameType(S$24, P$20))(obs);
-	}
-
-	var mixin$18 = {
-	  _handleEnd: function () {}
-	};
-
-	var S$25 = createStream('ignoreEnd', mixin$18);
-	var P$21 = createProperty('ignoreEnd', mixin$18);
-
-	function ignoreEnd(obs) {
-	  return new (obs._ofSameType(S$25, P$21))(obs);
-	}
-
-	var mixin$19 = {
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	  },
-	  _free: function () {
-	    this._fn = null;
-	  },
-	  _handleEnd: function () {
-	    var fn = this._fn;
-	    this._emitValue(fn());
-	    this._emitEnd();
-	  }
-	};
-
-	var S$26 = createStream('beforeEnd', mixin$19);
-	var P$22 = createProperty('beforeEnd', mixin$19);
-
-	function beforeEnd(obs, fn) {
-	  return new (obs._ofSameType(S$26, P$22))(obs, { fn: fn });
-	}
-
-	var mixin$20 = {
-	  _init: function (_ref) {
-	    var min = _ref.min,
-	        max = _ref.max;
-
-	    this._max = max;
-	    this._min = min;
-	    this._buff = [];
-	  },
-	  _free: function () {
-	    this._buff = null;
-	  },
-	  _handleValue: function (x) {
-	    this._buff = slide(this._buff, x, this._max);
-	    if (this._buff.length >= this._min) {
-	      this._emitValue(this._buff);
-	    }
-	  }
-	};
-
-	var S$27 = createStream('slidingWindow', mixin$20);
-	var P$23 = createProperty('slidingWindow', mixin$20);
-
-	function slidingWindow(obs, max) {
-	  var min = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
-
-	  return new (obs._ofSameType(S$27, P$23))(obs, { min: min, max: max });
-	}
-
-	var mixin$21 = {
-	  _init: function (_ref) {
-	    var fn = _ref.fn,
-	        flushOnEnd = _ref.flushOnEnd;
-
-	    this._fn = fn;
-	    this._flushOnEnd = flushOnEnd;
-	    this._buff = [];
-	  },
-	  _free: function () {
-	    this._buff = null;
-	  },
-	  _flush: function () {
-	    if (this._buff !== null && this._buff.length !== 0) {
-	      this._emitValue(this._buff);
-	      this._buff = [];
-	    }
-	  },
-	  _handleValue: function (x) {
-	    this._buff.push(x);
-	    var fn = this._fn;
-	    if (!fn(x)) {
-	      this._flush();
-	    }
-	  },
-	  _handleEnd: function () {
-	    if (this._flushOnEnd) {
-	      this._flush();
-	    }
-	    this._emitEnd();
-	  }
-	};
-
-	var S$28 = createStream('bufferWhile', mixin$21);
-	var P$24 = createProperty('bufferWhile', mixin$21);
-
-	var id$7 = function (x) {
-	  return x;
-	};
-
-	function bufferWhile(obs, fn) {
-	  var _ref2 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-	      _ref2$flushOnEnd = _ref2.flushOnEnd,
-	      flushOnEnd = _ref2$flushOnEnd === undefined ? true : _ref2$flushOnEnd;
-
-	  return new (obs._ofSameType(S$28, P$24))(obs, { fn: fn || id$7, flushOnEnd: flushOnEnd });
-	}
-
-	var mixin$22 = {
-	  _init: function (_ref) {
-	    var count = _ref.count,
-	        flushOnEnd = _ref.flushOnEnd;
-
-	    this._count = count;
-	    this._flushOnEnd = flushOnEnd;
-	    this._buff = [];
-	  },
-	  _free: function () {
-	    this._buff = null;
-	  },
-	  _flush: function () {
-	    if (this._buff !== null && this._buff.length !== 0) {
-	      this._emitValue(this._buff);
-	      this._buff = [];
-	    }
-	  },
-	  _handleValue: function (x) {
-	    this._buff.push(x);
-	    if (this._buff.length >= this._count) {
-	      this._flush();
-	    }
-	  },
-	  _handleEnd: function () {
-	    if (this._flushOnEnd) {
-	      this._flush();
-	    }
-	    this._emitEnd();
-	  }
-	};
-
-	var S$29 = createStream('bufferWithCount', mixin$22);
-	var P$25 = createProperty('bufferWithCount', mixin$22);
-
-	function bufferWhile$1(obs, count) {
-	  var _ref2 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
-	      _ref2$flushOnEnd = _ref2.flushOnEnd,
-	      flushOnEnd = _ref2$flushOnEnd === undefined ? true : _ref2$flushOnEnd;
-
-	  return new (obs._ofSameType(S$29, P$25))(obs, { count: count, flushOnEnd: flushOnEnd });
-	}
-
-	var mixin$23 = {
-	  _init: function (_ref) {
-	    var _this = this;
-
-	    var wait = _ref.wait,
-	        count = _ref.count,
-	        flushOnEnd = _ref.flushOnEnd;
-
-	    this._wait = wait;
-	    this._count = count;
-	    this._flushOnEnd = flushOnEnd;
-	    this._intervalId = null;
-	    this._$onTick = function () {
-	      return _this._flush();
-	    };
-	    this._buff = [];
-	  },
-	  _free: function () {
-	    this._$onTick = null;
-	    this._buff = null;
-	  },
-	  _flush: function () {
-	    if (this._buff !== null) {
-	      this._emitValue(this._buff);
-	      this._buff = [];
-	    }
-	  },
-	  _handleValue: function (x) {
-	    this._buff.push(x);
-	    if (this._buff.length >= this._count) {
-	      clearInterval(this._intervalId);
-	      this._flush();
-	      this._intervalId = setInterval(this._$onTick, this._wait);
-	    }
-	  },
-	  _handleEnd: function () {
-	    if (this._flushOnEnd && this._buff.length !== 0) {
-	      this._flush();
-	    }
-	    this._emitEnd();
-	  },
-	  _onActivation: function () {
-	    this._intervalId = setInterval(this._$onTick, this._wait);
-	    this._source.onAny(this._$handleAny); // copied from patterns/one-source
-	  },
-	  _onDeactivation: function () {
-	    if (this._intervalId !== null) {
-	      clearInterval(this._intervalId);
-	      this._intervalId = null;
-	    }
-	    this._source.offAny(this._$handleAny); // copied from patterns/one-source
-	  }
-	};
-
-	var S$30 = createStream('bufferWithTimeOrCount', mixin$23);
-	var P$26 = createProperty('bufferWithTimeOrCount', mixin$23);
-
-	function bufferWithTimeOrCount(obs, wait, count) {
-	  var _ref2 = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {},
-	      _ref2$flushOnEnd = _ref2.flushOnEnd,
-	      flushOnEnd = _ref2$flushOnEnd === undefined ? true : _ref2$flushOnEnd;
-
-	  return new (obs._ofSameType(S$30, P$26))(obs, { wait: wait, count: count, flushOnEnd: flushOnEnd });
-	}
-
-	function xformForObs(obs) {
-	  return {
-	    '@@transducer/step': function (res, input) {
-	      obs._emitValue(input);
-	      return null;
-	    },
-	    '@@transducer/result': function () {
-	      obs._emitEnd();
-	      return null;
-	    }
-	  };
-	}
-
-	var mixin$24 = {
-	  _init: function (_ref) {
-	    var transducer = _ref.transducer;
-
-	    this._xform = transducer(xformForObs(this));
-	  },
-	  _free: function () {
-	    this._xform = null;
-	  },
-	  _handleValue: function (x) {
-	    if (this._xform['@@transducer/step'](null, x) !== null) {
-	      this._xform['@@transducer/result'](null);
-	    }
-	  },
-	  _handleEnd: function () {
-	    this._xform['@@transducer/result'](null);
-	  }
-	};
-
-	var S$31 = createStream('transduce', mixin$24);
-	var P$27 = createProperty('transduce', mixin$24);
-
-	function transduce(obs, transducer) {
-	  return new (obs._ofSameType(S$31, P$27))(obs, { transducer: transducer });
-	}
-
-	var mixin$25 = {
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._handler = fn;
-	    this._emitter = emitter(this);
-	  },
-	  _free: function () {
-	    this._handler = null;
-	    this._emitter = null;
-	  },
-	  _handleAny: function (event) {
-	    this._handler(this._emitter, event);
-	  }
-	};
-
-	var S$32 = createStream('withHandler', mixin$25);
-	var P$28 = createProperty('withHandler', mixin$25);
-
-	function withHandler(obs, fn) {
-	  return new (obs._ofSameType(S$32, P$28))(obs, { fn: fn });
-	}
-
-	var isArray = Array.isArray || function (xs) {
-	  return Object.prototype.toString.call(xs) === '[object Array]';
-	};
-
-	function Zip(sources, combinator) {
-	  var _this = this;
-
-	  Stream.call(this);
-
-	  this._buffers = map(sources, function (source) {
-	    return isArray(source) ? cloneArray(source) : [];
-	  });
-	  this._sources = map(sources, function (source) {
-	    return isArray(source) ? never() : source;
-	  });
-
-	  this._combinator = combinator ? spread(combinator, this._sources.length) : function (x) {
-	    return x;
-	  };
-	  this._aliveCount = 0;
-
-	  this._$handlers = [];
-
-	  var _loop = function (i) {
-	    _this._$handlers.push(function (event) {
-	      return _this._handleAny(i, event);
-	    });
-	  };
-
-	  for (var i = 0; i < this._sources.length; i++) {
-	    _loop(i);
-	  }
-	}
-
-	inherit(Zip, Stream, {
-
-	  _name: 'zip',
-
-	  _onActivation: function () {
-
-	    // if all sources are arrays
-	    while (this._isFull()) {
-	      this._emit();
-	    }
-
-	    var length = this._sources.length;
-	    this._aliveCount = length;
-	    for (var i = 0; i < length && this._active; i++) {
-	      this._sources[i].onAny(this._$handlers[i]);
-	    }
-	  },
-	  _onDeactivation: function () {
-	    for (var i = 0; i < this._sources.length; i++) {
-	      this._sources[i].offAny(this._$handlers[i]);
-	    }
-	  },
-	  _emit: function () {
-	    var values = new Array(this._buffers.length);
-	    for (var i = 0; i < this._buffers.length; i++) {
-	      values[i] = this._buffers[i].shift();
-	    }
-	    var combinator = this._combinator;
-	    this._emitValue(combinator(values));
-	  },
-	  _isFull: function () {
-	    for (var i = 0; i < this._buffers.length; i++) {
-	      if (this._buffers[i].length === 0) {
-	        return false;
-	      }
-	    }
-	    return true;
-	  },
-	  _handleAny: function (i, event) {
-	    if (event.type === VALUE) {
-	      this._buffers[i].push(event.value);
-	      if (this._isFull()) {
-	        this._emit();
-	      }
-	    }
-	    if (event.type === ERROR) {
-	      this._emitError(event.value);
-	    }
-	    if (event.type === END) {
-	      this._aliveCount--;
-	      if (this._aliveCount === 0) {
-	        this._emitEnd();
-	      }
-	    }
-	  },
-	  _clear: function () {
-	    Stream.prototype._clear.call(this);
-	    this._sources = null;
-	    this._buffers = null;
-	    this._combinator = null;
-	    this._$handlers = null;
-	  }
-	});
-
-	function zip(observables, combinator /* Function | falsey */) {
-	  return observables.length === 0 ? never() : new Zip(observables, combinator);
-	}
-
-	var id$8 = function (x) {
-	  return x;
-	};
-
-	function AbstractPool() {
-	  var _this = this;
-
-	  var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-	      _ref$queueLim = _ref.queueLim,
-	      queueLim = _ref$queueLim === undefined ? 0 : _ref$queueLim,
-	      _ref$concurLim = _ref.concurLim,
-	      concurLim = _ref$concurLim === undefined ? -1 : _ref$concurLim,
-	      _ref$drop = _ref.drop,
-	      drop = _ref$drop === undefined ? 'new' : _ref$drop;
-
-	  Stream.call(this);
-
-	  this._queueLim = queueLim < 0 ? -1 : queueLim;
-	  this._concurLim = concurLim < 0 ? -1 : concurLim;
-	  this._drop = drop;
-	  this._queue = [];
-	  this._curSources = [];
-	  this._$handleSubAny = function (event) {
-	    return _this._handleSubAny(event);
-	  };
-	  this._$endHandlers = [];
-	  this._currentlyAdding = null;
-
-	  if (this._concurLim === 0) {
-	    this._emitEnd();
-	  }
-	}
-
-	inherit(AbstractPool, Stream, {
-
-	  _name: 'abstractPool',
-
-	  _add: function (obj, toObs /* Function | falsey */) {
-	    toObs = toObs || id$8;
-	    if (this._concurLim === -1 || this._curSources.length < this._concurLim) {
-	      this._addToCur(toObs(obj));
-	    } else {
-	      if (this._queueLim === -1 || this._queue.length < this._queueLim) {
-	        this._addToQueue(toObs(obj));
-	      } else if (this._drop === 'old') {
-	        this._removeOldest();
-	        this._add(obj, toObs);
-	      }
-	    }
-	  },
-	  _addAll: function (obss) {
-	    var _this2 = this;
-
-	    forEach(obss, function (obs) {
-	      return _this2._add(obs);
-	    });
-	  },
-	  _remove: function (obs) {
-	    if (this._removeCur(obs) === -1) {
-	      this._removeQueue(obs);
-	    }
-	  },
-	  _addToQueue: function (obs) {
-	    this._queue = concat(this._queue, [obs]);
-	  },
-	  _addToCur: function (obs) {
-	    if (this._active) {
-
-	      // HACK:
-	      //
-	      // We have two optimizations for cases when `obs` is ended. We don't want
-	      // to add such observable to the list, but only want to emit events
-	      // from it (if it has some).
-	      //
-	      // Instead of this hacks, we could just did following,
-	      // but it would be 5-8 times slower:
-	      //
-	      //     this._curSources = concat(this._curSources, [obs]);
-	      //     this._subscribe(obs);
-	      //
-
-	      // #1
-	      // This one for cases when `obs` already ended
-	      // e.g., Kefir.constant() or Kefir.never()
-	      if (!obs._alive) {
-	        if (obs._currentEvent) {
-	          this._emit(obs._currentEvent.type, obs._currentEvent.value);
-	        }
-	        return;
-	      }
-
-	      // #2
-	      // This one is for cases when `obs` going to end synchronously on
-	      // first subscriber e.g., Kefir.stream(em => {em.emit(1); em.end()})
-	      this._currentlyAdding = obs;
-	      obs.onAny(this._$handleSubAny);
-	      this._currentlyAdding = null;
-	      if (obs._alive) {
-	        this._curSources = concat(this._curSources, [obs]);
-	        if (this._active) {
-	          this._subToEnd(obs);
-	        }
-	      }
-	    } else {
-	      this._curSources = concat(this._curSources, [obs]);
-	    }
-	  },
-	  _subToEnd: function (obs) {
-	    var _this3 = this;
-
-	    var onEnd = function () {
-	      return _this3._removeCur(obs);
-	    };
-	    this._$endHandlers.push({ obs: obs, handler: onEnd });
-	    obs.onEnd(onEnd);
-	  },
-	  _subscribe: function (obs) {
-	    obs.onAny(this._$handleSubAny);
-
-	    // it can become inactive in responce of subscribing to `obs.onAny` above
-	    if (this._active) {
-	      this._subToEnd(obs);
-	    }
-	  },
-	  _unsubscribe: function (obs) {
-	    obs.offAny(this._$handleSubAny);
-
-	    var onEndI = findByPred(this._$endHandlers, function (obj) {
-	      return obj.obs === obs;
-	    });
-	    if (onEndI !== -1) {
-	      obs.offEnd(this._$endHandlers[onEndI].handler);
-	      this._$endHandlers.splice(onEndI, 1);
-	    }
-	  },
-	  _handleSubAny: function (event) {
-	    if (event.type === VALUE) {
-	      this._emitValue(event.value);
-	    } else if (event.type === ERROR) {
-	      this._emitError(event.value);
-	    }
-	  },
-	  _removeQueue: function (obs) {
-	    var index = find(this._queue, obs);
-	    this._queue = remove(this._queue, index);
-	    return index;
-	  },
-	  _removeCur: function (obs) {
-	    if (this._active) {
-	      this._unsubscribe(obs);
-	    }
-	    var index = find(this._curSources, obs);
-	    this._curSources = remove(this._curSources, index);
-	    if (index !== -1) {
-	      if (this._queue.length !== 0) {
-	        this._pullQueue();
-	      } else if (this._curSources.length === 0) {
-	        this._onEmpty();
-	      }
-	    }
-	    return index;
-	  },
-	  _removeOldest: function () {
-	    this._removeCur(this._curSources[0]);
-	  },
-	  _pullQueue: function () {
-	    if (this._queue.length !== 0) {
-	      this._queue = cloneArray(this._queue);
-	      this._addToCur(this._queue.shift());
-	    }
-	  },
-	  _onActivation: function () {
-	    for (var i = 0, sources = this._curSources; i < sources.length && this._active; i++) {
-	      this._subscribe(sources[i]);
-	    }
-	  },
-	  _onDeactivation: function () {
-	    for (var i = 0, sources = this._curSources; i < sources.length; i++) {
-	      this._unsubscribe(sources[i]);
-	    }
-	    if (this._currentlyAdding !== null) {
-	      this._unsubscribe(this._currentlyAdding);
-	    }
-	  },
-	  _isEmpty: function () {
-	    return this._curSources.length === 0;
-	  },
-	  _onEmpty: function () {},
-	  _clear: function () {
-	    Stream.prototype._clear.call(this);
-	    this._queue = null;
-	    this._curSources = null;
-	    this._$handleSubAny = null;
-	    this._$endHandlers = null;
-	  }
-	});
-
-	function Merge(sources) {
-	  AbstractPool.call(this);
-	  this._addAll(sources);
-	  this._initialised = true;
-	}
-
-	inherit(Merge, AbstractPool, {
-
-	  _name: 'merge',
-
-	  _onEmpty: function () {
-	    if (this._initialised) {
-	      this._emitEnd();
-	    }
-	  }
-	});
-
-	function merge(observables) {
-	  return observables.length === 0 ? never() : new Merge(observables);
-	}
-
-	function S$33(generator) {
-	  var _this = this;
-
-	  Stream.call(this);
-	  this._generator = generator;
-	  this._source = null;
-	  this._inLoop = false;
-	  this._iteration = 0;
-	  this._$handleAny = function (event) {
-	    return _this._handleAny(event);
-	  };
-	}
-
-	inherit(S$33, Stream, {
-
-	  _name: 'repeat',
-
-	  _handleAny: function (event) {
-	    if (event.type === END) {
-	      this._source = null;
-	      this._getSource();
-	    } else {
-	      this._emit(event.type, event.value);
-	    }
-	  },
-	  _getSource: function () {
-	    if (!this._inLoop) {
-	      this._inLoop = true;
-	      var generator = this._generator;
-	      while (this._source === null && this._alive && this._active) {
-	        this._source = generator(this._iteration++);
-	        if (this._source) {
-	          this._source.onAny(this._$handleAny);
-	        } else {
-	          this._emitEnd();
-	        }
-	      }
-	      this._inLoop = false;
-	    }
-	  },
-	  _onActivation: function () {
-	    if (this._source) {
-	      this._source.onAny(this._$handleAny);
-	    } else {
-	      this._getSource();
-	    }
-	  },
-	  _onDeactivation: function () {
-	    if (this._source) {
-	      this._source.offAny(this._$handleAny);
-	    }
-	  },
-	  _clear: function () {
-	    Stream.prototype._clear.call(this);
-	    this._generator = null;
-	    this._source = null;
-	    this._$handleAny = null;
-	  }
-	});
-
-	function repeat (generator) {
-	  return new S$33(generator);
-	}
-
-	function concat$1(observables) {
-	  return repeat(function (index) {
-	    return observables.length > index ? observables[index] : false;
-	  }).setName('concat');
-	}
-
-	function Pool() {
-	  AbstractPool.call(this);
-	}
-
-	inherit(Pool, AbstractPool, {
-
-	  _name: 'pool',
-
-	  plug: function (obs) {
-	    this._add(obs);
-	    return this;
-	  },
-	  unplug: function (obs) {
-	    this._remove(obs);
-	    return this;
-	  }
-	});
-
-	function FlatMap(source, fn, options) {
-	  var _this = this;
-
-	  AbstractPool.call(this, options);
-	  this._source = source;
-	  this._fn = fn;
-	  this._mainEnded = false;
-	  this._lastCurrent = null;
-	  this._$handleMain = function (event) {
-	    return _this._handleMain(event);
-	  };
-	}
-
-	inherit(FlatMap, AbstractPool, {
-	  _onActivation: function () {
-	    AbstractPool.prototype._onActivation.call(this);
-	    if (this._active) {
-	      this._source.onAny(this._$handleMain);
-	    }
-	  },
-	  _onDeactivation: function () {
-	    AbstractPool.prototype._onDeactivation.call(this);
-	    this._source.offAny(this._$handleMain);
-	    this._hadNoEvSinceDeact = true;
-	  },
-	  _handleMain: function (event) {
-
-	    if (event.type === VALUE) {
-	      // Is latest value before deactivation survived, and now is 'current' on this activation?
-	      // We don't want to handle such values, to prevent to constantly add
-	      // same observale on each activation/deactivation when our main source
-	      // is a `Kefir.conatant()` for example.
-	      var sameCurr = this._activating && this._hadNoEvSinceDeact && this._lastCurrent === event.value;
-	      if (!sameCurr) {
-	        this._add(event.value, this._fn);
-	      }
-	      this._lastCurrent = event.value;
-	      this._hadNoEvSinceDeact = false;
-	    }
-
-	    if (event.type === ERROR) {
-	      this._emitError(event.value);
-	    }
-
-	    if (event.type === END) {
-	      if (this._isEmpty()) {
-	        this._emitEnd();
-	      } else {
-	        this._mainEnded = true;
-	      }
-	    }
-	  },
-	  _onEmpty: function () {
-	    if (this._mainEnded) {
-	      this._emitEnd();
-	    }
-	  },
-	  _clear: function () {
-	    AbstractPool.prototype._clear.call(this);
-	    this._source = null;
-	    this._lastCurrent = null;
-	    this._$handleMain = null;
-	  }
-	});
-
-	function FlatMapErrors(source, fn) {
-	  FlatMap.call(this, source, fn);
-	}
-
-	inherit(FlatMapErrors, FlatMap, {
-
-	  // Same as in FlatMap, only VALUE/ERROR flipped
-	  _handleMain: function (event) {
-
-	    if (event.type === ERROR) {
-	      var sameCurr = this._activating && this._hadNoEvSinceDeact && this._lastCurrent === event.value;
-	      if (!sameCurr) {
-	        this._add(event.value, this._fn);
-	      }
-	      this._lastCurrent = event.value;
-	      this._hadNoEvSinceDeact = false;
-	    }
-
-	    if (event.type === VALUE) {
-	      this._emitValue(event.value);
-	    }
-
-	    if (event.type === END) {
-	      if (this._isEmpty()) {
-	        this._emitEnd();
-	      } else {
-	        this._mainEnded = true;
-	      }
-	    }
-	  }
-	});
-
-	function createConstructor$1(BaseClass, name) {
-	  return function AnonymousObservable(primary, secondary, options) {
-	    var _this = this;
-
-	    BaseClass.call(this);
-	    this._primary = primary;
-	    this._secondary = secondary;
-	    this._name = primary._name + '.' + name;
-	    this._lastSecondary = NOTHING;
-	    this._$handleSecondaryAny = function (event) {
-	      return _this._handleSecondaryAny(event);
-	    };
-	    this._$handlePrimaryAny = function (event) {
-	      return _this._handlePrimaryAny(event);
-	    };
-	    this._init(options);
-	  };
-	}
-
-	function createClassMethods$1(BaseClass) {
-	  return {
-	    _init: function () {},
-	    _free: function () {},
-	    _handlePrimaryValue: function (x) {
-	      this._emitValue(x);
-	    },
-	    _handlePrimaryError: function (x) {
-	      this._emitError(x);
-	    },
-	    _handlePrimaryEnd: function () {
-	      this._emitEnd();
-	    },
-	    _handleSecondaryValue: function (x) {
-	      this._lastSecondary = x;
-	    },
-	    _handleSecondaryError: function (x) {
-	      this._emitError(x);
-	    },
-	    _handleSecondaryEnd: function () {},
-	    _handlePrimaryAny: function (event) {
-	      switch (event.type) {
-	        case VALUE:
-	          return this._handlePrimaryValue(event.value);
-	        case ERROR:
-	          return this._handlePrimaryError(event.value);
-	        case END:
-	          return this._handlePrimaryEnd(event.value);
-	      }
-	    },
-	    _handleSecondaryAny: function (event) {
-	      switch (event.type) {
-	        case VALUE:
-	          return this._handleSecondaryValue(event.value);
-	        case ERROR:
-	          return this._handleSecondaryError(event.value);
-	        case END:
-	          this._handleSecondaryEnd(event.value);
-	          this._removeSecondary();
-	      }
-	    },
-	    _removeSecondary: function () {
-	      if (this._secondary !== null) {
-	        this._secondary.offAny(this._$handleSecondaryAny);
-	        this._$handleSecondaryAny = null;
-	        this._secondary = null;
-	      }
-	    },
-	    _onActivation: function () {
-	      if (this._secondary !== null) {
-	        this._secondary.onAny(this._$handleSecondaryAny);
-	      }
-	      if (this._active) {
-	        this._primary.onAny(this._$handlePrimaryAny);
-	      }
-	    },
-	    _onDeactivation: function () {
-	      if (this._secondary !== null) {
-	        this._secondary.offAny(this._$handleSecondaryAny);
-	      }
-	      this._primary.offAny(this._$handlePrimaryAny);
-	    },
-	    _clear: function () {
-	      BaseClass.prototype._clear.call(this);
-	      this._primary = null;
-	      this._secondary = null;
-	      this._lastSecondary = null;
-	      this._$handleSecondaryAny = null;
-	      this._$handlePrimaryAny = null;
-	      this._free();
-	    }
-	  };
-	}
-
-	function createStream$1(name, mixin) {
-	  var S = createConstructor$1(Stream, name);
-	  inherit(S, Stream, createClassMethods$1(Stream), mixin);
-	  return S;
-	}
-
-	function createProperty$1(name, mixin) {
-	  var P = createConstructor$1(Property, name);
-	  inherit(P, Property, createClassMethods$1(Property), mixin);
-	  return P;
-	}
-
-	var mixin$26 = {
-	  _handlePrimaryValue: function (x) {
-	    if (this._lastSecondary !== NOTHING && this._lastSecondary) {
-	      this._emitValue(x);
-	    }
-	  },
-	  _handleSecondaryEnd: function () {
-	    if (this._lastSecondary === NOTHING || !this._lastSecondary) {
-	      this._emitEnd();
-	    }
-	  }
-	};
-
-	var S$34 = createStream$1('filterBy', mixin$26);
-	var P$29 = createProperty$1('filterBy', mixin$26);
-
-	function filterBy(primary, secondary) {
-	  return new (primary._ofSameType(S$34, P$29))(primary, secondary);
-	}
-
-	var id2 = function (_, x) {
-	  return x;
-	};
-
-	function sampledBy(passive, active, combinator) {
-	  var _combinator = combinator ? function (a, b) {
-	    return combinator(b, a);
-	  } : id2;
-	  return combine([active], [passive], _combinator).setName(passive, 'sampledBy');
-	}
-
-	var mixin$27 = {
-	  _handlePrimaryValue: function (x) {
-	    if (this._lastSecondary !== NOTHING) {
-	      this._emitValue(x);
-	    }
-	  },
-	  _handleSecondaryEnd: function () {
-	    if (this._lastSecondary === NOTHING) {
-	      this._emitEnd();
-	    }
-	  }
-	};
-
-	var S$35 = createStream$1('skipUntilBy', mixin$27);
-	var P$30 = createProperty$1('skipUntilBy', mixin$27);
-
-	function skipUntilBy(primary, secondary) {
-	  return new (primary._ofSameType(S$35, P$30))(primary, secondary);
-	}
-
-	var mixin$28 = {
-	  _handleSecondaryValue: function () {
-	    this._emitEnd();
-	  }
-	};
-
-	var S$36 = createStream$1('takeUntilBy', mixin$28);
-	var P$31 = createProperty$1('takeUntilBy', mixin$28);
-
-	function takeUntilBy(primary, secondary) {
-	  return new (primary._ofSameType(S$36, P$31))(primary, secondary);
-	}
-
-	var mixin$29 = {
-	  _init: function () {
-	    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-	        _ref$flushOnEnd = _ref.flushOnEnd,
-	        flushOnEnd = _ref$flushOnEnd === undefined ? true : _ref$flushOnEnd;
-
-	    this._buff = [];
-	    this._flushOnEnd = flushOnEnd;
-	  },
-	  _free: function () {
-	    this._buff = null;
-	  },
-	  _flush: function () {
-	    if (this._buff !== null) {
-	      this._emitValue(this._buff);
-	      this._buff = [];
-	    }
-	  },
-	  _handlePrimaryEnd: function () {
-	    if (this._flushOnEnd) {
-	      this._flush();
-	    }
-	    this._emitEnd();
-	  },
-	  _onActivation: function () {
-	    this._primary.onAny(this._$handlePrimaryAny);
-	    if (this._alive && this._secondary !== null) {
-	      this._secondary.onAny(this._$handleSecondaryAny);
-	    }
-	  },
-	  _handlePrimaryValue: function (x) {
-	    this._buff.push(x);
-	  },
-	  _handleSecondaryValue: function () {
-	    this._flush();
-	  },
-	  _handleSecondaryEnd: function () {
-	    if (!this._flushOnEnd) {
-	      this._emitEnd();
-	    }
-	  }
-	};
-
-	var S$37 = createStream$1('bufferBy', mixin$29);
-	var P$32 = createProperty$1('bufferBy', mixin$29);
-
-	function bufferBy(primary, secondary, options /* optional */) {
-	  return new (primary._ofSameType(S$37, P$32))(primary, secondary, options);
-	}
-
-	var mixin$30 = {
-	  _init: function () {
-	    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
-	        _ref$flushOnEnd = _ref.flushOnEnd,
-	        flushOnEnd = _ref$flushOnEnd === undefined ? true : _ref$flushOnEnd,
-	        _ref$flushOnChange = _ref.flushOnChange,
-	        flushOnChange = _ref$flushOnChange === undefined ? false : _ref$flushOnChange;
-
-	    this._buff = [];
-	    this._flushOnEnd = flushOnEnd;
-	    this._flushOnChange = flushOnChange;
-	  },
-	  _free: function () {
-	    this._buff = null;
-	  },
-	  _flush: function () {
-	    if (this._buff !== null) {
-	      this._emitValue(this._buff);
-	      this._buff = [];
-	    }
-	  },
-	  _handlePrimaryEnd: function () {
-	    if (this._flushOnEnd) {
-	      this._flush();
-	    }
-	    this._emitEnd();
-	  },
-	  _handlePrimaryValue: function (x) {
-	    this._buff.push(x);
-	    if (this._lastSecondary !== NOTHING && !this._lastSecondary) {
-	      this._flush();
-	    }
-	  },
-	  _handleSecondaryEnd: function () {
-	    if (!this._flushOnEnd && (this._lastSecondary === NOTHING || this._lastSecondary)) {
-	      this._emitEnd();
-	    }
-	  },
-	  _handleSecondaryValue: function (x) {
-	    if (this._flushOnChange && !x) {
-	      this._flush();
-	    }
-
-	    // from default _handleSecondaryValue
-	    this._lastSecondary = x;
-	  }
-	};
-
-	var S$38 = createStream$1('bufferWhileBy', mixin$30);
-	var P$33 = createProperty$1('bufferWhileBy', mixin$30);
-
-	function bufferWhileBy(primary, secondary, options /* optional */) {
-	  return new (primary._ofSameType(S$38, P$33))(primary, secondary, options);
-	}
-
-	var f = function () {
-	  return false;
-	};
-	var t = function () {
-	  return true;
-	};
-
-	function awaiting(a, b) {
-	  var result = merge([map$1(a, t), map$1(b, f)]);
-	  result = skipDuplicates(result);
-	  result = toProperty(result, f);
-	  return result.setName(a, 'awaiting');
-	}
-
-	var mixin$31 = {
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	  },
-	  _free: function () {
-	    this._fn = null;
-	  },
-	  _handleValue: function (x) {
-	    var fn = this._fn;
-	    var result = fn(x);
-	    if (result.convert) {
-	      this._emitError(result.error);
-	    } else {
-	      this._emitValue(x);
-	    }
-	  }
-	};
-
-	var S$39 = createStream('valuesToErrors', mixin$31);
-	var P$34 = createProperty('valuesToErrors', mixin$31);
-
-	var defFn = function (x) {
-	  return { convert: true, error: x };
-	};
-
-	function valuesToErrors(obs) {
-	  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defFn;
-
-	  return new (obs._ofSameType(S$39, P$34))(obs, { fn: fn });
-	}
-
-	var mixin$32 = {
-	  _init: function (_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	  },
-	  _free: function () {
-	    this._fn = null;
-	  },
-	  _handleError: function (x) {
-	    var fn = this._fn;
-	    var result = fn(x);
-	    if (result.convert) {
-	      this._emitValue(result.value);
-	    } else {
-	      this._emitError(x);
-	    }
-	  }
-	};
-
-	var S$40 = createStream('errorsToValues', mixin$32);
-	var P$35 = createProperty('errorsToValues', mixin$32);
-
-	var defFn$1 = function (x) {
-	  return { convert: true, value: x };
-	};
-
-	function errorsToValues(obs) {
-	  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defFn$1;
-
-	  return new (obs._ofSameType(S$40, P$35))(obs, { fn: fn });
-	}
-
-	var mixin$33 = {
-	  _handleError: function (x) {
-	    this._emitError(x);
-	    this._emitEnd();
-	  }
-	};
-
-	var S$41 = createStream('endOnError', mixin$33);
-	var P$36 = createProperty('endOnError', mixin$33);
-
-	function endOnError(obs) {
-	  return new (obs._ofSameType(S$41, P$36))(obs);
-	}
-
-	Observable.prototype.toProperty = function (fn) {
-	  return toProperty(this, fn);
-	};
-
-	Observable.prototype.changes = function () {
-	  return changes(this);
-	};
-
-	Observable.prototype.toPromise = function (Promise) {
-	  return toPromise(this, Promise);
-	};
-
-	Observable.prototype.toESObservable = toESObservable;
-	Observable.prototype[$$observable] = toESObservable;
-
-	Observable.prototype.map = function (fn) {
-	  return map$1(this, fn);
-	};
-
-	Observable.prototype.filter = function (fn) {
-	  return filter(this, fn);
-	};
-
-	Observable.prototype.take = function (n) {
-	  return take(this, n);
-	};
-
-	Observable.prototype.takeErrors = function (n) {
-	  return takeErrors(this, n);
-	};
-
-	Observable.prototype.takeWhile = function (fn) {
-	  return takeWhile(this, fn);
-	};
-
-	Observable.prototype.last = function () {
-	  return last(this);
-	};
-
-	Observable.prototype.skip = function (n) {
-	  return skip(this, n);
-	};
-
-	Observable.prototype.skipWhile = function (fn) {
-	  return skipWhile(this, fn);
-	};
-
-	Observable.prototype.skipDuplicates = function (fn) {
-	  return skipDuplicates(this, fn);
-	};
-
-	Observable.prototype.diff = function (fn, seed) {
-	  return diff(this, fn, seed);
-	};
-
-	Observable.prototype.scan = function (fn, seed) {
-	  return scan(this, fn, seed);
-	};
-
-	Observable.prototype.flatten = function (fn) {
-	  return flatten(this, fn);
-	};
-
-	Observable.prototype.delay = function (wait) {
-	  return delay(this, wait);
-	};
-
-	Observable.prototype.throttle = function (wait, options) {
-	  return throttle(this, wait, options);
-	};
-
-	Observable.prototype.debounce = function (wait, options) {
-	  return debounce(this, wait, options);
-	};
-
-	Observable.prototype.mapErrors = function (fn) {
-	  return mapErrors(this, fn);
-	};
-
-	Observable.prototype.filterErrors = function (fn) {
-	  return filterErrors(this, fn);
-	};
-
-	Observable.prototype.ignoreValues = function () {
-	  return ignoreValues(this);
-	};
-
-	Observable.prototype.ignoreErrors = function () {
-	  return ignoreErrors(this);
-	};
-
-	Observable.prototype.ignoreEnd = function () {
-	  return ignoreEnd(this);
-	};
-
-	Observable.prototype.beforeEnd = function (fn) {
-	  return beforeEnd(this, fn);
-	};
-
-	Observable.prototype.slidingWindow = function (max, min) {
-	  return slidingWindow(this, max, min);
-	};
-
-	Observable.prototype.bufferWhile = function (fn, options) {
-	  return bufferWhile(this, fn, options);
-	};
-
-	Observable.prototype.bufferWithCount = function (count, options) {
-	  return bufferWhile$1(this, count, options);
-	};
-
-	Observable.prototype.bufferWithTimeOrCount = function (wait, count, options) {
-	  return bufferWithTimeOrCount(this, wait, count, options);
-	};
-
-	Observable.prototype.transduce = function (transducer) {
-	  return transduce(this, transducer);
-	};
-
-	Observable.prototype.withHandler = function (fn) {
-	  return withHandler(this, fn);
-	};
-
-	Observable.prototype.combine = function (other, combinator) {
-	  return combine([this, other], combinator);
-	};
-
-	Observable.prototype.zip = function (other, combinator) {
-	  return zip([this, other], combinator);
-	};
-
-	Observable.prototype.merge = function (other) {
-	  return merge([this, other]);
-	};
-
-	Observable.prototype.concat = function (other) {
-	  return concat$1([this, other]);
-	};
-
-	var pool = function () {
-	  return new Pool();
-	};
-
-	Observable.prototype.flatMap = function (fn) {
-	  return new FlatMap(this, fn).setName(this, 'flatMap');
-	};
-	Observable.prototype.flatMapLatest = function (fn) {
-	  return new FlatMap(this, fn, { concurLim: 1, drop: 'old' }).setName(this, 'flatMapLatest');
-	};
-	Observable.prototype.flatMapFirst = function (fn) {
-	  return new FlatMap(this, fn, { concurLim: 1 }).setName(this, 'flatMapFirst');
-	};
-	Observable.prototype.flatMapConcat = function (fn) {
-	  return new FlatMap(this, fn, { queueLim: -1, concurLim: 1 }).setName(this, 'flatMapConcat');
-	};
-	Observable.prototype.flatMapConcurLimit = function (fn, limit) {
-	  return new FlatMap(this, fn, { queueLim: -1, concurLim: limit }).setName(this, 'flatMapConcurLimit');
-	};
-
-	Observable.prototype.flatMapErrors = function (fn) {
-	  return new FlatMapErrors(this, fn).setName(this, 'flatMapErrors');
-	};
-
-	Observable.prototype.filterBy = function (other) {
-	  return filterBy(this, other);
-	};
-
-	Observable.prototype.sampledBy = function (other, combinator) {
-	  return sampledBy(this, other, combinator);
-	};
-
-	Observable.prototype.skipUntilBy = function (other) {
-	  return skipUntilBy(this, other);
-	};
-
-	Observable.prototype.takeUntilBy = function (other) {
-	  return takeUntilBy(this, other);
-	};
-
-	Observable.prototype.bufferBy = function (other, options) {
-	  return bufferBy(this, other, options);
-	};
-
-	Observable.prototype.bufferWhileBy = function (other, options) {
-	  return bufferWhileBy(this, other, options);
-	};
-
-	// Deprecated
-	// -----------------------------------------------------------------------------
-
-	var DEPRECATION_WARNINGS = true;
-	function dissableDeprecationWarnings() {
-	  DEPRECATION_WARNINGS = false;
-	}
-
-	function warn(msg) {
-	  if (DEPRECATION_WARNINGS && console && typeof console.warn === 'function') {
-	    var msg2 = '\nHere is an Error object for you containing the call stack:';
-	    console.warn(msg, msg2, new Error());
-	  }
-	}
-
-	Observable.prototype.awaiting = function (other) {
-	  warn('You are using deprecated .awaiting() method, see https://github.com/rpominov/kefir/issues/145');
-	  return awaiting(this, other);
-	};
-
-	Observable.prototype.valuesToErrors = function (fn) {
-	  warn('You are using deprecated .valuesToErrors() method, see https://github.com/rpominov/kefir/issues/149');
-	  return valuesToErrors(this, fn);
-	};
-
-	Observable.prototype.errorsToValues = function (fn) {
-	  warn('You are using deprecated .errorsToValues() method, see https://github.com/rpominov/kefir/issues/149');
-	  return errorsToValues(this, fn);
-	};
-
-	Observable.prototype.endOnError = function () {
-	  warn('You are using deprecated .endOnError() method, see https://github.com/rpominov/kefir/issues/150');
-	  return endOnError(this);
-	};
-
-	// Exports
-	// --------------------------------------------------------------------------
-
-	var Kefir = { Observable: Observable, Stream: Stream, Property: Property, never: never, later: later, interval: interval, sequentially: sequentially,
-	  fromPoll: fromPoll, withInterval: withInterval, fromCallback: fromCallback, fromNodeCallback: fromNodeCallback, fromEvents: fromEvents, stream: stream,
-	  constant: constant, constantError: constantError, fromPromise: fromPromise, fromESObservable: fromESObservable, combine: combine, zip: zip, merge: merge,
-	  concat: concat$1, Pool: Pool, pool: pool, repeat: repeat, staticLand: staticLand };
-
-	Kefir.Kefir = Kefir;
-
-	exports.dissableDeprecationWarnings = dissableDeprecationWarnings;
-	exports.Kefir = Kefir;
-	exports.Observable = Observable;
-	exports.Stream = Stream;
-	exports.Property = Property;
-	exports.never = never;
-	exports.later = later;
-	exports.interval = interval;
-	exports.sequentially = sequentially;
-	exports.fromPoll = fromPoll;
-	exports.withInterval = withInterval;
-	exports.fromCallback = fromCallback;
-	exports.fromNodeCallback = fromNodeCallback;
-	exports.fromEvents = fromEvents;
-	exports.stream = stream;
-	exports.constant = constant;
-	exports.constantError = constantError;
-	exports.fromPromise = fromPromise;
-	exports.fromESObservable = fromESObservable;
-	exports.combine = combine;
-	exports.zip = zip;
-	exports.merge = merge;
-	exports.concat = concat$1;
-	exports.Pool = Pool;
-	exports.pool = pool;
-	exports.repeat = repeat;
-	exports.staticLand = staticLand;
-	exports['default'] = Kefir;
-
-	Object.defineProperty(exports, '__esModule', { value: true });
-
-}));
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(80)))
+		result = '@@observable';
+	}
+
+	return result;
+}
+});
+
+var index$1 = createCommonjsModule(function (module, exports) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+
+
+var _ponyfill2 = _interopRequireDefault(ponyfill);
+
+function _interopRequireDefault(obj) {
+  return obj && obj.__esModule ? obj : { 'default': obj };
+}
+
+var root; /* global window */
+
+if (typeof self !== 'undefined') {
+  root = self;
+} else if (typeof window !== 'undefined') {
+  root = window;
+} else if (typeof commonjsGlobal !== 'undefined') {
+  root = commonjsGlobal;
+} else {
+  root = module;
+}
+
+var result = (0, _ponyfill2['default'])(root);
+exports['default'] = result;
+});
+
+var index = index$1;
+
+// this file contains some hot JS modules systems stuff
+
+var $$observable = index.default ? index.default : index;
+
+function fromESObservable(_observable) {
+  var observable = _observable[$$observable] ? _observable[$$observable]() : _observable;
+  return stream(function (emitter) {
+    var unsub = observable.subscribe({
+      error: function (error) {
+        emitter.error(error);
+        emitter.end();
+      },
+      next: function (value) {
+        emitter.emit(value);
+      },
+      complete: function () {
+        emitter.end();
+      }
+    });
+
+    if (unsub.unsubscribe) {
+      return function () {
+        unsub.unsubscribe();
+      };
+    } else {
+      return unsub;
+    }
+  }).setName('fromESObservable');
+}
+
+function ESObservable(observable) {
+  this._observable = observable.takeErrors(1);
+}
+
+extend(ESObservable.prototype, {
+  subscribe: function (observerOrOnNext, onError, onComplete) {
+    var _this = this;
+
+    var observer = typeof observerOrOnNext === 'function' ? { next: observerOrOnNext, error: onError, complete: onComplete } : observerOrOnNext;
+
+    var fn = function (event) {
+      if (event.type === END) {
+        closed = true;
+      }
+
+      if (event.type === VALUE && observer.next) {
+        observer.next(event.value);
+      } else if (event.type === ERROR && observer.error) {
+        observer.error(event.value);
+      } else if (event.type === END && observer.complete) {
+        observer.complete(event.value);
+      }
+    };
+
+    this._observable.onAny(fn);
+    var closed = false;
+
+    var subscription = {
+      unsubscribe: function () {
+        closed = true;
+        _this._observable.offAny(fn);
+      },
+      get closed() {
+        return closed;
+      }
+    };
+    return subscription;
+  }
+});
+
+// Need to assign directly b/c Symbols aren't enumerable.
+ESObservable.prototype[$$observable] = function () {
+  return this;
+};
+
+function toESObservable() {
+  return new ESObservable(this);
+}
+
+function collect(source, keys, values) {
+  for (var prop in source) {
+    if (source.hasOwnProperty(prop)) {
+      keys.push(prop);
+      values.push(source[prop]);
+    }
+  }
+}
+
+function defaultErrorsCombinator(errors) {
+  var latestError = void 0;
+  for (var i = 0; i < errors.length; i++) {
+    if (errors[i] !== undefined) {
+      if (latestError === undefined || latestError.index < errors[i].index) {
+        latestError = errors[i];
+      }
+    }
+  }
+  return latestError.error;
+}
+
+function Combine(active, passive, combinator) {
+  var _this = this;
+
+  Stream.call(this);
+  this._activeCount = active.length;
+  this._sources = concat(active, passive);
+  this._combinator = combinator;
+  this._aliveCount = 0;
+  this._latestValues = new Array(this._sources.length);
+  this._latestErrors = new Array(this._sources.length);
+  fillArray(this._latestValues, NOTHING);
+  this._emitAfterActivation = false;
+  this._endAfterActivation = false;
+  this._latestErrorIndex = 0;
+
+  this._$handlers = [];
+
+  var _loop = function (i) {
+    _this._$handlers.push(function (event) {
+      return _this._handleAny(i, event);
+    });
+  };
+
+  for (var i = 0; i < this._sources.length; i++) {
+    _loop(i);
+  }
+}
+
+inherit(Combine, Stream, {
+  _name: 'combine',
+
+  _onActivation: function () {
+    this._aliveCount = this._activeCount;
+
+    // we need to suscribe to _passive_ sources before _active_
+    // (see https://github.com/rpominov/kefir/issues/98)
+    for (var i = this._activeCount; i < this._sources.length; i++) {
+      this._sources[i].onAny(this._$handlers[i]);
+    }
+    for (var _i = 0; _i < this._activeCount; _i++) {
+      this._sources[_i].onAny(this._$handlers[_i]);
+    }
+
+    if (this._emitAfterActivation) {
+      this._emitAfterActivation = false;
+      this._emitIfFull();
+    }
+    if (this._endAfterActivation) {
+      this._emitEnd();
+    }
+  },
+  _onDeactivation: function () {
+    var length = this._sources.length,
+        i = void 0;
+    for (i = 0; i < length; i++) {
+      this._sources[i].offAny(this._$handlers[i]);
+    }
+  },
+  _emitIfFull: function () {
+    var hasAllValues = true;
+    var hasErrors = false;
+    var length = this._latestValues.length;
+    var valuesCopy = new Array(length);
+    var errorsCopy = new Array(length);
+
+    for (var i = 0; i < length; i++) {
+      valuesCopy[i] = this._latestValues[i];
+      errorsCopy[i] = this._latestErrors[i];
+
+      if (valuesCopy[i] === NOTHING) {
+        hasAllValues = false;
+      }
+
+      if (errorsCopy[i] !== undefined) {
+        hasErrors = true;
+      }
+    }
+
+    if (hasAllValues) {
+      var combinator = this._combinator;
+      this._emitValue(combinator(valuesCopy));
+    }
+    if (hasErrors) {
+      this._emitError(defaultErrorsCombinator(errorsCopy));
+    }
+  },
+  _handleAny: function (i, event) {
+    if (event.type === VALUE || event.type === ERROR) {
+      if (event.type === VALUE) {
+        this._latestValues[i] = event.value;
+        this._latestErrors[i] = undefined;
+      }
+      if (event.type === ERROR) {
+        this._latestValues[i] = NOTHING;
+        this._latestErrors[i] = {
+          index: this._latestErrorIndex++,
+          error: event.value
+        };
+      }
+
+      if (i < this._activeCount) {
+        if (this._activating) {
+          this._emitAfterActivation = true;
+        } else {
+          this._emitIfFull();
+        }
+      }
+    } else {
+      // END
+
+      if (i < this._activeCount) {
+        this._aliveCount--;
+        if (this._aliveCount === 0) {
+          if (this._activating) {
+            this._endAfterActivation = true;
+          } else {
+            this._emitEnd();
+          }
+        }
+      }
+    }
+  },
+  _clear: function () {
+    Stream.prototype._clear.call(this);
+    this._sources = null;
+    this._latestValues = null;
+    this._latestErrors = null;
+    this._combinator = null;
+    this._$handlers = null;
+  }
+});
+
+function combineAsArray(active) {
+  var passive = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : [];
+  var combinator = arguments[2];
+
+  if (!Array.isArray(passive)) {
+    throw new Error('Combine can only combine active and passive collections of the same type.');
+  }
+
+  combinator = combinator ? spread(combinator, active.length + passive.length) : function (x) {
+    return x;
+  };
+  return active.length === 0 ? never() : new Combine(active, passive, combinator);
+}
+
+function combineAsObject(active) {
+  var passive = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+  var combinator = arguments[2];
+
+  if (typeof passive !== 'object' || Array.isArray(passive)) {
+    throw new Error('Combine can only combine active and passive collections of the same type.');
+  }
+
+  var keys = [],
+      activeObservables = [],
+      passiveObservables = [];
+
+  collect(active, keys, activeObservables);
+  collect(passive, keys, passiveObservables);
+
+  var objectify = function (values) {
+    var event = {};
+    for (var i = values.length - 1; 0 <= i; i--) {
+      event[keys[i]] = values[i];
+    }
+    return combinator ? combinator(event) : event;
+  };
+
+  return activeObservables.length === 0 ? never() : new Combine(activeObservables, passiveObservables, objectify);
+}
+
+function combine(active, passive, combinator) {
+  if (typeof passive === 'function') {
+    combinator = passive;
+    passive = undefined;
+  }
+
+  return Array.isArray(active) ? combineAsArray(active, passive, combinator) : combineAsObject(active, passive, combinator);
+}
+
+var Observable$2 = {
+  empty: function () {
+    return never();
+  },
+
+
+  // Monoid based on merge() seems more useful than one based on concat().
+  concat: function (a, b) {
+    return a.merge(b);
+  },
+  of: function (x) {
+    return constant(x);
+  },
+  map: function (fn, obs) {
+    return obs.map(fn);
+  },
+  bimap: function (fnErr, fnVal, obs) {
+    return obs.mapErrors(fnErr).map(fnVal);
+  },
+
+
+  // This ap strictly speaking incompatible with chain. If we derive ap from chain we get
+  // different (not very useful) behavior. But spec requires that if method can be derived
+  // it must have the same behavior as hand-written method. We intentionally violate the spec
+  // in hope that it won't cause many troubles in practice. And in return we have more useful type.
+  ap: function (obsFn, obsVal) {
+    return combine([obsFn, obsVal], function (fn, val) {
+      return fn(val);
+    });
+  },
+  chain: function (fn, obs) {
+    return obs.flatMap(fn);
+  }
+};
+
+
+
+var staticLand = Object.freeze({
+	Observable: Observable$2
+});
+
+var mixin = {
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._fn = fn;
+  },
+  _free: function () {
+    this._fn = null;
+  },
+  _handleValue: function (x) {
+    var fn = this._fn;
+    this._emitValue(fn(x));
+  }
+};
+
+var S$7 = createStream('map', mixin);
+var P$3 = createProperty('map', mixin);
+
+var id = function (x) {
+  return x;
+};
+
+function map$1(obs) {
+  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : id;
+
+  return new (obs._ofSameType(S$7, P$3))(obs, { fn: fn });
+}
+
+var mixin$1 = {
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._fn = fn;
+  },
+  _free: function () {
+    this._fn = null;
+  },
+  _handleValue: function (x) {
+    var fn = this._fn;
+    if (fn(x)) {
+      this._emitValue(x);
+    }
+  }
+};
+
+var S$8 = createStream('filter', mixin$1);
+var P$4 = createProperty('filter', mixin$1);
+
+var id$1 = function (x) {
+  return x;
+};
+
+function filter(obs) {
+  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : id$1;
+
+  return new (obs._ofSameType(S$8, P$4))(obs, { fn: fn });
+}
+
+var mixin$2 = {
+  _init: function (_ref) {
+    var n = _ref.n;
+
+    this._n = n;
+    if (n <= 0) {
+      this._emitEnd();
+    }
+  },
+  _handleValue: function (x) {
+    this._n--;
+    this._emitValue(x);
+    if (this._n === 0) {
+      this._emitEnd();
+    }
+  }
+};
+
+var S$9 = createStream('take', mixin$2);
+var P$5 = createProperty('take', mixin$2);
+
+function take(obs, n) {
+  return new (obs._ofSameType(S$9, P$5))(obs, { n: n });
+}
+
+var mixin$3 = {
+  _init: function (_ref) {
+    var n = _ref.n;
+
+    this._n = n;
+    if (n <= 0) {
+      this._emitEnd();
+    }
+  },
+  _handleError: function (x) {
+    this._n--;
+    this._emitError(x);
+    if (this._n === 0) {
+      this._emitEnd();
+    }
+  }
+};
+
+var S$10 = createStream('takeErrors', mixin$3);
+var P$6 = createProperty('takeErrors', mixin$3);
+
+function takeErrors(obs, n) {
+  return new (obs._ofSameType(S$10, P$6))(obs, { n: n });
+}
+
+var mixin$4 = {
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._fn = fn;
+  },
+  _free: function () {
+    this._fn = null;
+  },
+  _handleValue: function (x) {
+    var fn = this._fn;
+    if (fn(x)) {
+      this._emitValue(x);
+    } else {
+      this._emitEnd();
+    }
+  }
+};
+
+var S$11 = createStream('takeWhile', mixin$4);
+var P$7 = createProperty('takeWhile', mixin$4);
+
+var id$2 = function (x) {
+  return x;
+};
+
+function takeWhile(obs) {
+  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : id$2;
+
+  return new (obs._ofSameType(S$11, P$7))(obs, { fn: fn });
+}
+
+var mixin$5 = {
+  _init: function () {
+    this._lastValue = NOTHING;
+  },
+  _free: function () {
+    this._lastValue = null;
+  },
+  _handleValue: function (x) {
+    this._lastValue = x;
+  },
+  _handleEnd: function () {
+    if (this._lastValue !== NOTHING) {
+      this._emitValue(this._lastValue);
+    }
+    this._emitEnd();
+  }
+};
+
+var S$12 = createStream('last', mixin$5);
+var P$8 = createProperty('last', mixin$5);
+
+function last(obs) {
+  return new (obs._ofSameType(S$12, P$8))(obs);
+}
+
+var mixin$6 = {
+  _init: function (_ref) {
+    var n = _ref.n;
+
+    this._n = Math.max(0, n);
+  },
+  _handleValue: function (x) {
+    if (this._n === 0) {
+      this._emitValue(x);
+    } else {
+      this._n--;
+    }
+  }
+};
+
+var S$13 = createStream('skip', mixin$6);
+var P$9 = createProperty('skip', mixin$6);
+
+function skip(obs, n) {
+  return new (obs._ofSameType(S$13, P$9))(obs, { n: n });
+}
+
+var mixin$7 = {
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._fn = fn;
+  },
+  _free: function () {
+    this._fn = null;
+  },
+  _handleValue: function (x) {
+    var fn = this._fn;
+    if (this._fn !== null && !fn(x)) {
+      this._fn = null;
+    }
+    if (this._fn === null) {
+      this._emitValue(x);
+    }
+  }
+};
+
+var S$14 = createStream('skipWhile', mixin$7);
+var P$10 = createProperty('skipWhile', mixin$7);
+
+var id$3 = function (x) {
+  return x;
+};
+
+function skipWhile(obs) {
+  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : id$3;
+
+  return new (obs._ofSameType(S$14, P$10))(obs, { fn: fn });
+}
+
+var mixin$8 = {
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._fn = fn;
+    this._prev = NOTHING;
+  },
+  _free: function () {
+    this._fn = null;
+    this._prev = null;
+  },
+  _handleValue: function (x) {
+    var fn = this._fn;
+    if (this._prev === NOTHING || !fn(this._prev, x)) {
+      this._prev = x;
+      this._emitValue(x);
+    }
+  }
+};
+
+var S$15 = createStream('skipDuplicates', mixin$8);
+var P$11 = createProperty('skipDuplicates', mixin$8);
+
+var eq = function (a, b) {
+  return a === b;
+};
+
+function skipDuplicates(obs) {
+  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : eq;
+
+  return new (obs._ofSameType(S$15, P$11))(obs, { fn: fn });
+}
+
+var mixin$9 = {
+  _init: function (_ref) {
+    var fn = _ref.fn,
+        seed = _ref.seed;
+
+    this._fn = fn;
+    this._prev = seed;
+  },
+  _free: function () {
+    this._prev = null;
+    this._fn = null;
+  },
+  _handleValue: function (x) {
+    if (this._prev !== NOTHING) {
+      var fn = this._fn;
+      this._emitValue(fn(this._prev, x));
+    }
+    this._prev = x;
+  }
+};
+
+var S$16 = createStream('diff', mixin$9);
+var P$12 = createProperty('diff', mixin$9);
+
+function defaultFn(a, b) {
+  return [a, b];
+}
+
+function diff(obs, fn) {
+  var seed = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : NOTHING;
+
+  return new (obs._ofSameType(S$16, P$12))(obs, { fn: fn || defaultFn, seed: seed });
+}
+
+var P$13 = createProperty('scan', {
+  _init: function (_ref) {
+    var fn = _ref.fn,
+        seed = _ref.seed;
+
+    this._fn = fn;
+    this._seed = seed;
+    if (seed !== NOTHING) {
+      this._emitValue(seed);
+    }
+  },
+  _free: function () {
+    this._fn = null;
+    this._seed = null;
+  },
+  _handleValue: function (x) {
+    var fn = this._fn;
+    if (this._currentEvent === null || this._currentEvent.type === ERROR) {
+      this._emitValue(this._seed === NOTHING ? x : fn(this._seed, x));
+    } else {
+      this._emitValue(fn(this._currentEvent.value, x));
+    }
+  }
+});
+
+function scan(obs, fn) {
+  var seed = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : NOTHING;
+
+  return new P$13(obs, { fn: fn, seed: seed });
+}
+
+var mixin$10 = {
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._fn = fn;
+  },
+  _free: function () {
+    this._fn = null;
+  },
+  _handleValue: function (x) {
+    var fn = this._fn;
+    var xs = fn(x);
+    for (var i = 0; i < xs.length; i++) {
+      this._emitValue(xs[i]);
+    }
+  }
+};
+
+var S$17 = createStream('flatten', mixin$10);
+
+var id$4 = function (x) {
+  return x;
+};
+
+function flatten(obs) {
+  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : id$4;
+
+  return new S$17(obs, { fn: fn });
+}
+
+var END_MARKER = {};
+
+var mixin$11 = {
+  _init: function (_ref) {
+    var _this = this;
+
+    var wait = _ref.wait;
+
+    this._wait = Math.max(0, wait);
+    this._buff = [];
+    this._$shiftBuff = function () {
+      var value = _this._buff.shift();
+      if (value === END_MARKER) {
+        _this._emitEnd();
+      } else {
+        _this._emitValue(value);
+      }
+    };
+  },
+  _free: function () {
+    this._buff = null;
+    this._$shiftBuff = null;
+  },
+  _handleValue: function (x) {
+    if (this._activating) {
+      this._emitValue(x);
+    } else {
+      this._buff.push(x);
+      setTimeout(this._$shiftBuff, this._wait);
+    }
+  },
+  _handleEnd: function () {
+    if (this._activating) {
+      this._emitEnd();
+    } else {
+      this._buff.push(END_MARKER);
+      setTimeout(this._$shiftBuff, this._wait);
+    }
+  }
+};
+
+var S$18 = createStream('delay', mixin$11);
+var P$14 = createProperty('delay', mixin$11);
+
+function delay(obs, wait) {
+  return new (obs._ofSameType(S$18, P$14))(obs, { wait: wait });
+}
+
+var now = Date.now ? function () {
+  return Date.now();
+} : function () {
+  return new Date().getTime();
+};
+
+var mixin$12 = {
+  _init: function (_ref) {
+    var _this = this;
+
+    var wait = _ref.wait,
+        leading = _ref.leading,
+        trailing = _ref.trailing;
+
+    this._wait = Math.max(0, wait);
+    this._leading = leading;
+    this._trailing = trailing;
+    this._trailingValue = null;
+    this._timeoutId = null;
+    this._endLater = false;
+    this._lastCallTime = 0;
+    this._$trailingCall = function () {
+      return _this._trailingCall();
+    };
+  },
+  _free: function () {
+    this._trailingValue = null;
+    this._$trailingCall = null;
+  },
+  _handleValue: function (x) {
+    if (this._activating) {
+      this._emitValue(x);
+    } else {
+      var curTime = now();
+      if (this._lastCallTime === 0 && !this._leading) {
+        this._lastCallTime = curTime;
+      }
+      var remaining = this._wait - (curTime - this._lastCallTime);
+      if (remaining <= 0) {
+        this._cancelTrailing();
+        this._lastCallTime = curTime;
+        this._emitValue(x);
+      } else if (this._trailing) {
+        this._cancelTrailing();
+        this._trailingValue = x;
+        this._timeoutId = setTimeout(this._$trailingCall, remaining);
+      }
+    }
+  },
+  _handleEnd: function () {
+    if (this._activating) {
+      this._emitEnd();
+    } else {
+      if (this._timeoutId) {
+        this._endLater = true;
+      } else {
+        this._emitEnd();
+      }
+    }
+  },
+  _cancelTrailing: function () {
+    if (this._timeoutId !== null) {
+      clearTimeout(this._timeoutId);
+      this._timeoutId = null;
+    }
+  },
+  _trailingCall: function () {
+    this._emitValue(this._trailingValue);
+    this._timeoutId = null;
+    this._trailingValue = null;
+    this._lastCallTime = !this._leading ? 0 : now();
+    if (this._endLater) {
+      this._emitEnd();
+    }
+  }
+};
+
+var S$19 = createStream('throttle', mixin$12);
+var P$15 = createProperty('throttle', mixin$12);
+
+function throttle(obs, wait) {
+  var _ref2 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
+      _ref2$leading = _ref2.leading,
+      leading = _ref2$leading === undefined ? true : _ref2$leading,
+      _ref2$trailing = _ref2.trailing,
+      trailing = _ref2$trailing === undefined ? true : _ref2$trailing;
+
+  return new (obs._ofSameType(S$19, P$15))(obs, { wait: wait, leading: leading, trailing: trailing });
+}
+
+var mixin$13 = {
+  _init: function (_ref) {
+    var _this = this;
+
+    var wait = _ref.wait,
+        immediate = _ref.immediate;
+
+    this._wait = Math.max(0, wait);
+    this._immediate = immediate;
+    this._lastAttempt = 0;
+    this._timeoutId = null;
+    this._laterValue = null;
+    this._endLater = false;
+    this._$later = function () {
+      return _this._later();
+    };
+  },
+  _free: function () {
+    this._laterValue = null;
+    this._$later = null;
+  },
+  _handleValue: function (x) {
+    if (this._activating) {
+      this._emitValue(x);
+    } else {
+      this._lastAttempt = now();
+      if (this._immediate && !this._timeoutId) {
+        this._emitValue(x);
+      }
+      if (!this._timeoutId) {
+        this._timeoutId = setTimeout(this._$later, this._wait);
+      }
+      if (!this._immediate) {
+        this._laterValue = x;
+      }
+    }
+  },
+  _handleEnd: function () {
+    if (this._activating) {
+      this._emitEnd();
+    } else {
+      if (this._timeoutId && !this._immediate) {
+        this._endLater = true;
+      } else {
+        this._emitEnd();
+      }
+    }
+  },
+  _later: function () {
+    var last = now() - this._lastAttempt;
+    if (last < this._wait && last >= 0) {
+      this._timeoutId = setTimeout(this._$later, this._wait - last);
+    } else {
+      this._timeoutId = null;
+      if (!this._immediate) {
+        this._emitValue(this._laterValue);
+        this._laterValue = null;
+      }
+      if (this._endLater) {
+        this._emitEnd();
+      }
+    }
+  }
+};
+
+var S$20 = createStream('debounce', mixin$13);
+var P$16 = createProperty('debounce', mixin$13);
+
+function debounce(obs, wait) {
+  var _ref2 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
+      _ref2$immediate = _ref2.immediate,
+      immediate = _ref2$immediate === undefined ? false : _ref2$immediate;
+
+  return new (obs._ofSameType(S$20, P$16))(obs, { wait: wait, immediate: immediate });
+}
+
+var mixin$14 = {
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._fn = fn;
+  },
+  _free: function () {
+    this._fn = null;
+  },
+  _handleError: function (x) {
+    var fn = this._fn;
+    this._emitError(fn(x));
+  }
+};
+
+var S$21 = createStream('mapErrors', mixin$14);
+var P$17 = createProperty('mapErrors', mixin$14);
+
+var id$5 = function (x) {
+  return x;
+};
+
+function mapErrors(obs) {
+  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : id$5;
+
+  return new (obs._ofSameType(S$21, P$17))(obs, { fn: fn });
+}
+
+var mixin$15 = {
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._fn = fn;
+  },
+  _free: function () {
+    this._fn = null;
+  },
+  _handleError: function (x) {
+    var fn = this._fn;
+    if (fn(x)) {
+      this._emitError(x);
+    }
+  }
+};
+
+var S$22 = createStream('filterErrors', mixin$15);
+var P$18 = createProperty('filterErrors', mixin$15);
+
+var id$6 = function (x) {
+  return x;
+};
+
+function filterErrors(obs) {
+  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : id$6;
+
+  return new (obs._ofSameType(S$22, P$18))(obs, { fn: fn });
+}
+
+var mixin$16 = {
+  _handleValue: function () {}
+};
+
+var S$23 = createStream('ignoreValues', mixin$16);
+var P$19 = createProperty('ignoreValues', mixin$16);
+
+function ignoreValues(obs) {
+  return new (obs._ofSameType(S$23, P$19))(obs);
+}
+
+var mixin$17 = {
+  _handleError: function () {}
+};
+
+var S$24 = createStream('ignoreErrors', mixin$17);
+var P$20 = createProperty('ignoreErrors', mixin$17);
+
+function ignoreErrors(obs) {
+  return new (obs._ofSameType(S$24, P$20))(obs);
+}
+
+var mixin$18 = {
+  _handleEnd: function () {}
+};
+
+var S$25 = createStream('ignoreEnd', mixin$18);
+var P$21 = createProperty('ignoreEnd', mixin$18);
+
+function ignoreEnd(obs) {
+  return new (obs._ofSameType(S$25, P$21))(obs);
+}
+
+var mixin$19 = {
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._fn = fn;
+  },
+  _free: function () {
+    this._fn = null;
+  },
+  _handleEnd: function () {
+    var fn = this._fn;
+    this._emitValue(fn());
+    this._emitEnd();
+  }
+};
+
+var S$26 = createStream('beforeEnd', mixin$19);
+var P$22 = createProperty('beforeEnd', mixin$19);
+
+function beforeEnd(obs, fn) {
+  return new (obs._ofSameType(S$26, P$22))(obs, { fn: fn });
+}
+
+var mixin$20 = {
+  _init: function (_ref) {
+    var min = _ref.min,
+        max = _ref.max;
+
+    this._max = max;
+    this._min = min;
+    this._buff = [];
+  },
+  _free: function () {
+    this._buff = null;
+  },
+  _handleValue: function (x) {
+    this._buff = slide(this._buff, x, this._max);
+    if (this._buff.length >= this._min) {
+      this._emitValue(this._buff);
+    }
+  }
+};
+
+var S$27 = createStream('slidingWindow', mixin$20);
+var P$23 = createProperty('slidingWindow', mixin$20);
+
+function slidingWindow(obs, max) {
+  var min = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+
+  return new (obs._ofSameType(S$27, P$23))(obs, { min: min, max: max });
+}
+
+var mixin$21 = {
+  _init: function (_ref) {
+    var fn = _ref.fn,
+        flushOnEnd = _ref.flushOnEnd;
+
+    this._fn = fn;
+    this._flushOnEnd = flushOnEnd;
+    this._buff = [];
+  },
+  _free: function () {
+    this._buff = null;
+  },
+  _flush: function () {
+    if (this._buff !== null && this._buff.length !== 0) {
+      this._emitValue(this._buff);
+      this._buff = [];
+    }
+  },
+  _handleValue: function (x) {
+    this._buff.push(x);
+    var fn = this._fn;
+    if (!fn(x)) {
+      this._flush();
+    }
+  },
+  _handleEnd: function () {
+    if (this._flushOnEnd) {
+      this._flush();
+    }
+    this._emitEnd();
+  }
+};
+
+var S$28 = createStream('bufferWhile', mixin$21);
+var P$24 = createProperty('bufferWhile', mixin$21);
+
+var id$7 = function (x) {
+  return x;
+};
+
+function bufferWhile(obs, fn) {
+  var _ref2 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
+      _ref2$flushOnEnd = _ref2.flushOnEnd,
+      flushOnEnd = _ref2$flushOnEnd === undefined ? true : _ref2$flushOnEnd;
+
+  return new (obs._ofSameType(S$28, P$24))(obs, { fn: fn || id$7, flushOnEnd: flushOnEnd });
+}
+
+var mixin$22 = {
+  _init: function (_ref) {
+    var count = _ref.count,
+        flushOnEnd = _ref.flushOnEnd;
+
+    this._count = count;
+    this._flushOnEnd = flushOnEnd;
+    this._buff = [];
+  },
+  _free: function () {
+    this._buff = null;
+  },
+  _flush: function () {
+    if (this._buff !== null && this._buff.length !== 0) {
+      this._emitValue(this._buff);
+      this._buff = [];
+    }
+  },
+  _handleValue: function (x) {
+    this._buff.push(x);
+    if (this._buff.length >= this._count) {
+      this._flush();
+    }
+  },
+  _handleEnd: function () {
+    if (this._flushOnEnd) {
+      this._flush();
+    }
+    this._emitEnd();
+  }
+};
+
+var S$29 = createStream('bufferWithCount', mixin$22);
+var P$25 = createProperty('bufferWithCount', mixin$22);
+
+function bufferWhile$1(obs, count) {
+  var _ref2 = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {},
+      _ref2$flushOnEnd = _ref2.flushOnEnd,
+      flushOnEnd = _ref2$flushOnEnd === undefined ? true : _ref2$flushOnEnd;
+
+  return new (obs._ofSameType(S$29, P$25))(obs, { count: count, flushOnEnd: flushOnEnd });
+}
+
+var mixin$23 = {
+  _init: function (_ref) {
+    var _this = this;
+
+    var wait = _ref.wait,
+        count = _ref.count,
+        flushOnEnd = _ref.flushOnEnd;
+
+    this._wait = wait;
+    this._count = count;
+    this._flushOnEnd = flushOnEnd;
+    this._intervalId = null;
+    this._$onTick = function () {
+      return _this._flush();
+    };
+    this._buff = [];
+  },
+  _free: function () {
+    this._$onTick = null;
+    this._buff = null;
+  },
+  _flush: function () {
+    if (this._buff !== null) {
+      this._emitValue(this._buff);
+      this._buff = [];
+    }
+  },
+  _handleValue: function (x) {
+    this._buff.push(x);
+    if (this._buff.length >= this._count) {
+      clearInterval(this._intervalId);
+      this._flush();
+      this._intervalId = setInterval(this._$onTick, this._wait);
+    }
+  },
+  _handleEnd: function () {
+    if (this._flushOnEnd && this._buff.length !== 0) {
+      this._flush();
+    }
+    this._emitEnd();
+  },
+  _onActivation: function () {
+    this._intervalId = setInterval(this._$onTick, this._wait);
+    this._source.onAny(this._$handleAny); // copied from patterns/one-source
+  },
+  _onDeactivation: function () {
+    if (this._intervalId !== null) {
+      clearInterval(this._intervalId);
+      this._intervalId = null;
+    }
+    this._source.offAny(this._$handleAny); // copied from patterns/one-source
+  }
+};
+
+var S$30 = createStream('bufferWithTimeOrCount', mixin$23);
+var P$26 = createProperty('bufferWithTimeOrCount', mixin$23);
+
+function bufferWithTimeOrCount(obs, wait, count) {
+  var _ref2 = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {},
+      _ref2$flushOnEnd = _ref2.flushOnEnd,
+      flushOnEnd = _ref2$flushOnEnd === undefined ? true : _ref2$flushOnEnd;
+
+  return new (obs._ofSameType(S$30, P$26))(obs, { wait: wait, count: count, flushOnEnd: flushOnEnd });
+}
+
+function xformForObs(obs) {
+  return {
+    '@@transducer/step': function (res, input) {
+      obs._emitValue(input);
+      return null;
+    },
+    '@@transducer/result': function () {
+      obs._emitEnd();
+      return null;
+    }
+  };
+}
+
+var mixin$24 = {
+  _init: function (_ref) {
+    var transducer = _ref.transducer;
+
+    this._xform = transducer(xformForObs(this));
+  },
+  _free: function () {
+    this._xform = null;
+  },
+  _handleValue: function (x) {
+    if (this._xform['@@transducer/step'](null, x) !== null) {
+      this._xform['@@transducer/result'](null);
+    }
+  },
+  _handleEnd: function () {
+    this._xform['@@transducer/result'](null);
+  }
+};
+
+var S$31 = createStream('transduce', mixin$24);
+var P$27 = createProperty('transduce', mixin$24);
+
+function transduce(obs, transducer) {
+  return new (obs._ofSameType(S$31, P$27))(obs, { transducer: transducer });
+}
+
+var mixin$25 = {
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._handler = fn;
+    this._emitter = emitter(this);
+  },
+  _free: function () {
+    this._handler = null;
+    this._emitter = null;
+  },
+  _handleAny: function (event) {
+    this._handler(this._emitter, event);
+  }
+};
+
+var S$32 = createStream('withHandler', mixin$25);
+var P$28 = createProperty('withHandler', mixin$25);
+
+function withHandler(obs, fn) {
+  return new (obs._ofSameType(S$32, P$28))(obs, { fn: fn });
+}
+
+var isArray = Array.isArray || function (xs) {
+  return Object.prototype.toString.call(xs) === '[object Array]';
+};
+
+function Zip(sources, combinator) {
+  var _this = this;
+
+  Stream.call(this);
+
+  this._buffers = map(sources, function (source) {
+    return isArray(source) ? cloneArray(source) : [];
+  });
+  this._sources = map(sources, function (source) {
+    return isArray(source) ? never() : source;
+  });
+
+  this._combinator = combinator ? spread(combinator, this._sources.length) : function (x) {
+    return x;
+  };
+  this._aliveCount = 0;
+
+  this._$handlers = [];
+
+  var _loop = function (i) {
+    _this._$handlers.push(function (event) {
+      return _this._handleAny(i, event);
+    });
+  };
+
+  for (var i = 0; i < this._sources.length; i++) {
+    _loop(i);
+  }
+}
+
+inherit(Zip, Stream, {
+  _name: 'zip',
+
+  _onActivation: function () {
+    // if all sources are arrays
+    while (this._isFull()) {
+      this._emit();
+    }
+
+    var length = this._sources.length;
+    this._aliveCount = length;
+    for (var i = 0; i < length && this._active; i++) {
+      this._sources[i].onAny(this._$handlers[i]);
+    }
+  },
+  _onDeactivation: function () {
+    for (var i = 0; i < this._sources.length; i++) {
+      this._sources[i].offAny(this._$handlers[i]);
+    }
+  },
+  _emit: function () {
+    var values = new Array(this._buffers.length);
+    for (var i = 0; i < this._buffers.length; i++) {
+      values[i] = this._buffers[i].shift();
+    }
+    var combinator = this._combinator;
+    this._emitValue(combinator(values));
+  },
+  _isFull: function () {
+    for (var i = 0; i < this._buffers.length; i++) {
+      if (this._buffers[i].length === 0) {
+        return false;
+      }
+    }
+    return true;
+  },
+  _handleAny: function (i, event) {
+    if (event.type === VALUE) {
+      this._buffers[i].push(event.value);
+      if (this._isFull()) {
+        this._emit();
+      }
+    }
+    if (event.type === ERROR) {
+      this._emitError(event.value);
+    }
+    if (event.type === END) {
+      this._aliveCount--;
+      if (this._aliveCount === 0) {
+        this._emitEnd();
+      }
+    }
+  },
+  _clear: function () {
+    Stream.prototype._clear.call(this);
+    this._sources = null;
+    this._buffers = null;
+    this._combinator = null;
+    this._$handlers = null;
+  }
+});
+
+function zip(observables, combinator /* Function | falsey */) {
+  return observables.length === 0 ? never() : new Zip(observables, combinator);
+}
+
+var id$8 = function (x) {
+  return x;
+};
+
+function AbstractPool() {
+  var _this = this;
+
+  var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+      _ref$queueLim = _ref.queueLim,
+      queueLim = _ref$queueLim === undefined ? 0 : _ref$queueLim,
+      _ref$concurLim = _ref.concurLim,
+      concurLim = _ref$concurLim === undefined ? -1 : _ref$concurLim,
+      _ref$drop = _ref.drop,
+      drop = _ref$drop === undefined ? 'new' : _ref$drop;
+
+  Stream.call(this);
+
+  this._queueLim = queueLim < 0 ? -1 : queueLim;
+  this._concurLim = concurLim < 0 ? -1 : concurLim;
+  this._drop = drop;
+  this._queue = [];
+  this._curSources = [];
+  this._$handleSubAny = function (event) {
+    return _this._handleSubAny(event);
+  };
+  this._$endHandlers = [];
+  this._currentlyAdding = null;
+
+  if (this._concurLim === 0) {
+    this._emitEnd();
+  }
+}
+
+inherit(AbstractPool, Stream, {
+  _name: 'abstractPool',
+
+  _add: function (obj, toObs /* Function | falsey */) {
+    toObs = toObs || id$8;
+    if (this._concurLim === -1 || this._curSources.length < this._concurLim) {
+      this._addToCur(toObs(obj));
+    } else {
+      if (this._queueLim === -1 || this._queue.length < this._queueLim) {
+        this._addToQueue(toObs(obj));
+      } else if (this._drop === 'old') {
+        this._removeOldest();
+        this._add(obj, toObs);
+      }
+    }
+  },
+  _addAll: function (obss) {
+    var _this2 = this;
+
+    forEach(obss, function (obs) {
+      return _this2._add(obs);
+    });
+  },
+  _remove: function (obs) {
+    if (this._removeCur(obs) === -1) {
+      this._removeQueue(obs);
+    }
+  },
+  _addToQueue: function (obs) {
+    this._queue = concat(this._queue, [obs]);
+  },
+  _addToCur: function (obs) {
+    if (this._active) {
+      // HACK:
+      //
+      // We have two optimizations for cases when `obs` is ended. We don't want
+      // to add such observable to the list, but only want to emit events
+      // from it (if it has some).
+      //
+      // Instead of this hacks, we could just did following,
+      // but it would be 5-8 times slower:
+      //
+      //     this._curSources = concat(this._curSources, [obs]);
+      //     this._subscribe(obs);
+      //
+
+      // #1
+      // This one for cases when `obs` already ended
+      // e.g., Kefir.constant() or Kefir.never()
+      if (!obs._alive) {
+        if (obs._currentEvent) {
+          this._emit(obs._currentEvent.type, obs._currentEvent.value);
+        }
+        return;
+      }
+
+      // #2
+      // This one is for cases when `obs` going to end synchronously on
+      // first subscriber e.g., Kefir.stream(em => {em.emit(1); em.end()})
+      this._currentlyAdding = obs;
+      obs.onAny(this._$handleSubAny);
+      this._currentlyAdding = null;
+      if (obs._alive) {
+        this._curSources = concat(this._curSources, [obs]);
+        if (this._active) {
+          this._subToEnd(obs);
+        }
+      }
+    } else {
+      this._curSources = concat(this._curSources, [obs]);
+    }
+  },
+  _subToEnd: function (obs) {
+    var _this3 = this;
+
+    var onEnd = function () {
+      return _this3._removeCur(obs);
+    };
+    this._$endHandlers.push({ obs: obs, handler: onEnd });
+    obs.onEnd(onEnd);
+  },
+  _subscribe: function (obs) {
+    obs.onAny(this._$handleSubAny);
+
+    // it can become inactive in responce of subscribing to `obs.onAny` above
+    if (this._active) {
+      this._subToEnd(obs);
+    }
+  },
+  _unsubscribe: function (obs) {
+    obs.offAny(this._$handleSubAny);
+
+    var onEndI = findByPred(this._$endHandlers, function (obj) {
+      return obj.obs === obs;
+    });
+    if (onEndI !== -1) {
+      obs.offEnd(this._$endHandlers[onEndI].handler);
+      this._$endHandlers.splice(onEndI, 1);
+    }
+  },
+  _handleSubAny: function (event) {
+    if (event.type === VALUE) {
+      this._emitValue(event.value);
+    } else if (event.type === ERROR) {
+      this._emitError(event.value);
+    }
+  },
+  _removeQueue: function (obs) {
+    var index = find(this._queue, obs);
+    this._queue = remove(this._queue, index);
+    return index;
+  },
+  _removeCur: function (obs) {
+    if (this._active) {
+      this._unsubscribe(obs);
+    }
+    var index = find(this._curSources, obs);
+    this._curSources = remove(this._curSources, index);
+    if (index !== -1) {
+      if (this._queue.length !== 0) {
+        this._pullQueue();
+      } else if (this._curSources.length === 0) {
+        this._onEmpty();
+      }
+    }
+    return index;
+  },
+  _removeOldest: function () {
+    this._removeCur(this._curSources[0]);
+  },
+  _pullQueue: function () {
+    if (this._queue.length !== 0) {
+      this._queue = cloneArray(this._queue);
+      this._addToCur(this._queue.shift());
+    }
+  },
+  _onActivation: function () {
+    for (var i = 0, sources = this._curSources; i < sources.length && this._active; i++) {
+      this._subscribe(sources[i]);
+    }
+  },
+  _onDeactivation: function () {
+    for (var i = 0, sources = this._curSources; i < sources.length; i++) {
+      this._unsubscribe(sources[i]);
+    }
+    if (this._currentlyAdding !== null) {
+      this._unsubscribe(this._currentlyAdding);
+    }
+  },
+  _isEmpty: function () {
+    return this._curSources.length === 0;
+  },
+  _onEmpty: function () {},
+  _clear: function () {
+    Stream.prototype._clear.call(this);
+    this._queue = null;
+    this._curSources = null;
+    this._$handleSubAny = null;
+    this._$endHandlers = null;
+  }
+});
+
+function Merge(sources) {
+  AbstractPool.call(this);
+  this._addAll(sources);
+  this._initialised = true;
+}
+
+inherit(Merge, AbstractPool, {
+  _name: 'merge',
+
+  _onEmpty: function () {
+    if (this._initialised) {
+      this._emitEnd();
+    }
+  }
+});
+
+function merge(observables) {
+  return observables.length === 0 ? never() : new Merge(observables);
+}
+
+function S$33(generator) {
+  var _this = this;
+
+  Stream.call(this);
+  this._generator = generator;
+  this._source = null;
+  this._inLoop = false;
+  this._iteration = 0;
+  this._$handleAny = function (event) {
+    return _this._handleAny(event);
+  };
+}
+
+inherit(S$33, Stream, {
+  _name: 'repeat',
+
+  _handleAny: function (event) {
+    if (event.type === END) {
+      this._source = null;
+      this._getSource();
+    } else {
+      this._emit(event.type, event.value);
+    }
+  },
+  _getSource: function () {
+    if (!this._inLoop) {
+      this._inLoop = true;
+      var generator = this._generator;
+      while (this._source === null && this._alive && this._active) {
+        this._source = generator(this._iteration++);
+        if (this._source) {
+          this._source.onAny(this._$handleAny);
+        } else {
+          this._emitEnd();
+        }
+      }
+      this._inLoop = false;
+    }
+  },
+  _onActivation: function () {
+    if (this._source) {
+      this._source.onAny(this._$handleAny);
+    } else {
+      this._getSource();
+    }
+  },
+  _onDeactivation: function () {
+    if (this._source) {
+      this._source.offAny(this._$handleAny);
+    }
+  },
+  _clear: function () {
+    Stream.prototype._clear.call(this);
+    this._generator = null;
+    this._source = null;
+    this._$handleAny = null;
+  }
+});
+
+var repeat = function (generator) {
+  return new S$33(generator);
+};
+
+function concat$1(observables) {
+  return repeat(function (index) {
+    return observables.length > index ? observables[index] : false;
+  }).setName('concat');
+}
+
+function Pool() {
+  AbstractPool.call(this);
+}
+
+inherit(Pool, AbstractPool, {
+  _name: 'pool',
+
+  plug: function (obs) {
+    this._add(obs);
+    return this;
+  },
+  unplug: function (obs) {
+    this._remove(obs);
+    return this;
+  }
+});
+
+function FlatMap(source, fn, options) {
+  var _this = this;
+
+  AbstractPool.call(this, options);
+  this._source = source;
+  this._fn = fn;
+  this._mainEnded = false;
+  this._lastCurrent = null;
+  this._$handleMain = function (event) {
+    return _this._handleMain(event);
+  };
+}
+
+inherit(FlatMap, AbstractPool, {
+  _onActivation: function () {
+    AbstractPool.prototype._onActivation.call(this);
+    if (this._active) {
+      this._source.onAny(this._$handleMain);
+    }
+  },
+  _onDeactivation: function () {
+    AbstractPool.prototype._onDeactivation.call(this);
+    this._source.offAny(this._$handleMain);
+    this._hadNoEvSinceDeact = true;
+  },
+  _handleMain: function (event) {
+    if (event.type === VALUE) {
+      // Is latest value before deactivation survived, and now is 'current' on this activation?
+      // We don't want to handle such values, to prevent to constantly add
+      // same observale on each activation/deactivation when our main source
+      // is a `Kefir.conatant()` for example.
+      var sameCurr = this._activating && this._hadNoEvSinceDeact && this._lastCurrent === event.value;
+      if (!sameCurr) {
+        this._add(event.value, this._fn);
+      }
+      this._lastCurrent = event.value;
+      this._hadNoEvSinceDeact = false;
+    }
+
+    if (event.type === ERROR) {
+      this._emitError(event.value);
+    }
+
+    if (event.type === END) {
+      if (this._isEmpty()) {
+        this._emitEnd();
+      } else {
+        this._mainEnded = true;
+      }
+    }
+  },
+  _onEmpty: function () {
+    if (this._mainEnded) {
+      this._emitEnd();
+    }
+  },
+  _clear: function () {
+    AbstractPool.prototype._clear.call(this);
+    this._source = null;
+    this._lastCurrent = null;
+    this._$handleMain = null;
+  }
+});
+
+function FlatMapErrors(source, fn) {
+  FlatMap.call(this, source, fn);
+}
+
+inherit(FlatMapErrors, FlatMap, {
+  // Same as in FlatMap, only VALUE/ERROR flipped
+  _handleMain: function (event) {
+    if (event.type === ERROR) {
+      var sameCurr = this._activating && this._hadNoEvSinceDeact && this._lastCurrent === event.value;
+      if (!sameCurr) {
+        this._add(event.value, this._fn);
+      }
+      this._lastCurrent = event.value;
+      this._hadNoEvSinceDeact = false;
+    }
+
+    if (event.type === VALUE) {
+      this._emitValue(event.value);
+    }
+
+    if (event.type === END) {
+      if (this._isEmpty()) {
+        this._emitEnd();
+      } else {
+        this._mainEnded = true;
+      }
+    }
+  }
+});
+
+function createConstructor$1(BaseClass, name) {
+  return function AnonymousObservable(primary, secondary, options) {
+    var _this = this;
+
+    BaseClass.call(this);
+    this._primary = primary;
+    this._secondary = secondary;
+    this._name = primary._name + '.' + name;
+    this._lastSecondary = NOTHING;
+    this._$handleSecondaryAny = function (event) {
+      return _this._handleSecondaryAny(event);
+    };
+    this._$handlePrimaryAny = function (event) {
+      return _this._handlePrimaryAny(event);
+    };
+    this._init(options);
+  };
+}
+
+function createClassMethods$1(BaseClass) {
+  return {
+    _init: function () {},
+    _free: function () {},
+    _handlePrimaryValue: function (x) {
+      this._emitValue(x);
+    },
+    _handlePrimaryError: function (x) {
+      this._emitError(x);
+    },
+    _handlePrimaryEnd: function () {
+      this._emitEnd();
+    },
+    _handleSecondaryValue: function (x) {
+      this._lastSecondary = x;
+    },
+    _handleSecondaryError: function (x) {
+      this._emitError(x);
+    },
+    _handleSecondaryEnd: function () {},
+    _handlePrimaryAny: function (event) {
+      switch (event.type) {
+        case VALUE:
+          return this._handlePrimaryValue(event.value);
+        case ERROR:
+          return this._handlePrimaryError(event.value);
+        case END:
+          return this._handlePrimaryEnd(event.value);
+      }
+    },
+    _handleSecondaryAny: function (event) {
+      switch (event.type) {
+        case VALUE:
+          return this._handleSecondaryValue(event.value);
+        case ERROR:
+          return this._handleSecondaryError(event.value);
+        case END:
+          this._handleSecondaryEnd(event.value);
+          this._removeSecondary();
+      }
+    },
+    _removeSecondary: function () {
+      if (this._secondary !== null) {
+        this._secondary.offAny(this._$handleSecondaryAny);
+        this._$handleSecondaryAny = null;
+        this._secondary = null;
+      }
+    },
+    _onActivation: function () {
+      if (this._secondary !== null) {
+        this._secondary.onAny(this._$handleSecondaryAny);
+      }
+      if (this._active) {
+        this._primary.onAny(this._$handlePrimaryAny);
+      }
+    },
+    _onDeactivation: function () {
+      if (this._secondary !== null) {
+        this._secondary.offAny(this._$handleSecondaryAny);
+      }
+      this._primary.offAny(this._$handlePrimaryAny);
+    },
+    _clear: function () {
+      BaseClass.prototype._clear.call(this);
+      this._primary = null;
+      this._secondary = null;
+      this._lastSecondary = null;
+      this._$handleSecondaryAny = null;
+      this._$handlePrimaryAny = null;
+      this._free();
+    }
+  };
+}
+
+function createStream$1(name, mixin) {
+  var S = createConstructor$1(Stream, name);
+  inherit(S, Stream, createClassMethods$1(Stream), mixin);
+  return S;
+}
+
+function createProperty$1(name, mixin) {
+  var P = createConstructor$1(Property, name);
+  inherit(P, Property, createClassMethods$1(Property), mixin);
+  return P;
+}
+
+var mixin$26 = {
+  _handlePrimaryValue: function (x) {
+    if (this._lastSecondary !== NOTHING && this._lastSecondary) {
+      this._emitValue(x);
+    }
+  },
+  _handleSecondaryEnd: function () {
+    if (this._lastSecondary === NOTHING || !this._lastSecondary) {
+      this._emitEnd();
+    }
+  }
+};
+
+var S$34 = createStream$1('filterBy', mixin$26);
+var P$29 = createProperty$1('filterBy', mixin$26);
+
+function filterBy(primary, secondary) {
+  return new (primary._ofSameType(S$34, P$29))(primary, secondary);
+}
+
+var id2 = function (_, x) {
+  return x;
+};
+
+function sampledBy(passive, active, combinator) {
+  var _combinator = combinator ? function (a, b) {
+    return combinator(b, a);
+  } : id2;
+  return combine([active], [passive], _combinator).setName(passive, 'sampledBy');
+}
+
+var mixin$27 = {
+  _handlePrimaryValue: function (x) {
+    if (this._lastSecondary !== NOTHING) {
+      this._emitValue(x);
+    }
+  },
+  _handleSecondaryEnd: function () {
+    if (this._lastSecondary === NOTHING) {
+      this._emitEnd();
+    }
+  }
+};
+
+var S$35 = createStream$1('skipUntilBy', mixin$27);
+var P$30 = createProperty$1('skipUntilBy', mixin$27);
+
+function skipUntilBy(primary, secondary) {
+  return new (primary._ofSameType(S$35, P$30))(primary, secondary);
+}
+
+var mixin$28 = {
+  _handleSecondaryValue: function () {
+    this._emitEnd();
+  }
+};
+
+var S$36 = createStream$1('takeUntilBy', mixin$28);
+var P$31 = createProperty$1('takeUntilBy', mixin$28);
+
+function takeUntilBy(primary, secondary) {
+  return new (primary._ofSameType(S$36, P$31))(primary, secondary);
+}
+
+var mixin$29 = {
+  _init: function () {
+    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+        _ref$flushOnEnd = _ref.flushOnEnd,
+        flushOnEnd = _ref$flushOnEnd === undefined ? true : _ref$flushOnEnd;
+
+    this._buff = [];
+    this._flushOnEnd = flushOnEnd;
+  },
+  _free: function () {
+    this._buff = null;
+  },
+  _flush: function () {
+    if (this._buff !== null) {
+      this._emitValue(this._buff);
+      this._buff = [];
+    }
+  },
+  _handlePrimaryEnd: function () {
+    if (this._flushOnEnd) {
+      this._flush();
+    }
+    this._emitEnd();
+  },
+  _onActivation: function () {
+    this._primary.onAny(this._$handlePrimaryAny);
+    if (this._alive && this._secondary !== null) {
+      this._secondary.onAny(this._$handleSecondaryAny);
+    }
+  },
+  _handlePrimaryValue: function (x) {
+    this._buff.push(x);
+  },
+  _handleSecondaryValue: function () {
+    this._flush();
+  },
+  _handleSecondaryEnd: function () {
+    if (!this._flushOnEnd) {
+      this._emitEnd();
+    }
+  }
+};
+
+var S$37 = createStream$1('bufferBy', mixin$29);
+var P$32 = createProperty$1('bufferBy', mixin$29);
+
+function bufferBy(primary, secondary, options /* optional */) {
+  return new (primary._ofSameType(S$37, P$32))(primary, secondary, options);
+}
+
+var mixin$30 = {
+  _init: function () {
+    var _ref = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {},
+        _ref$flushOnEnd = _ref.flushOnEnd,
+        flushOnEnd = _ref$flushOnEnd === undefined ? true : _ref$flushOnEnd,
+        _ref$flushOnChange = _ref.flushOnChange,
+        flushOnChange = _ref$flushOnChange === undefined ? false : _ref$flushOnChange;
+
+    this._buff = [];
+    this._flushOnEnd = flushOnEnd;
+    this._flushOnChange = flushOnChange;
+  },
+  _free: function () {
+    this._buff = null;
+  },
+  _flush: function () {
+    if (this._buff !== null) {
+      this._emitValue(this._buff);
+      this._buff = [];
+    }
+  },
+  _handlePrimaryEnd: function () {
+    if (this._flushOnEnd) {
+      this._flush();
+    }
+    this._emitEnd();
+  },
+  _handlePrimaryValue: function (x) {
+    this._buff.push(x);
+    if (this._lastSecondary !== NOTHING && !this._lastSecondary) {
+      this._flush();
+    }
+  },
+  _handleSecondaryEnd: function () {
+    if (!this._flushOnEnd && (this._lastSecondary === NOTHING || this._lastSecondary)) {
+      this._emitEnd();
+    }
+  },
+  _handleSecondaryValue: function (x) {
+    if (this._flushOnChange && !x) {
+      this._flush();
+    }
+
+    // from default _handleSecondaryValue
+    this._lastSecondary = x;
+  }
+};
+
+var S$38 = createStream$1('bufferWhileBy', mixin$30);
+var P$33 = createProperty$1('bufferWhileBy', mixin$30);
+
+function bufferWhileBy(primary, secondary, options /* optional */) {
+  return new (primary._ofSameType(S$38, P$33))(primary, secondary, options);
+}
+
+var f = function () {
+  return false;
+};
+var t = function () {
+  return true;
+};
+
+function awaiting(a, b) {
+  var result = merge([map$1(a, t), map$1(b, f)]);
+  result = skipDuplicates(result);
+  result = toProperty(result, f);
+  return result.setName(a, 'awaiting');
+}
+
+var mixin$31 = {
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._fn = fn;
+  },
+  _free: function () {
+    this._fn = null;
+  },
+  _handleValue: function (x) {
+    var fn = this._fn;
+    var result = fn(x);
+    if (result.convert) {
+      this._emitError(result.error);
+    } else {
+      this._emitValue(x);
+    }
+  }
+};
+
+var S$39 = createStream('valuesToErrors', mixin$31);
+var P$34 = createProperty('valuesToErrors', mixin$31);
+
+var defFn = function (x) {
+  return { convert: true, error: x };
+};
+
+function valuesToErrors(obs) {
+  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defFn;
+
+  return new (obs._ofSameType(S$39, P$34))(obs, { fn: fn });
+}
+
+var mixin$32 = {
+  _init: function (_ref) {
+    var fn = _ref.fn;
+
+    this._fn = fn;
+  },
+  _free: function () {
+    this._fn = null;
+  },
+  _handleError: function (x) {
+    var fn = this._fn;
+    var result = fn(x);
+    if (result.convert) {
+      this._emitValue(result.value);
+    } else {
+      this._emitError(x);
+    }
+  }
+};
+
+var S$40 = createStream('errorsToValues', mixin$32);
+var P$35 = createProperty('errorsToValues', mixin$32);
+
+var defFn$1 = function (x) {
+  return { convert: true, value: x };
+};
+
+function errorsToValues(obs) {
+  var fn = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defFn$1;
+
+  return new (obs._ofSameType(S$40, P$35))(obs, { fn: fn });
+}
+
+var mixin$33 = {
+  _handleError: function (x) {
+    this._emitError(x);
+    this._emitEnd();
+  }
+};
+
+var S$41 = createStream('endOnError', mixin$33);
+var P$36 = createProperty('endOnError', mixin$33);
+
+function endOnError(obs) {
+  return new (obs._ofSameType(S$41, P$36))(obs);
+}
+
+// Create a stream
+// -----------------------------------------------------------------------------
+
+// () -> Stream
+// (number, any) -> Stream
+// (number, any) -> Stream
+// (number, Array<any>) -> Stream
+// (number, Function) -> Stream
+// (number, Function) -> Stream
+// (Function) -> Stream
+// (Function) -> Stream
+// Target = {addEventListener, removeEventListener}|{addListener, removeListener}|{on, off}
+// (Target, string, Function|undefined) -> Stream
+// (Function) -> Stream
+// Create a property
+// -----------------------------------------------------------------------------
+
+// (any) -> Property
+// (any) -> Property
+// Convert observables
+// -----------------------------------------------------------------------------
+
+// (Stream|Property, Function|undefined) -> Property
+Observable.prototype.toProperty = function (fn) {
+  return toProperty(this, fn);
+};
+
+// (Stream|Property) -> Stream
+Observable.prototype.changes = function () {
+  return changes(this);
+};
+
+// Interoperation with other implimentations
+// -----------------------------------------------------------------------------
+
+// (Promise) -> Property
+// (Stream|Property, Function|undefined) -> Promise
+Observable.prototype.toPromise = function (Promise) {
+  return toPromise(this, Promise);
+};
+
+// (ESObservable) -> Stream
+// (Stream|Property) -> ES7 Observable
+Observable.prototype.toESObservable = toESObservable;
+Observable.prototype[$$observable] = toESObservable;
+
+// Modify an observable
+// -----------------------------------------------------------------------------
+
+// (Stream, Function|undefined) -> Stream
+// (Property, Function|undefined) -> Property
+Observable.prototype.map = function (fn) {
+  return map$1(this, fn);
+};
+
+// (Stream, Function|undefined) -> Stream
+// (Property, Function|undefined) -> Property
+Observable.prototype.filter = function (fn) {
+  return filter(this, fn);
+};
+
+// (Stream, number) -> Stream
+// (Property, number) -> Property
+Observable.prototype.take = function (n) {
+  return take(this, n);
+};
+
+// (Stream, number) -> Stream
+// (Property, number) -> Property
+Observable.prototype.takeErrors = function (n) {
+  return takeErrors(this, n);
+};
+
+// (Stream, Function|undefined) -> Stream
+// (Property, Function|undefined) -> Property
+Observable.prototype.takeWhile = function (fn) {
+  return takeWhile(this, fn);
+};
+
+// (Stream) -> Stream
+// (Property) -> Property
+Observable.prototype.last = function () {
+  return last(this);
+};
+
+// (Stream, number) -> Stream
+// (Property, number) -> Property
+Observable.prototype.skip = function (n) {
+  return skip(this, n);
+};
+
+// (Stream, Function|undefined) -> Stream
+// (Property, Function|undefined) -> Property
+Observable.prototype.skipWhile = function (fn) {
+  return skipWhile(this, fn);
+};
+
+// (Stream, Function|undefined) -> Stream
+// (Property, Function|undefined) -> Property
+Observable.prototype.skipDuplicates = function (fn) {
+  return skipDuplicates(this, fn);
+};
+
+// (Stream, Function|falsey, any|undefined) -> Stream
+// (Property, Function|falsey, any|undefined) -> Property
+Observable.prototype.diff = function (fn, seed) {
+  return diff(this, fn, seed);
+};
+
+// (Stream|Property, Function, any|undefined) -> Property
+Observable.prototype.scan = function (fn, seed) {
+  return scan(this, fn, seed);
+};
+
+// (Stream, Function|undefined) -> Stream
+// (Property, Function|undefined) -> Property
+Observable.prototype.flatten = function (fn) {
+  return flatten(this, fn);
+};
+
+// (Stream, number) -> Stream
+// (Property, number) -> Property
+Observable.prototype.delay = function (wait) {
+  return delay(this, wait);
+};
+
+// Options = {leading: boolean|undefined, trailing: boolean|undefined}
+// (Stream, number, Options|undefined) -> Stream
+// (Property, number, Options|undefined) -> Property
+Observable.prototype.throttle = function (wait, options) {
+  return throttle(this, wait, options);
+};
+
+// Options = {immediate: boolean|undefined}
+// (Stream, number, Options|undefined) -> Stream
+// (Property, number, Options|undefined) -> Property
+Observable.prototype.debounce = function (wait, options) {
+  return debounce(this, wait, options);
+};
+
+// (Stream, Function|undefined) -> Stream
+// (Property, Function|undefined) -> Property
+Observable.prototype.mapErrors = function (fn) {
+  return mapErrors(this, fn);
+};
+
+// (Stream, Function|undefined) -> Stream
+// (Property, Function|undefined) -> Property
+Observable.prototype.filterErrors = function (fn) {
+  return filterErrors(this, fn);
+};
+
+// (Stream) -> Stream
+// (Property) -> Property
+Observable.prototype.ignoreValues = function () {
+  return ignoreValues(this);
+};
+
+// (Stream) -> Stream
+// (Property) -> Property
+Observable.prototype.ignoreErrors = function () {
+  return ignoreErrors(this);
+};
+
+// (Stream) -> Stream
+// (Property) -> Property
+Observable.prototype.ignoreEnd = function () {
+  return ignoreEnd(this);
+};
+
+// (Stream, Function) -> Stream
+// (Property, Function) -> Property
+Observable.prototype.beforeEnd = function (fn) {
+  return beforeEnd(this, fn);
+};
+
+// (Stream, number, number|undefined) -> Stream
+// (Property, number, number|undefined) -> Property
+Observable.prototype.slidingWindow = function (max, min) {
+  return slidingWindow(this, max, min);
+};
+
+// Options = {flushOnEnd: boolean|undefined}
+// (Stream, Function|falsey, Options|undefined) -> Stream
+// (Property, Function|falsey, Options|undefined) -> Property
+Observable.prototype.bufferWhile = function (fn, options) {
+  return bufferWhile(this, fn, options);
+};
+
+// (Stream, number) -> Stream
+// (Property, number) -> Property
+Observable.prototype.bufferWithCount = function (count, options) {
+  return bufferWhile$1(this, count, options);
+};
+
+// Options = {flushOnEnd: boolean|undefined}
+// (Stream, number, number, Options|undefined) -> Stream
+// (Property, number, number, Options|undefined) -> Property
+Observable.prototype.bufferWithTimeOrCount = function (wait, count, options) {
+  return bufferWithTimeOrCount(this, wait, count, options);
+};
+
+// (Stream, Function) -> Stream
+// (Property, Function) -> Property
+Observable.prototype.transduce = function (transducer) {
+  return transduce(this, transducer);
+};
+
+// (Stream, Function) -> Stream
+// (Property, Function) -> Property
+Observable.prototype.withHandler = function (fn) {
+  return withHandler(this, fn);
+};
+
+// Combine observables
+// -----------------------------------------------------------------------------
+
+// (Array<Stream|Property>, Function|undefiend) -> Stream
+// (Array<Stream|Property>, Array<Stream|Property>, Function|undefiend) -> Stream
+Observable.prototype.combine = function (other, combinator) {
+  return combine([this, other], combinator);
+};
+
+// (Array<Stream|Property>, Function|undefiend) -> Stream
+Observable.prototype.zip = function (other, combinator) {
+  return zip([this, other], combinator);
+};
+
+// (Array<Stream|Property>) -> Stream
+Observable.prototype.merge = function (other) {
+  return merge([this, other]);
+};
+
+// (Array<Stream|Property>) -> Stream
+Observable.prototype.concat = function (other) {
+  return concat$1([this, other]);
+};
+
+// () -> Pool
+var pool = function () {
+  return new Pool();
+};
+
+// (Function) -> Stream
+// Options = {concurLim: number|undefined, queueLim: number|undefined, drop: 'old'|'new'|undefiend}
+// (Stream|Property, Function|falsey, Options|undefined) -> Stream
+Observable.prototype.flatMap = function (fn) {
+  return new FlatMap(this, fn).setName(this, 'flatMap');
+};
+Observable.prototype.flatMapLatest = function (fn) {
+  return new FlatMap(this, fn, { concurLim: 1, drop: 'old' }).setName(this, 'flatMapLatest');
+};
+Observable.prototype.flatMapFirst = function (fn) {
+  return new FlatMap(this, fn, { concurLim: 1 }).setName(this, 'flatMapFirst');
+};
+Observable.prototype.flatMapConcat = function (fn) {
+  return new FlatMap(this, fn, { queueLim: -1, concurLim: 1 }).setName(this, 'flatMapConcat');
+};
+Observable.prototype.flatMapConcurLimit = function (fn, limit) {
+  return new FlatMap(this, fn, { queueLim: -1, concurLim: limit }).setName(this, 'flatMapConcurLimit');
+};
+
+// (Stream|Property, Function|falsey) -> Stream
+Observable.prototype.flatMapErrors = function (fn) {
+  return new FlatMapErrors(this, fn).setName(this, 'flatMapErrors');
+};
+
+// Combine two observables
+// -----------------------------------------------------------------------------
+
+// (Stream, Stream|Property) -> Stream
+// (Property, Stream|Property) -> Property
+Observable.prototype.filterBy = function (other) {
+  return filterBy(this, other);
+};
+
+// (Stream, Stream|Property, Function|undefiend) -> Stream
+// (Property, Stream|Property, Function|undefiend) -> Property
+Observable.prototype.sampledBy = function (other, combinator) {
+  return sampledBy(this, other, combinator);
+};
+
+// (Stream, Stream|Property) -> Stream
+// (Property, Stream|Property) -> Property
+Observable.prototype.skipUntilBy = function (other) {
+  return skipUntilBy(this, other);
+};
+
+// (Stream, Stream|Property) -> Stream
+// (Property, Stream|Property) -> Property
+Observable.prototype.takeUntilBy = function (other) {
+  return takeUntilBy(this, other);
+};
+
+// Options = {flushOnEnd: boolean|undefined}
+// (Stream, Stream|Property, Options|undefined) -> Stream
+// (Property, Stream|Property, Options|undefined) -> Property
+Observable.prototype.bufferBy = function (other, options) {
+  return bufferBy(this, other, options);
+};
+
+// Options = {flushOnEnd: boolean|undefined}
+// (Stream, Stream|Property, Options|undefined) -> Stream
+// (Property, Stream|Property, Options|undefined) -> Property
+Observable.prototype.bufferWhileBy = function (other, options) {
+  return bufferWhileBy(this, other, options);
+};
+
+// Deprecated
+// -----------------------------------------------------------------------------
+
+var DEPRECATION_WARNINGS = true;
+function dissableDeprecationWarnings() {
+  DEPRECATION_WARNINGS = false;
+}
+
+function warn(msg) {
+  if (DEPRECATION_WARNINGS && console && typeof console.warn === 'function') {
+    var msg2 = '\nHere is an Error object for you containing the call stack:';
+    console.warn(msg, msg2, new Error());
+  }
+}
+
+// (Stream|Property, Stream|Property) -> Property
+Observable.prototype.awaiting = function (other) {
+  warn('You are using deprecated .awaiting() method, see https://github.com/rpominov/kefir/issues/145');
+  return awaiting(this, other);
+};
+
+// (Stream, Function|undefined) -> Stream
+// (Property, Function|undefined) -> Property
+Observable.prototype.valuesToErrors = function (fn) {
+  warn('You are using deprecated .valuesToErrors() method, see https://github.com/rpominov/kefir/issues/149');
+  return valuesToErrors(this, fn);
+};
+
+// (Stream, Function|undefined) -> Stream
+// (Property, Function|undefined) -> Property
+Observable.prototype.errorsToValues = function (fn) {
+  warn('You are using deprecated .errorsToValues() method, see https://github.com/rpominov/kefir/issues/149');
+  return errorsToValues(this, fn);
+};
+
+// (Stream) -> Stream
+// (Property) -> Property
+Observable.prototype.endOnError = function () {
+  warn('You are using deprecated .endOnError() method, see https://github.com/rpominov/kefir/issues/150');
+  return endOnError(this);
+};
+
+// Exports
+// --------------------------------------------------------------------------
+
+var Kefir = {
+  Observable: Observable,
+  Stream: Stream,
+  Property: Property,
+  never: never,
+  later: later,
+  interval: interval,
+  sequentially: sequentially,
+  fromPoll: fromPoll,
+  withInterval: withInterval,
+  fromCallback: fromCallback,
+  fromNodeCallback: fromNodeCallback,
+  fromEvents: fromEvents,
+  stream: stream,
+  constant: constant,
+  constantError: constantError,
+  fromPromise: fromPromise,
+  fromESObservable: fromESObservable,
+  combine: combine,
+  zip: zip,
+  merge: merge,
+  concat: concat$1,
+  Pool: Pool,
+  pool: pool,
+  repeat: repeat,
+  staticLand: staticLand
+};
+
+Kefir.Kefir = Kefir;
+
+exports.dissableDeprecationWarnings = dissableDeprecationWarnings;
+exports.Kefir = Kefir;
+exports.Observable = Observable;
+exports.Stream = Stream;
+exports.Property = Property;
+exports.never = never;
+exports.later = later;
+exports.interval = interval;
+exports.sequentially = sequentially;
+exports.fromPoll = fromPoll;
+exports.withInterval = withInterval;
+exports.fromCallback = fromCallback;
+exports.fromNodeCallback = fromNodeCallback;
+exports.fromEvents = fromEvents;
+exports.stream = stream;
+exports.constant = constant;
+exports.constantError = constantError;
+exports.fromPromise = fromPromise;
+exports.fromESObservable = fromESObservable;
+exports.combine = combine;
+exports.zip = zip;
+exports.merge = merge;
+exports.concat = concat$1;
+exports.Pool = Pool;
+exports.pool = pool;
+exports.repeat = repeat;
+exports.staticLand = staticLand;
+exports['default'] = Kefir;
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+})));
+
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(140)))
 
 /***/ }),
 /* 58 */
@@ -14121,7 +14242,7 @@ var _curryN = __webpack_require__(62);
 var _dispatchable = __webpack_require__(10);
 var _has = __webpack_require__(15);
 var _reduce = __webpack_require__(19);
-var _xreduceBy = __webpack_require__(492);
+var _xreduceBy = __webpack_require__(488);
 
 
 /**
@@ -14533,10 +14654,10 @@ module.exports = EventPluginRegistry;
 var _assign = __webpack_require__(9);
 
 var EventPluginRegistry = __webpack_require__(73);
-var ReactEventEmitterMixin = __webpack_require__(630);
+var ReactEventEmitterMixin = __webpack_require__(626);
 var ViewportMetrics = __webpack_require__(335);
 
-var getVendorPrefixedEventName = __webpack_require__(665);
+var getVendorPrefixedEventName = __webpack_require__(661);
 var isEventSupported = __webpack_require__(110);
 
 /**
@@ -15419,39 +15540,11 @@ module.exports = canDefineProperty;
 
 /***/ }),
 /* 80 */
-/***/ (function(module, exports) {
-
-var g;
-
-// This works in non-strict mode
-g = (function() {
-	return this;
-})();
-
-try {
-	// This works if eval is allowed (see CSP)
-	g = g || Function("return this")() || (1,eval)("this");
-} catch(e) {
-	// This works if the window reference is available
-	if(typeof window === "object")
-		g = window;
-}
-
-// g can still be undefined, but nothing to do about it...
-// We return undefined, instead of nothing here, so it's
-// easier to handle this case. if(!global) { ...}
-
-module.exports = g;
-
-
-/***/ }),
-/* 81 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(process) {Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_infestines__ = __webpack_require__(43);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "toFunction", function() { return toFunction; });
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* WEBPACK VAR INJECTION */(function(process) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "toFunction", function() { return toFunction; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "modify", function() { return modify; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "remove", function() { return remove; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "set", function() { return set; });
@@ -15486,8 +15579,10 @@ module.exports = g;
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "branch", function() { return branch; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "elems", function() { return elems; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "values", function() { return values; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "matches", function() { return matches; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "get", function() { return get; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "lens", function() { return lens; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "setter", function() { return setter; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "augment", function() { return augment; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "defaults", function() { return defaults; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "define", function() { return define; });
@@ -15496,8 +15591,8 @@ module.exports = g;
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "rewrite", function() { return rewrite; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "append", function() { return append; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "filter", function() { return filter; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "findHint", function() { return findHint; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "find", function() { return find; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "findHint", function() { return findHint; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "findWith", function() { return findWith; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "index", function() { return index; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "last", function() { return last; });
@@ -15514,6 +15609,8 @@ module.exports = g;
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "complement", function() { return complement; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "identity", function() { return identity; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "inverse", function() { return inverse; });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_infestines__ = __webpack_require__(37);
+
 
 
 //
@@ -15607,21 +15704,21 @@ var run = function run(o, C, xi2yC, s, i) {
 //
 
 var expectedOptic = "Expecting an optic";
-var header = "partial.lenses:";
+var opticIsEither = "An optic can be either\n- a string,\n- a non-negative integer,\n- a ternary optic function,\n- an ordinary unary or binary function, or\n- an array of optics.\nSee documentation of `toFunction` and `compose` for details.";
+var header = "partial.lenses: ";
 
 function warn(f, m) {
   if (!f.warned) {
     f.warned = 1;
-    console.warn(header, m);
+    console.warn(header + m);
   }
 }
 
 function errorGiven(m, o, e) {
-  m += ".";
-  var args = [header, m, "Given:", o];
-  if (e) args.push("\n" + e);
-  console.error.apply(console, args);
-  throw new Error(e ? m + " " + e : m);
+  m = header + m + ".";
+  e = e ? "\n" + e : "";
+  console.error(m, "Given:", o, e);
+  throw Error(m + e);
 }
 
 function checkIndex(x) {
@@ -15630,17 +15727,17 @@ function checkIndex(x) {
 }
 
 function reqFunction(o) {
-  if (!(__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_infestines__["t" /* isFunction */])(o) && (o.length === 4 || o.length <= 2))) errorGiven(expectedOptic, o);
+  if (!(__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_infestines__["t" /* isFunction */])(o) && (o.length === 4 || o.length <= 2))) errorGiven(expectedOptic, o, opticIsEither);
 }
 
 function reqArray(o) {
-  if (!Array.isArray(o)) errorGiven(expectedOptic, o);
+  if (!Array.isArray(o)) errorGiven(expectedOptic, o, opticIsEither);
 }
 
 //
 
-function reqApplicative(f) {
-  if (!f.of) errorGiven("Traversals require an applicative", f, "Note that you cannot `get` a traversal. Perhaps you wanted to `collect` it?");
+function reqApplicative(C, name, arg) {
+  if (!C.of) errorGiven("`" + name + (arg ? "(" + arg + ")" : "") + "` requires an applicative", C, "Note that you cannot `get` a traversal. Perhaps you wanted to `collect` it?");
 }
 
 //
@@ -15730,7 +15827,7 @@ var traversePartialIndexLazy = function traversePartialIndexLazy(map, ap, z, del
 };
 
 function traversePartialIndex(A, xi2yA, xs) {
-  if (process.env.NODE_ENV !== "production") reqApplicative(A);
+  if (process.env.NODE_ENV !== "production") reqApplicative(A, "elems");
   var map = A.map,
       ap = A.ap,
       of = A.of,
@@ -15954,8 +16051,8 @@ var branchOnMerge = function branchOnMerge(x, keys$$1) {
         r[k] = void 0 !== _v ? _v : x[k];
       }
     }
-    for (var _i = 0; _i < n; ++_i) {
-      var _k = keys$$1[_i];
+    for (var _i2 = 0; _i2 < n; ++_i2) {
+      var _k = keys$$1[_i2];
       var _v2 = o[_k];
       if (o !== _v2) {
         if (!r) r = {};
@@ -15981,7 +16078,7 @@ function branchOnLazy(keys$$1, vals, map, ap, z, delay, A, xi2yA, x, i) {
 
 var branchOn = function branchOn(keys$$1, vals) {
   return function (A, xi2yA, x, _) {
-    if (process.env.NODE_ENV !== "production") reqApplicative(A);
+    if (process.env.NODE_ENV !== "production") reqApplicative(A, vals ? "branch" : "values");
     var map = A.map,
         ap = A.ap,
         of = A.of,
@@ -16008,19 +16105,28 @@ var replaced = function replaced(inn, out, x) {
   return __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_infestines__["w" /* acyclicEqualsU */])(x, inn) ? out : x;
 };
 
-function findIndexHint(u, xi2b, xs) {
+function findIndex(xi2b, xs) {
   var n = xs.length;
-  u = 0 <= u ? u < n ? u : n - 1 : 0;
+  for (var i = 0; i < n; ++i) {
+    if (xi2b(xs[i], i)) return i;
+  }return n;
+}
+
+function findIndexHint(hint, xi2b, xs) {
+  var n = xs.length;
+  var u = hint.hint;
+  if (n <= u) u = n - 1;
+  if (u < 0) u = 0;
   var d = u - 1;
   for (; 0 <= d && u < n; ++u, --d) {
-    if (xi2b(xs[u], u)) return u;
-    if (xi2b(xs[d], d)) return d;
+    if (xi2b(xs[u], hint)) return u;
+    if (xi2b(xs[d], hint)) return d;
   }
   for (; u < n; ++u) {
-    if (xi2b(xs[u], u)) return u;
+    if (xi2b(xs[u], hint)) return u;
   }for (; 0 <= d; --d) {
-    if (xi2b(xs[d], d)) return d;
-  }return -1;
+    if (xi2b(xs[d], hint)) return d;
+  }return n;
 }
 
 function partitionIntoIndex(xi2b, xs, ts, fs) {
@@ -16035,6 +16141,72 @@ function partitionIntoIndex(xi2b, xs, ts, fs) {
 var fromReader = function fromReader(wi2x) {
   return function (F, xi2yF, w, i) {
     return (0, F.map)(__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_infestines__["s" /* always */])(w), xi2yF(wi2x(w, i), i));
+  };
+};
+
+//
+
+function reNext(m, re) {
+  var lastIndex = re.lastIndex;
+  re.lastIndex = m.index + m[0].length;
+  var n = re.exec(m.input);
+  re.lastIndex = lastIndex;
+  if (process.env.NODE_ENV !== "production") if (n && !n[0]) warn(reNext, "`matches(" + re + ")` traversal terminated at index " + n.index + " in " + JSON.stringify(n.input) + " due to empty match.");
+  if (n && n[0]) return n;
+}
+
+var reValue = function reValue(m) {
+  return m[0];
+};
+var reIndex = function reIndex(m) {
+  return m.index;
+};
+
+//
+
+var iterCollect = function iterCollect(s) {
+  return function (x) {
+    return function (xs) {
+      return [s, x, xs];
+    };
+  };
+};
+
+var iterLazy = function iterLazy(map, ap, of, delay, xi2yA, t, s) {
+  return (s = reNext(s, t)) ? ap(ap(map(iterCollect, of(s)), xi2yA(reValue(s), reIndex(s))), delay(function () {
+    return iterLazy(map, ap, of, delay, xi2yA, t, s);
+  })) : of(void 0);
+};
+
+function iterEager(map, ap, of, _, xi2yA, t, s) {
+  var ss = [];
+  while (s = reNext(s, t)) {
+    ss.push(s);
+  }var i = ss.length;
+  var r = of(void 0);
+  while (i--) {
+    s = ss[i];
+    r = ap(ap(map(iterCollect, of(s)), xi2yA(reValue(s), reIndex(s))), r);
+  }
+  return r;
+}
+
+//
+
+var matchesJoin = function matchesJoin(input) {
+  return function (matches) {
+    var result = "";
+    var lastIndex = 0;
+    while (matches) {
+      var m = matches[0];
+      result += input.slice(lastIndex, m.index);
+      var s = matches[1];
+      if (void 0 !== s) result += s;
+      lastIndex = m[0].length + m.index;
+      matches = matches[2];
+    }
+    result += input.slice(lastIndex);
+    return result || void 0;
   };
 };
 
@@ -16128,10 +16300,10 @@ var choice = function choice() {
   }
 
   return choose(function (x) {
-    var i = findIndexHint(0, function (l) {
+    var l = ls[findIndex(function (l) {
       return void 0 !== getU(l, x);
-    }, ls);
-    return i < 0 ? zero : ls[i];
+    }, ls)];
+    return void 0 !== l ? l : zero;
   });
 };
 
@@ -16264,7 +16436,7 @@ function elems(A, xi2yA, xs, _) {
   if (seemsArrayLike(xs)) {
     return A === Ident ? mapPartialIndexU(xi2yA, xs) : traversePartialIndex(A, xi2yA, xs);
   } else {
-    if (process.env.NODE_ENV !== "production") reqApplicative(A);
+    if (process.env.NODE_ENV !== "production") reqApplicative(A, "elems");
     return (0, A.of)(xs);
   }
 }
@@ -16273,9 +16445,36 @@ function values(A, xi2yA, xs, _) {
   if (xs instanceof Object) {
     return branchOn(__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_infestines__["y" /* keys */])(xs))(A, xi2yA, xs);
   } else {
-    if (process.env.NODE_ENV !== "production") reqApplicative(A);
+    if (process.env.NODE_ENV !== "production") reqApplicative(A, "values");
     return (0, A.of)(xs);
   }
+}
+
+function matches(re) {
+  if (process.env.NODE_ENV !== "production") warn(matches, "`matches` is experimental and might be removed or changed before next major release.");
+  return function (C, xi2yC, x, _) {
+    if (__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_infestines__["p" /* isString */])(x)) {
+      var map = C.map;
+
+      if (re.global) {
+        if (process.env.NODE_ENV !== "production") reqApplicative(C, "matches", re);
+        var ap = C.ap,
+            of = C.of,
+            delay = C.delay;
+
+        var m0 = [""];
+        m0.input = x;
+        m0.index = 0;
+        return map(matchesJoin(x), (delay ? iterLazy : iterEager)(map, ap, of, delay, xi2yC, re, m0));
+      } else {
+        var m = x.match(re);
+        if (m) return map(function (y) {
+          return x.replace(re, void 0 !== y ? y : "") || void 0;
+        }, xi2yC(m[0], m.index));
+      }
+    }
+    return zero(C, xi2yC, x, void 0);
+  };
 }
 
 // Operations on lenses
@@ -16295,6 +16494,8 @@ var lens = /*#__PURE__*/__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_infest
     }, xi2yF(get(x, i), i));
   };
 });
+
+var setter = /*#__PURE__*/lens(__WEBPACK_IMPORTED_MODULE_0_infestines__["b" /* id */]);
 
 // Computing derived props
 
@@ -16385,24 +16586,26 @@ var filter = function filter(xi2b) {
   };
 };
 
-var findHint = /*#__PURE__*/__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_infestines__["c" /* curry */])(function (hint, xi2b) {
-  if (process.env.NODE_ENV !== "production") if (void 0 !== hint) warn(findHint, "`findHint` is experimental and might be removed or changed before next major release.");
-  return function (F, xi2yF, xs, i) {
-    if (seemsArrayLike(xs)) {
-      i = findIndexHint(hint, xi2b, xs);
-      if (i < 0) i = xs.length;
-      if (void 0 !== hint) hint = i;
-    } else {
-      xs = void 0;
-      i = 0;
-    }
+var find = function find(xi2b) {
+  return function (F, xi2yF, xs, _i) {
+    var ys = seemsArrayLike(xs) ? xs : "",
+        i = findIndex(xi2b, ys);
     return (0, F.map)(function (v) {
-      return setIndex(i, v, xs);
-    }, xi2yF(xs && xs[i], i));
+      return setIndex(i, v, ys);
+    }, xi2yF(ys[i], i));
+  };
+};
+
+var findHint = /*#__PURE__*/__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_infestines__["c" /* curry */])(function (xh2b, hint) {
+  if (process.env.NODE_ENV !== "production") warn(findHint, "`findHint` is experimental and might be removed or changed before next major release.");
+  return function (F, xi2yF, xs, _i) {
+    var ys = seemsArrayLike(xs) ? xs : "",
+        i = hint.hint = findIndexHint(hint, xh2b, ys);
+    return (0, F.map)(function (v) {
+      return setIndex(i, v, ys);
+    }, xi2yF(ys[i], i));
   };
 });
-
-var find = /*#__PURE__*/findHint();
 
 function findWith() {
   var lls = compose.apply(undefined, arguments);
@@ -16531,7 +16734,7 @@ var inverse = function inverse(iso) {
 /* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(2)))
 
 /***/ }),
-/* 82 */
+/* 81 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -16604,6 +16807,27 @@ function shallowEqual(objA, objB) {
 module.exports = shallowEqual;
 
 /***/ }),
+/* 82 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/**
+ * Copyright 2013-present, Facebook, Inc.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree. An additional grant
+ * of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+
+
+var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
+
+module.exports = ReactPropTypesSecret;
+
+
+/***/ }),
 /* 83 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -16653,7 +16877,7 @@ module.exports = _curry2(function ap(applicative, fn) {
 var _curry2 = __webpack_require__(0);
 var _dispatchable = __webpack_require__(10);
 var _makeFlat = __webpack_require__(293);
-var _xchain = __webpack_require__(481);
+var _xchain = __webpack_require__(477);
 var map = __webpack_require__(16);
 
 
@@ -16783,7 +17007,7 @@ var _dispatchable = __webpack_require__(10);
 var _filter = __webpack_require__(287);
 var _isObject = __webpack_require__(292);
 var _reduce = __webpack_require__(19);
-var _xfilter = __webpack_require__(486);
+var _xfilter = __webpack_require__(482);
 var keys = __webpack_require__(24);
 
 
@@ -16862,7 +17086,7 @@ module.exports = _curry1(_identity);
 /* 89 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var _objectAssign = __webpack_require__(471);
+var _objectAssign = __webpack_require__(467);
 
 module.exports =
   typeof Object.assign === 'function' ? Object.assign : _objectAssign;
@@ -17097,8 +17321,8 @@ module.exports = _curry2(function uniqWith(pred, list) {
 
 
 
-var DOMLazyTree = __webpack_require__(39);
-var Danger = __webpack_require__(603);
+var DOMLazyTree = __webpack_require__(40);
+var Danger = __webpack_require__(599);
 var ReactDOMComponentTree = __webpack_require__(11);
 var ReactInstrumentation = __webpack_require__(20);
 
@@ -17652,9 +17876,9 @@ module.exports = KeyEscapeUtils;
 var _prodInvariant = __webpack_require__(8);
 
 var ReactPropTypesSecret = __webpack_require__(334);
-var propTypesFactory = __webpack_require__(262);
+var propTypesFactory = __webpack_require__(263);
 
-var React = __webpack_require__(41);
+var React = __webpack_require__(42);
 var PropTypes = propTypesFactory(React.isValidElement);
 
 var invariant = __webpack_require__(5);
@@ -18849,7 +19073,7 @@ var _prodInvariant = __webpack_require__(36);
 var ReactNoopUpdateQueue = __webpack_require__(114);
 
 var canDefineProperty = __webpack_require__(79);
-var emptyObject = __webpack_require__(42);
+var emptyObject = __webpack_require__(43);
 var invariant = __webpack_require__(5);
 var warning = __webpack_require__(7);
 
@@ -25074,17 +25298,45 @@ return tv4; // used by _header.js to globalise.
 
 /***/ }),
 /* 140 */
+/***/ (function(module, exports) {
+
+var g;
+
+// This works in non-strict mode
+g = (function() {
+	return this;
+})();
+
+try {
+	// This works if eval is allowed (see CSP)
+	g = g || Function("return this")() || (1,eval)("this");
+} catch(e) {
+	// This works if the window reference is available
+	if(typeof window === "object")
+		g = window;
+}
+
+// g can still be undefined, but nothing to do about it...
+// We return undefined, instead of nothing here, so it's
+// easier to handle this case. if(!global) { ...}
+
+module.exports = g;
+
+
+/***/ }),
+/* 141 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(process) {Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* WEBPACK VAR INJECTION */(function(process) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "fromKefir", function() { return fromKefir; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "createElement", function() { return createElement$1; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "fromClass", function() { return fromClass; });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_react__ = __webpack_require__(348);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_react___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_react__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_kefir__ = __webpack_require__(57);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_kefir___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_kefir__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_infestines__ = __webpack_require__(43);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "fromKefir", function() { return fromKefir; });
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "fromClass", function() { return fromClass; });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_infestines__ = __webpack_require__(37);
 
 
 
@@ -25097,7 +25349,7 @@ var ERROR = "error";
 var END = "end";
 var STYLE = "style";
 var CHILDREN = "children";
-var KARET_LIFT = "karet-lift";
+var LIFT = "karet-lift";
 var DD_REF = "$$ref";
 
 //
@@ -25111,15 +25363,22 @@ var isObs = function isObs(x) {
 
 //
 
+function doSubscribe(self, props) {
+  self.at = 0;
+  self.doSubscribe(props);
+  self.at = 1;
+}
+
 var LiftedComponent = /*#__PURE__*/__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["k" /* inherit */])(function LiftedComponent(props) {
   Component$1.call(this, props);
+  this.at = 0;
 }, Component$1, {
   componentWillReceiveProps: function componentWillReceiveProps(nextProps) {
     this.componentWillUnmount();
-    this.doSubscribe(nextProps);
+    doSubscribe(this, nextProps);
   },
   componentWillMount: function componentWillMount() {
-    this.doSubscribe(this.props);
+    doSubscribe(this, this.props);
   }
 });
 
@@ -25143,7 +25402,7 @@ var FromKefir = /*#__PURE__*/__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_i
         switch (e.type) {
           case VALUE:
             _this.rendered = e.value || null;
-            _this.forceUpdate();
+            _this.at && _this.forceUpdate();
             break;
           case ERROR:
             throw e.value;
@@ -25156,6 +25415,7 @@ var FromKefir = /*#__PURE__*/__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_i
     } else {
       this.rendered = observable || null;
     }
+    this.at = 1;
   },
   render: function render() {
     return this.rendered;
@@ -25168,18 +25428,99 @@ var fromKefir = function fromKefir(observable) {
 
 //
 
-function forEach(props, extra, fn) {
+function renderChildren(children, self, values) {
+  if (isObs(children)) {
+    return values[self.at++];
+  } else if (__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["n" /* isArray */])(children)) {
+    var newChildren = children;
+    for (var i = 0, n = children.length; i < n; ++i) {
+      var childI = children[i];
+      var newChildI = childI;
+      if (isObs(childI)) {
+        newChildI = values[self.at++];
+      } else if (__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["n" /* isArray */])(childI)) {
+        newChildI = renderChildren(childI, self, values);
+      }
+      if (newChildI !== childI) {
+        if (newChildren === children) newChildren = children.slice(0);
+        newChildren[i] = newChildI;
+      }
+    }
+    return newChildren;
+  } else {
+    return children;
+  }
+}
+
+function renderStyle(style, self, values) {
+  var newStyle = null;
+  for (var i in style) {
+    var styleI = style[i];
+    if (isObs(styleI)) {
+      if (!newStyle) {
+        newStyle = {};
+        for (var j in style) {
+          if (j === i) break;
+          newStyle[j] = style[j];
+        }
+      }
+      newStyle[i] = values[self.at++];
+    } else if (newStyle) {
+      newStyle[i] = styleI;
+    }
+  }
+  return newStyle || style;
+}
+
+function _render(self, values) {
+  var props = self.props;
+
+  var type = null;
+  var newProps = null;
+  var newChildren = null;
+
+  self.at = 0;
+
+  for (var key in props) {
+    var val = props[key];
+    if (CHILDREN === key) {
+      newChildren = renderChildren(val, self, values);
+    } else if ("$$type" === key) {
+      type = props[key];
+    } else if (DD_REF === key) {
+      newProps = newProps || {};
+      newProps.ref = isObs(val) ? values[self.at++] : val;
+    } else if (isObs(val)) {
+      newProps = newProps || {};
+      newProps[key] = values[self.at++];
+    } else if (STYLE === key) {
+      newProps = newProps || {};
+      newProps.style = renderStyle(val, self, values);
+    } else {
+      newProps = newProps || {};
+      newProps[key] = val;
+    }
+  }
+
+  return newChildren instanceof Array ? reactElement.apply(null, [type, newProps].concat(newChildren)) : null !== newChildren ? reactElement(type, newProps, newChildren) : reactElement(type, newProps);
+}
+
+//
+
+function forEachInChildrenArray(children, extra, fn) {
+  for (var i = 0, n = children.length; i < n; ++i) {
+    var childI = children[i];
+    if (isObs(childI)) fn(extra, childI);else if (__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["n" /* isArray */])(childI)) forEachInChildrenArray(childI, extra, fn);
+  }
+}
+
+function forEachInProps(props, extra, fn) {
   for (var key in props) {
     var val = props[key];
     if (isObs(val)) {
       fn(extra, val);
     } else if (CHILDREN === key) {
-      if (__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["n" /* isArray */])(val)) {
-        for (var i = 0, n = val.length; i < n; ++i) {
-          var valI = val[i];
-          if (isObs(valI)) fn(extra, valI);
-        }
-      }
+      if (__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["n" /* isArray */])(val)) forEachInChildrenArray(val, extra, fn);
     } else if (STYLE === key) {
       for (var k in val) {
         var valK = val[k];
@@ -25187,71 +25528,6 @@ function forEach(props, extra, fn) {
       }
     }
   }
-}
-
-function _render(props, values) {
-  var type = null;
-  var newProps = null;
-  var newChildren = null;
-
-  var k = -1;
-
-  for (var key in props) {
-    var val = props[key];
-    if (CHILDREN === key) {
-      if (isObs(val)) {
-        newChildren = values[++k];
-      } else if (__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["n" /* isArray */])(val)) {
-        for (var i = 0, n = val.length; i < n; ++i) {
-          var valI = val[i];
-          if (isObs(valI)) {
-            if (!newChildren) {
-              newChildren = Array(n);
-              for (var j = 0; j < i; ++j) {
-                newChildren[j] = val[j];
-              }
-            }
-            newChildren[i] = values[++k];
-          } else if (newChildren) newChildren[i] = valI;
-        }
-        if (!newChildren) newChildren = val;
-      } else {
-        newChildren = val;
-      }
-    } else if ("$$type" === key) {
-      type = props[key];
-    } else if (DD_REF === key) {
-      newProps = newProps || {};
-      newProps.ref = isObs(val) ? values[++k] : val;
-    } else if (isObs(val)) {
-      newProps = newProps || {};
-      newProps[key] = values[++k];
-    } else if (STYLE === key) {
-      var newStyle = void 0;
-      for (var _i in val) {
-        var _valI = val[_i];
-        if (isObs(_valI)) {
-          if (!newStyle) {
-            newStyle = {};
-            for (var _j in val) {
-              if (_j === _i) break;
-              newStyle[_j] = val[_j];
-            }
-          }
-          newStyle[_i] = values[++k];
-        } else if (newStyle) {
-          newStyle[_i] = _valI;
-        }
-      }
-      newProps = newProps || {};
-      newProps.style = newStyle || val;
-    } else {
-      newProps = newProps || {};
-      newProps[key] = val;
-    }
-  }
-
-  return newChildren instanceof Array ? reactElement.apply(null, [type, newProps].concat(newChildren)) : newChildren ? reactElement(type, newProps, newChildren) : reactElement(type, newProps);
 }
 
 //
@@ -25282,7 +25558,7 @@ function onAny(self, obs) {
           var values = self.values;
           if (values[idx] !== value) {
             values[idx] = value;
-            self.forceUpdate();
+            self.at && self.forceUpdate();
           }
           break;
         }
@@ -25311,16 +25587,16 @@ var FromClass = /*#__PURE__*/__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_i
   componentWillUnmount: function componentWillUnmount() {
     var handlers = this.handlers;
     if (handlers instanceof Function) {
-      forEach(this.props, handlers, offAny1);
+      forEachInProps(this.props, handlers, offAny1);
     } else if (handlers) {
-      forEach(this.props, handlers.reverse(), offAny);
+      forEachInProps(this.props, handlers.reverse(), offAny);
     }
   },
   doSubscribe: function doSubscribe(props) {
     var _this2 = this;
 
     this.values = 0;
-    forEach(props, this, incValues);
+    forEachInProps(props, this, incValues);
     var n = this.values;
 
     switch (n) {
@@ -25330,14 +25606,14 @@ var FromClass = /*#__PURE__*/__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_i
       case 1:
         {
           this.values = this;
-          var handlers = function handlers(e) {
+          forEachInProps(props, this.handlers = function (e) {
             switch (e.type) {
               case VALUE:
                 {
                   var value = e.value;
                   if (_this2.values !== value) {
                     _this2.values = value;
-                    _this2.forceUpdate();
+                    _this2.at && _this2.forceUpdate();
                   }
                   break;
                 }
@@ -25349,32 +25625,38 @@ var FromClass = /*#__PURE__*/__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_i
                   _this2.handlers = null;
                 }
             }
-          };
-          this.handlers = handlers;
-          forEach(props, handlers, onAny1);
+          }, onAny1);
           break;
         }
       default:
         this.values = Array(n).fill(this);
         this.handlers = [];
-        forEach(props, this, onAny);
+        forEachInProps(props, this, onAny);
     }
   },
   render: function render() {
     if (this.handlers instanceof Function) {
       var value = this.values;
       if (value === this) return null;
-      return _render(this.props, [value]);
+      return _render(this, [value]);
     } else {
       var values = this.values;
       for (var i = 0, n = values.length; i < n; ++i) {
         if (values[i] === this) return null;
-      }return _render(this.props, values);
+      }return _render(this, values);
     }
   }
 });
 
 //
+
+function hasObsInChildrenArray(i, children) {
+  for (var n = children.length; i < n; ++i) {
+    var child = children[i];
+    if (isObs(child) || __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["n" /* isArray */])(child) && hasObsInChildrenArray(0, child)) return true;
+  }
+  return false;
+}
 
 function hasObsInProps(props) {
   for (var key in props) {
@@ -25382,9 +25664,7 @@ function hasObsInProps(props) {
     if (isObs(val)) {
       return true;
     } else if (CHILDREN === key) {
-      if (__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["n" /* isArray */])(val)) for (var i = 0, n = val.length; i < n; ++i) {
-        if (isObs(val[i])) return true;
-      }
+      if (__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["n" /* isArray */])(val) && hasObsInChildrenArray(0, val)) return true;
     } else if (STYLE === key) {
       for (var k in val) {
         if (isObs(val[k])) return true;
@@ -25394,31 +25674,15 @@ function hasObsInProps(props) {
   return false;
 }
 
-function hasObsInArgs(args) {
-  for (var i = 2, n = args.length; i < n; ++i) {
-    var arg = args[i];
-    if (__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["n" /* isArray */])(arg)) {
-      for (var j = 0, m = arg.length; j < m; ++j) {
-        if (isObs(arg[j])) return true;
-      }
-    } else if (isObs(arg)) {
-      return true;
-    }
-  }
-  return hasObsInProps(args[1]);
-}
+//
 
 function filterProps(type, props) {
   var newProps = { "$$type": type };
   for (var key in props) {
     var val = props[key];
-    if ("ref" === key) newProps[DD_REF] = val;else if (KARET_LIFT !== key) newProps[key] = val;
+    if ("ref" === key) newProps[DD_REF] = val;else if (LIFT !== key) newProps[key] = val;
   }
   return newProps;
-}
-
-function hasLift(props) {
-  return props && props[KARET_LIFT] === true;
 }
 
 function createElement$1() {
@@ -25427,22 +25691,24 @@ function createElement$1() {
   }
 
   var type = args[0];
-  var props = args[1];
-  if (__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["p" /* isString */])(type) || hasLift(props)) {
-    if (hasObsInArgs(args)) {
+  var props = args[1] || __WEBPACK_IMPORTED_MODULE_2_infestines__["v" /* object0 */];
+  if (__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["p" /* isString */])(type) || props[LIFT]) {
+    if (hasObsInChildrenArray(2, args) || hasObsInProps(props)) {
       args[1] = filterProps(type, props);
       args[0] = FromClass;
-    } else if (hasLift(props)) {
-      args[1] = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["g" /* dissocPartialU */])(KARET_LIFT, props) || __WEBPACK_IMPORTED_MODULE_2_infestines__["v" /* object0 */];
+    } else if (props[LIFT]) {
+      args[1] = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["g" /* dissocPartialU */])(LIFT, props) || __WEBPACK_IMPORTED_MODULE_2_infestines__["v" /* object0 */];
     }
   }
   return reactElement.apply(undefined, args);
 }
 
-var karet = process.env.NODE_ENV === "production" ? __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["h" /* assocPartialU */])("createElement", createElement$1, __WEBPACK_IMPORTED_MODULE_0_react__) : Object.defineProperty(__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["h" /* assocPartialU */])("createElement", createElement$1, __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["g" /* dissocPartialU */])("PropTypes", __WEBPACK_IMPORTED_MODULE_0_react__)), "PropTypes", {
-  get: function get() {
-    return __WEBPACK_IMPORTED_MODULE_0_react__["PropTypes"];
-  }
+var karet = process.env.NODE_ENV === "production" ? /*#__PURE__*/__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["h" /* assocPartialU */])("createElement", createElement$1, __WEBPACK_IMPORTED_MODULE_0_react__) : /*#__PURE__*/Object.defineProperty(__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["h" /* assocPartialU */])("createElement", createElement$1, __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_2_infestines__["g" /* dissocPartialU */])("PropTypes", __WEBPACK_IMPORTED_MODULE_0_react__)), "PropTypes", {
+  get: function (React$$1) {
+    return function () {
+      return React$$1.PropTypes;
+    };
+  }(__WEBPACK_IMPORTED_MODULE_0_react__)
 });
 
 //
@@ -25458,22 +25724,22 @@ var fromClass = function fromClass(Class) {
 /* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(2)))
 
 /***/ }),
-/* 141 */
+/* 142 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* WEBPACK VAR INJECTION */(function(process) {Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_infestines__ = __webpack_require__(43);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_kefir__ = __webpack_require__(57);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_kefir___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_kefir__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_partial_lenses__ = __webpack_require__(81);
-/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "holding", function() { return holding; });
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* WEBPACK VAR INJECTION */(function(process) {/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "holding", function() { return holding; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "AbstractMutable", function() { return AbstractMutable; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "MutableWithSource", function() { return MutableWithSource; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "LensedAtom", function() { return LensedAtom; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Atom", function() { return Atom; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Join", function() { return Join; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Molecule", function() { return Molecule; });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_infestines__ = __webpack_require__(37);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_kefir__ = __webpack_require__(57);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_kefir___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1_kefir__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_partial_lenses__ = __webpack_require__(80);
 
 
 
@@ -25780,7 +26046,7 @@ function atom() {
 /* WEBPACK VAR INJECTION */}.call(__webpack_exports__, __webpack_require__(2)))
 
 /***/ }),
-/* 142 */
+/* 143 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -25801,7 +26067,7 @@ function atom() {
  */
 
 var _ = __webpack_require__(349);
-var FullSignalK = __webpack_require__(686);
+var FullSignalK = __webpack_require__(682);
 
   var subSchemas = {
     'notifications': __webpack_require__(124),
@@ -25843,7 +26109,7 @@ function getTv4() {
   tv4.addSchema('https://signalk.github.io/specification/schemas/external/geojson/geometry.json', externalGeometry);
   tv4.addSchema('http://json-schema.org/geojson/geometry.json', externalGeometry);
 
-  tv4.addFormat(__webpack_require__(689))
+  tv4.addFormat(__webpack_require__(685))
 
   return tv4;
 }
@@ -25875,7 +26141,7 @@ function validateDelta(delta, ignoreContext) {
 
 function validateWithSchema(msg, schemaName) {
   var tv4 = __webpack_require__(139);
-  var schema = __webpack_require__(684)("./" + schemaName);
+  var schema = __webpack_require__(680)("./" + schemaName);
   var valid = tv4.validateResult(msg,schema, true, true);
   return valid;
 }
@@ -26048,11 +26314,11 @@ module.exports.validateVessel = function(vesselData) {
 module.exports.fillIdentity = fillIdentity;
 module.exports.validateDelta = validateDelta;
 module.exports.chaiModule = chaiAsPromised;
-module.exports.i18n = __webpack_require__(682);
+module.exports.i18n = __webpack_require__(678);
 module.exports.getTv4 = getTv4;
 module.exports.subSchemas = subSchemas;
 module.exports.units = __webpack_require__(55).definitions.units;
-module.exports.metadata = __webpack_require__(683);
+module.exports.metadata = __webpack_require__(679);
 module.exports.FullSignalK = FullSignalK;
 module.exports.fakeMmsiId = "urn:mrn:imo:mmsi:230099999";
 module.exports.getSourceId = getSourceId;
@@ -26060,7 +26326,7 @@ module.exports.keyForSourceIdPath = keyForSourceIdPath;
 
 
 /***/ }),
-/* 143 */
+/* 144 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26150,7 +26416,7 @@ module.exports = EventListener;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 144 */
+/* 145 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26182,7 +26448,7 @@ function focusNode(node) {
 module.exports = focusNode;
 
 /***/ }),
-/* 145 */
+/* 146 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -26226,13 +26492,13 @@ function getActiveElement(doc) /*?DOMElement*/{
 module.exports = getActiveElement;
 
 /***/ }),
-/* 146 */
+/* 147 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__.p + "f4769f9bdb7466be65088239c12046d1.eot";
 
 /***/ }),
-/* 147 */
+/* 148 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26310,7 +26576,7 @@ return af;
 
 
 /***/ }),
-/* 148 */
+/* 149 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26374,7 +26640,7 @@ return arDz;
 
 
 /***/ }),
-/* 149 */
+/* 150 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26438,7 +26704,7 @@ return arKw;
 
 
 /***/ }),
-/* 150 */
+/* 151 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26569,7 +26835,7 @@ return arLy;
 
 
 /***/ }),
-/* 151 */
+/* 152 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26634,7 +26900,7 @@ return arMa;
 
 
 /***/ }),
-/* 152 */
+/* 153 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26744,7 +27010,7 @@ return arSa;
 
 
 /***/ }),
-/* 153 */
+/* 154 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26808,7 +27074,7 @@ return arTn;
 
 
 /***/ }),
-/* 154 */
+/* 155 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -26955,7 +27221,7 @@ return ar;
 
 
 /***/ }),
-/* 155 */
+/* 156 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -27065,7 +27331,7 @@ return az;
 
 
 /***/ }),
-/* 156 */
+/* 157 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -27204,7 +27470,7 @@ return be;
 
 
 /***/ }),
-/* 157 */
+/* 158 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -27299,7 +27565,7 @@ return bg;
 
 
 /***/ }),
-/* 158 */
+/* 159 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -27423,7 +27689,7 @@ return bn;
 
 
 /***/ }),
-/* 159 */
+/* 160 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -27547,7 +27813,7 @@ return bo;
 
 
 /***/ }),
-/* 160 */
+/* 161 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -27660,7 +27926,7 @@ return br;
 
 
 /***/ }),
-/* 161 */
+/* 162 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -27808,7 +28074,7 @@ return bs;
 
 
 /***/ }),
-/* 162 */
+/* 163 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -27901,7 +28167,7 @@ return ca;
 
 
 /***/ }),
-/* 163 */
+/* 164 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -28078,7 +28344,7 @@ return cs;
 
 
 /***/ }),
-/* 164 */
+/* 165 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -28146,7 +28412,7 @@ return cv;
 
 
 /***/ }),
-/* 165 */
+/* 166 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -28232,7 +28498,7 @@ return cy;
 
 
 /***/ }),
-/* 166 */
+/* 167 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -28297,7 +28563,7 @@ return da;
 
 
 /***/ }),
-/* 167 */
+/* 168 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -28381,7 +28647,7 @@ return deAt;
 
 
 /***/ }),
-/* 168 */
+/* 169 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -28464,7 +28730,7 @@ return deCh;
 
 
 /***/ }),
-/* 169 */
+/* 170 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -28547,7 +28813,7 @@ return de;
 
 
 /***/ }),
-/* 170 */
+/* 171 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -28652,7 +28918,7 @@ return dv;
 
 
 /***/ }),
-/* 171 */
+/* 172 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -28757,7 +29023,7 @@ return el;
 
 
 /***/ }),
-/* 172 */
+/* 173 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -28829,7 +29095,7 @@ return enAu;
 
 
 /***/ }),
-/* 173 */
+/* 174 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -28897,7 +29163,7 @@ return enCa;
 
 
 /***/ }),
-/* 174 */
+/* 175 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -28969,7 +29235,7 @@ return enGb;
 
 
 /***/ }),
-/* 175 */
+/* 176 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -29041,7 +29307,7 @@ return enIe;
 
 
 /***/ }),
-/* 176 */
+/* 177 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -29113,7 +29379,7 @@ return enNz;
 
 
 /***/ }),
-/* 177 */
+/* 178 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -29191,7 +29457,7 @@ return eo;
 
 
 /***/ }),
-/* 178 */
+/* 179 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -29278,7 +29544,7 @@ return esDo;
 
 
 /***/ }),
-/* 179 */
+/* 180 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -29366,7 +29632,7 @@ return es;
 
 
 /***/ }),
-/* 180 */
+/* 181 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -29451,7 +29717,7 @@ return et;
 
 
 /***/ }),
-/* 181 */
+/* 182 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -29522,7 +29788,7 @@ return eu;
 
 
 /***/ }),
-/* 182 */
+/* 183 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -29634,7 +29900,7 @@ return fa;
 
 
 /***/ }),
-/* 183 */
+/* 184 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -29746,7 +30012,7 @@ return fi;
 
 
 /***/ }),
-/* 184 */
+/* 185 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -29811,7 +30077,7 @@ return fo;
 
 
 /***/ }),
-/* 185 */
+/* 186 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -29890,7 +30156,7 @@ return frCa;
 
 
 /***/ }),
-/* 186 */
+/* 187 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -29973,7 +30239,7 @@ return frCh;
 
 
 /***/ }),
-/* 187 */
+/* 188 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -30061,7 +30327,7 @@ return fr;
 
 
 /***/ }),
-/* 188 */
+/* 189 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -30141,7 +30407,7 @@ return fy;
 
 
 /***/ }),
-/* 189 */
+/* 190 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -30222,7 +30488,7 @@ return gd;
 
 
 /***/ }),
-/* 190 */
+/* 191 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -30304,7 +30570,7 @@ return gl;
 
 
 /***/ }),
-/* 191 */
+/* 192 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -30431,7 +30697,7 @@ return gomLatn;
 
 
 /***/ }),
-/* 192 */
+/* 193 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -30535,7 +30801,7 @@ return he;
 
 
 /***/ }),
-/* 193 */
+/* 194 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -30664,7 +30930,7 @@ return hi;
 
 
 /***/ }),
-/* 194 */
+/* 195 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -30814,7 +31080,7 @@ return hr;
 
 
 /***/ }),
-/* 195 */
+/* 196 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -30928,7 +31194,7 @@ return hu;
 
 
 /***/ }),
-/* 196 */
+/* 197 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -31028,7 +31294,7 @@ return hyAm;
 
 
 /***/ }),
-/* 197 */
+/* 198 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -31116,7 +31382,7 @@ return id;
 
 
 /***/ }),
-/* 198 */
+/* 199 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -31248,7 +31514,7 @@ return is;
 
 
 /***/ }),
-/* 199 */
+/* 200 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -31323,7 +31589,7 @@ return it;
 
 
 /***/ }),
-/* 200 */
+/* 201 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -31408,7 +31674,7 @@ return ja;
 
 
 /***/ }),
-/* 201 */
+/* 202 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -31496,7 +31762,7 @@ return jv;
 
 
 /***/ }),
-/* 202 */
+/* 203 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -31590,7 +31856,7 @@ return ka;
 
 
 /***/ }),
-/* 203 */
+/* 204 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -31682,7 +31948,7 @@ return kk;
 
 
 /***/ }),
-/* 204 */
+/* 205 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -31745,7 +32011,7 @@ return km;
 
 
 /***/ }),
-/* 205 */
+/* 206 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -31876,7 +32142,7 @@ return kn;
 
 
 /***/ }),
-/* 206 */
+/* 207 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -31950,7 +32216,7 @@ return ko;
 
 
 /***/ }),
-/* 207 */
+/* 208 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -32043,7 +32309,7 @@ return ky;
 
 
 /***/ }),
-/* 208 */
+/* 209 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -32185,7 +32451,7 @@ return lb;
 
 
 /***/ }),
-/* 209 */
+/* 210 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -32260,7 +32526,7 @@ return lo;
 
 
 /***/ }),
-/* 210 */
+/* 211 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -32382,7 +32648,7 @@ return lt;
 
 
 /***/ }),
-/* 211 */
+/* 212 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -32484,7 +32750,7 @@ return lv;
 
 
 /***/ }),
-/* 212 */
+/* 213 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -32600,7 +32866,7 @@ return me;
 
 
 /***/ }),
-/* 213 */
+/* 214 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -32669,7 +32935,7 @@ return mi;
 
 
 /***/ }),
-/* 214 */
+/* 215 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -32764,7 +33030,7 @@ return mk;
 
 
 /***/ }),
-/* 215 */
+/* 216 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -32850,7 +33116,7 @@ return ml;
 
 
 /***/ }),
-/* 216 */
+/* 217 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -33014,7 +33280,7 @@ return mr;
 
 
 /***/ }),
-/* 217 */
+/* 218 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -33102,7 +33368,7 @@ return msMy;
 
 
 /***/ }),
-/* 218 */
+/* 219 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -33189,7 +33455,7 @@ return ms;
 
 
 /***/ }),
-/* 219 */
+/* 220 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -33290,7 +33556,7 @@ return my;
 
 
 /***/ }),
-/* 220 */
+/* 221 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -33358,7 +33624,7 @@ return nb;
 
 
 /***/ }),
-/* 221 */
+/* 222 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -33486,7 +33752,7 @@ return ne;
 
 
 /***/ }),
-/* 222 */
+/* 223 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -33579,7 +33845,7 @@ return nlBe;
 
 
 /***/ }),
-/* 223 */
+/* 224 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -33672,7 +33938,7 @@ return nl;
 
 
 /***/ }),
-/* 224 */
+/* 225 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -33737,7 +34003,7 @@ return nn;
 
 
 /***/ }),
-/* 225 */
+/* 226 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -33866,7 +34132,7 @@ return paIn;
 
 
 /***/ }),
-/* 226 */
+/* 227 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -33978,7 +34244,7 @@ return pl;
 
 
 /***/ }),
-/* 227 */
+/* 228 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -34044,7 +34310,7 @@ return ptBr;
 
 
 /***/ }),
-/* 228 */
+/* 229 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -34114,7 +34380,7 @@ return pt;
 
 
 /***/ }),
-/* 229 */
+/* 230 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -34194,7 +34460,7 @@ return ro;
 
 
 /***/ }),
-/* 230 */
+/* 231 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -34382,7 +34648,7 @@ return ru;
 
 
 /***/ }),
-/* 231 */
+/* 232 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -34485,7 +34751,7 @@ return sd;
 
 
 /***/ }),
-/* 232 */
+/* 233 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -34551,7 +34817,7 @@ return se;
 
 
 /***/ }),
-/* 233 */
+/* 234 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -34627,7 +34893,7 @@ return si;
 
 
 /***/ }),
-/* 234 */
+/* 235 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -34782,7 +35048,7 @@ return sk;
 
 
 /***/ }),
-/* 235 */
+/* 236 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -34949,7 +35215,7 @@ return sl;
 
 
 /***/ }),
-/* 236 */
+/* 237 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -35024,7 +35290,7 @@ return sq;
 
 
 /***/ }),
-/* 237 */
+/* 238 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -35139,7 +35405,7 @@ return srCyrl;
 
 
 /***/ }),
-/* 238 */
+/* 239 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -35254,7 +35520,7 @@ return sr;
 
 
 /***/ }),
-/* 239 */
+/* 240 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -35348,7 +35614,7 @@ return ss;
 
 
 /***/ }),
-/* 240 */
+/* 241 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -35422,7 +35688,7 @@ return sv;
 
 
 /***/ }),
-/* 241 */
+/* 242 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -35486,7 +35752,7 @@ return sw;
 
 
 /***/ }),
-/* 242 */
+/* 243 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -35621,7 +35887,7 @@ return ta;
 
 
 /***/ }),
-/* 243 */
+/* 244 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -35715,7 +35981,7 @@ return te;
 
 
 /***/ }),
-/* 244 */
+/* 245 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -35788,7 +36054,7 @@ return tet;
 
 
 /***/ }),
-/* 245 */
+/* 246 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -35860,7 +36126,7 @@ return th;
 
 
 /***/ }),
-/* 246 */
+/* 247 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -35927,7 +36193,7 @@ return tlPh;
 
 
 /***/ }),
-/* 247 */
+/* 248 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -36052,7 +36318,7 @@ return tlh;
 
 
 /***/ }),
-/* 248 */
+/* 249 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -36147,7 +36413,7 @@ return tr;
 
 
 /***/ }),
-/* 249 */
+/* 250 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -36243,7 +36509,7 @@ return tzl;
 
 
 /***/ }),
-/* 250 */
+/* 251 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -36306,7 +36572,7 @@ return tzmLatn;
 
 
 /***/ }),
-/* 251 */
+/* 252 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -36369,7 +36635,7 @@ return tzm;
 
 
 /***/ }),
-/* 252 */
+/* 253 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -36525,7 +36791,7 @@ return uk;
 
 
 /***/ }),
-/* 253 */
+/* 254 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -36629,7 +36895,7 @@ return ur;
 
 
 /***/ }),
-/* 254 */
+/* 255 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -36692,7 +36958,7 @@ return uzLatn;
 
 
 /***/ }),
-/* 255 */
+/* 256 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -36755,7 +37021,7 @@ return uz;
 
 
 /***/ }),
-/* 256 */
+/* 257 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -36839,7 +37105,7 @@ return vi;
 
 
 /***/ }),
-/* 257 */
+/* 258 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -36912,7 +37178,7 @@ return xPseudo;
 
 
 /***/ }),
-/* 258 */
+/* 259 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -36977,7 +37243,7 @@ return yo;
 
 
 /***/ }),
-/* 259 */
+/* 260 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -37093,7 +37359,7 @@ return zhCn;
 
 
 /***/ }),
-/* 260 */
+/* 261 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -37203,7 +37469,7 @@ return zhHk;
 
 
 /***/ }),
-/* 261 */
+/* 262 */
 /***/ (function(module, exports, __webpack_require__) {
 
 //! moment.js locale configuration
@@ -37312,7 +37578,7 @@ return zhTw;
 
 
 /***/ }),
-/* 262 */
+/* 263 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -37331,7 +37597,7 @@ return zhTw;
 // Therefore we re-export development-only version with all the PropTypes checks here.
 // However if one is migrating to the `prop-types` npm library, they will go through the
 // `index.js` entry point, and it will branch depending on the environment.
-var factory = __webpack_require__(263);
+var factory = __webpack_require__(264);
 module.exports = function(isValidElement) {
   // It is still allowed in 15.5.
   var throwOnDirectAccess = false;
@@ -37340,7 +37606,7 @@ module.exports = function(isValidElement) {
 
 
 /***/ }),
-/* 263 */
+/* 264 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -37359,8 +37625,8 @@ var emptyFunction = __webpack_require__(18);
 var invariant = __webpack_require__(5);
 var warning = __webpack_require__(7);
 
-var ReactPropTypesSecret = __webpack_require__(264);
-var checkPropTypes = __webpack_require__(401);
+var ReactPropTypesSecret = __webpack_require__(82);
+var checkPropTypes = __webpack_require__(397);
 
 module.exports = function(isValidElement, throwOnDirectAccess) {
   /* global Symbol */
@@ -37666,6 +37932,20 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
       return emptyFunction.thatReturnsNull;
     }
 
+    for (var i = 0; i < arrayOfTypeCheckers.length; i++) {
+      var checker = arrayOfTypeCheckers[i];
+      if (typeof checker !== 'function') {
+        warning(
+          false,
+          'Invalid argument supplid to oneOfType. Expected an array of check functions, but ' +
+          'received %s at index %s.',
+          getPostfixForTypeWarning(checker),
+          i
+        );
+        return emptyFunction.thatReturnsNull;
+      }
+    }
+
     function validate(props, propName, componentName, location, propFullName) {
       for (var i = 0; i < arrayOfTypeCheckers.length; i++) {
         var checker = arrayOfTypeCheckers[i];
@@ -37798,6 +38078,9 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
   // This handles more types than `getPropType`. Only used for error messages.
   // See `createPrimitiveTypeChecker`.
   function getPreciseType(propValue) {
+    if (typeof propValue === 'undefined' || propValue === null) {
+      return '' + propValue;
+    }
     var propType = getPropType(propValue);
     if (propType === 'object') {
       if (propValue instanceof Date) {
@@ -37807,6 +38090,23 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
       }
     }
     return propType;
+  }
+
+  // Returns a string that is postfixed to a warning about an invalid type.
+  // For example, "undefined" or "of type array"
+  function getPostfixForTypeWarning(value) {
+    var type = getPreciseType(value);
+    switch (type) {
+      case 'array':
+      case 'object':
+        return 'an ' + type;
+      case 'boolean':
+      case 'date':
+      case 'regexp':
+        return 'a ' + type;
+      default:
+        return type;
+    }
   }
 
   // Returns class name of the object, if any.
@@ -37826,269 +38126,248 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 264 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/**
- * Copyright 2013-present, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
- */
-
-
-
-var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
-
-module.exports = ReactPropTypesSecret;
-
-
-/***/ }),
 /* 265 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = {
-  F: __webpack_require__(404),
-  T: __webpack_require__(405),
-  __: __webpack_require__(406),
+  F: __webpack_require__(400),
+  T: __webpack_require__(401),
+  __: __webpack_require__(402),
   add: __webpack_require__(58),
-  addIndex: __webpack_require__(407),
+  addIndex: __webpack_require__(403),
   adjust: __webpack_require__(266),
-  all: __webpack_require__(408),
-  allPass: __webpack_require__(409),
-  always: __webpack_require__(37),
+  all: __webpack_require__(404),
+  allPass: __webpack_require__(405),
+  always: __webpack_require__(38),
   and: __webpack_require__(267),
   any: __webpack_require__(268),
-  anyPass: __webpack_require__(410),
+  anyPass: __webpack_require__(406),
   ap: __webpack_require__(83),
-  aperture: __webpack_require__(411),
-  append: __webpack_require__(412),
+  aperture: __webpack_require__(407),
+  append: __webpack_require__(408),
   apply: __webpack_require__(269),
-  applySpec: __webpack_require__(413),
-  ascend: __webpack_require__(414),
+  applySpec: __webpack_require__(409),
+  ascend: __webpack_require__(410),
   assoc: __webpack_require__(59),
   assocPath: __webpack_require__(270),
-  binary: __webpack_require__(415),
+  binary: __webpack_require__(411),
   bind: __webpack_require__(271),
-  both: __webpack_require__(416),
-  call: __webpack_require__(417),
+  both: __webpack_require__(412),
+  call: __webpack_require__(413),
   chain: __webpack_require__(84),
-  clamp: __webpack_require__(418),
-  clone: __webpack_require__(419),
-  comparator: __webpack_require__(420),
-  complement: __webpack_require__(421),
+  clamp: __webpack_require__(414),
+  clone: __webpack_require__(415),
+  comparator: __webpack_require__(416),
+  complement: __webpack_require__(417),
   compose: __webpack_require__(85),
   composeK: __webpack_require__(272),
-  composeP: __webpack_require__(422),
+  composeP: __webpack_require__(418),
   concat: __webpack_require__(86),
-  cond: __webpack_require__(423),
-  construct: __webpack_require__(424),
+  cond: __webpack_require__(419),
+  construct: __webpack_require__(420),
   constructN: __webpack_require__(273),
-  contains: __webpack_require__(425),
+  contains: __webpack_require__(421),
   converge: __webpack_require__(274),
-  countBy: __webpack_require__(426),
+  countBy: __webpack_require__(422),
   curry: __webpack_require__(60),
   curryN: __webpack_require__(14),
-  dec: __webpack_require__(427),
-  descend: __webpack_require__(428),
+  dec: __webpack_require__(423),
+  descend: __webpack_require__(424),
   defaultTo: __webpack_require__(275),
   difference: __webpack_require__(276),
   differenceWith: __webpack_require__(277),
   dissoc: __webpack_require__(278),
-  dissocPath: __webpack_require__(429),
-  divide: __webpack_require__(430),
+  dissocPath: __webpack_require__(425),
+  divide: __webpack_require__(426),
   drop: __webpack_require__(279),
-  dropLast: __webpack_require__(431),
-  dropLastWhile: __webpack_require__(432),
-  dropRepeats: __webpack_require__(433),
+  dropLast: __webpack_require__(427),
+  dropLastWhile: __webpack_require__(428),
+  dropRepeats: __webpack_require__(429),
   dropRepeatsWith: __webpack_require__(280),
-  dropWhile: __webpack_require__(434),
-  either: __webpack_require__(435),
+  dropWhile: __webpack_require__(430),
+  either: __webpack_require__(431),
   empty: __webpack_require__(281),
-  eqBy: __webpack_require__(436),
-  eqProps: __webpack_require__(437),
+  eqBy: __webpack_require__(432),
+  eqProps: __webpack_require__(433),
   equals: __webpack_require__(22),
-  evolve: __webpack_require__(438),
+  evolve: __webpack_require__(434),
   filter: __webpack_require__(87),
-  find: __webpack_require__(439),
-  findIndex: __webpack_require__(440),
-  findLast: __webpack_require__(441),
-  findLastIndex: __webpack_require__(442),
-  flatten: __webpack_require__(443),
+  find: __webpack_require__(435),
+  findIndex: __webpack_require__(436),
+  findLast: __webpack_require__(437),
+  findLastIndex: __webpack_require__(438),
+  flatten: __webpack_require__(439),
   flip: __webpack_require__(61),
-  forEach: __webpack_require__(444),
-  forEachObjIndexed: __webpack_require__(445),
-  fromPairs: __webpack_require__(446),
-  groupBy: __webpack_require__(447),
-  groupWith: __webpack_require__(448),
-  gt: __webpack_require__(449),
-  gte: __webpack_require__(450),
-  has: __webpack_require__(451),
-  hasIn: __webpack_require__(452),
-  head: __webpack_require__(453),
+  forEach: __webpack_require__(440),
+  forEachObjIndexed: __webpack_require__(441),
+  fromPairs: __webpack_require__(442),
+  groupBy: __webpack_require__(443),
+  groupWith: __webpack_require__(444),
+  gt: __webpack_require__(445),
+  gte: __webpack_require__(446),
+  has: __webpack_require__(447),
+  hasIn: __webpack_require__(448),
+  head: __webpack_require__(449),
   identical: __webpack_require__(282),
   identity: __webpack_require__(88),
-  ifElse: __webpack_require__(454),
-  inc: __webpack_require__(455),
-  indexBy: __webpack_require__(456),
-  indexOf: __webpack_require__(457),
-  init: __webpack_require__(458),
-  insert: __webpack_require__(459),
-  insertAll: __webpack_require__(460),
-  intersection: __webpack_require__(495),
-  intersectionWith: __webpack_require__(496),
-  intersperse: __webpack_require__(497),
-  into: __webpack_require__(498),
-  invert: __webpack_require__(499),
-  invertObj: __webpack_require__(500),
+  ifElse: __webpack_require__(450),
+  inc: __webpack_require__(451),
+  indexBy: __webpack_require__(452),
+  indexOf: __webpack_require__(453),
+  init: __webpack_require__(454),
+  insert: __webpack_require__(455),
+  insertAll: __webpack_require__(456),
+  intersection: __webpack_require__(491),
+  intersectionWith: __webpack_require__(492),
+  intersperse: __webpack_require__(493),
+  into: __webpack_require__(494),
+  invert: __webpack_require__(495),
+  invertObj: __webpack_require__(496),
   invoker: __webpack_require__(45),
   is: __webpack_require__(297),
   isArrayLike: __webpack_require__(46),
-  isEmpty: __webpack_require__(501),
-  isNil: __webpack_require__(502),
-  join: __webpack_require__(503),
+  isEmpty: __webpack_require__(497),
+  isNil: __webpack_require__(498),
+  join: __webpack_require__(499),
   juxt: __webpack_require__(298),
   keys: __webpack_require__(24),
-  keysIn: __webpack_require__(504),
+  keysIn: __webpack_require__(500),
   last: __webpack_require__(299),
-  lastIndexOf: __webpack_require__(505),
+  lastIndexOf: __webpack_require__(501),
   length: __webpack_require__(300),
   lens: __webpack_require__(67),
-  lensIndex: __webpack_require__(506),
-  lensPath: __webpack_require__(507),
-  lensProp: __webpack_require__(508),
+  lensIndex: __webpack_require__(502),
+  lensPath: __webpack_require__(503),
+  lensProp: __webpack_require__(504),
   lift: __webpack_require__(68),
   liftN: __webpack_require__(301),
-  lt: __webpack_require__(509),
-  lte: __webpack_require__(510),
+  lt: __webpack_require__(505),
+  lte: __webpack_require__(506),
   map: __webpack_require__(16),
-  mapAccum: __webpack_require__(511),
-  mapAccumRight: __webpack_require__(512),
-  mapObjIndexed: __webpack_require__(513),
-  match: __webpack_require__(514),
-  mathMod: __webpack_require__(515),
-  max: __webpack_require__(38),
-  maxBy: __webpack_require__(516),
+  mapAccum: __webpack_require__(507),
+  mapAccumRight: __webpack_require__(508),
+  mapObjIndexed: __webpack_require__(509),
+  match: __webpack_require__(510),
+  mathMod: __webpack_require__(511),
+  max: __webpack_require__(39),
+  maxBy: __webpack_require__(512),
   mean: __webpack_require__(302),
-  median: __webpack_require__(517),
-  memoize: __webpack_require__(518),
-  merge: __webpack_require__(519),
-  mergeAll: __webpack_require__(520),
-  mergeWith: __webpack_require__(521),
+  median: __webpack_require__(513),
+  memoize: __webpack_require__(514),
+  merge: __webpack_require__(515),
+  mergeAll: __webpack_require__(516),
+  mergeWith: __webpack_require__(517),
   mergeWithKey: __webpack_require__(303),
-  min: __webpack_require__(522),
-  minBy: __webpack_require__(523),
-  modulo: __webpack_require__(524),
+  min: __webpack_require__(518),
+  minBy: __webpack_require__(519),
+  modulo: __webpack_require__(520),
   multiply: __webpack_require__(304),
   nAry: __webpack_require__(69),
-  negate: __webpack_require__(525),
-  none: __webpack_require__(526),
+  negate: __webpack_require__(521),
+  none: __webpack_require__(522),
   not: __webpack_require__(305),
   nth: __webpack_require__(47),
-  nthArg: __webpack_require__(527),
+  nthArg: __webpack_require__(523),
   objOf: __webpack_require__(306),
-  of: __webpack_require__(528),
-  omit: __webpack_require__(529),
-  once: __webpack_require__(530),
+  of: __webpack_require__(524),
+  omit: __webpack_require__(525),
+  once: __webpack_require__(526),
   or: __webpack_require__(307),
   over: __webpack_require__(308),
-  pair: __webpack_require__(531),
-  partial: __webpack_require__(532),
-  partialRight: __webpack_require__(533),
-  partition: __webpack_require__(534),
+  pair: __webpack_require__(527),
+  partial: __webpack_require__(528),
+  partialRight: __webpack_require__(529),
+  partition: __webpack_require__(530),
   path: __webpack_require__(48),
-  pathEq: __webpack_require__(535),
-  pathOr: __webpack_require__(536),
-  pathSatisfies: __webpack_require__(537),
-  pick: __webpack_require__(538),
+  pathEq: __webpack_require__(531),
+  pathOr: __webpack_require__(532),
+  pathSatisfies: __webpack_require__(533),
+  pick: __webpack_require__(534),
   pickAll: __webpack_require__(309),
-  pickBy: __webpack_require__(539),
+  pickBy: __webpack_require__(535),
   pipe: __webpack_require__(310),
-  pipeK: __webpack_require__(540),
+  pipeK: __webpack_require__(536),
   pipeP: __webpack_require__(311),
   pluck: __webpack_require__(49),
   prepend: __webpack_require__(312),
-  product: __webpack_require__(541),
-  project: __webpack_require__(542),
+  product: __webpack_require__(537),
+  project: __webpack_require__(538),
   prop: __webpack_require__(93),
-  propEq: __webpack_require__(543),
-  propIs: __webpack_require__(544),
-  propOr: __webpack_require__(545),
-  propSatisfies: __webpack_require__(546),
-  props: __webpack_require__(547),
-  range: __webpack_require__(548),
+  propEq: __webpack_require__(539),
+  propIs: __webpack_require__(540),
+  propOr: __webpack_require__(541),
+  propSatisfies: __webpack_require__(542),
+  props: __webpack_require__(543),
+  range: __webpack_require__(544),
   reduce: __webpack_require__(25),
   reduceBy: __webpack_require__(70),
   reduceRight: __webpack_require__(313),
-  reduceWhile: __webpack_require__(549),
-  reduced: __webpack_require__(550),
+  reduceWhile: __webpack_require__(545),
+  reduced: __webpack_require__(546),
   reject: __webpack_require__(71),
-  remove: __webpack_require__(551),
-  repeat: __webpack_require__(552),
-  replace: __webpack_require__(553),
+  remove: __webpack_require__(547),
+  repeat: __webpack_require__(548),
+  replace: __webpack_require__(549),
   reverse: __webpack_require__(72),
-  scan: __webpack_require__(554),
+  scan: __webpack_require__(550),
   sequence: __webpack_require__(314),
-  set: __webpack_require__(555),
+  set: __webpack_require__(551),
   slice: __webpack_require__(33),
-  sort: __webpack_require__(556),
-  sortBy: __webpack_require__(557),
-  sortWith: __webpack_require__(558),
-  split: __webpack_require__(559),
-  splitAt: __webpack_require__(560),
-  splitEvery: __webpack_require__(561),
-  splitWhen: __webpack_require__(562),
-  subtract: __webpack_require__(563),
+  sort: __webpack_require__(552),
+  sortBy: __webpack_require__(553),
+  sortWith: __webpack_require__(554),
+  split: __webpack_require__(555),
+  splitAt: __webpack_require__(556),
+  splitEvery: __webpack_require__(557),
+  splitWhen: __webpack_require__(558),
+  subtract: __webpack_require__(559),
   sum: __webpack_require__(315),
-  symmetricDifference: __webpack_require__(564),
-  symmetricDifferenceWith: __webpack_require__(565),
+  symmetricDifference: __webpack_require__(560),
+  symmetricDifferenceWith: __webpack_require__(561),
   tail: __webpack_require__(94),
   take: __webpack_require__(316),
-  takeLast: __webpack_require__(566),
-  takeLastWhile: __webpack_require__(567),
-  takeWhile: __webpack_require__(568),
-  tap: __webpack_require__(569),
-  test: __webpack_require__(570),
+  takeLast: __webpack_require__(562),
+  takeLastWhile: __webpack_require__(563),
+  takeWhile: __webpack_require__(564),
+  tap: __webpack_require__(565),
+  test: __webpack_require__(566),
   times: __webpack_require__(317),
-  toLower: __webpack_require__(571),
-  toPairs: __webpack_require__(572),
-  toPairsIn: __webpack_require__(573),
+  toLower: __webpack_require__(567),
+  toPairs: __webpack_require__(568),
+  toPairsIn: __webpack_require__(569),
   toString: __webpack_require__(50),
-  toUpper: __webpack_require__(574),
-  transduce: __webpack_require__(575),
-  transpose: __webpack_require__(576),
-  traverse: __webpack_require__(577),
-  trim: __webpack_require__(578),
-  tryCatch: __webpack_require__(579),
+  toUpper: __webpack_require__(570),
+  transduce: __webpack_require__(571),
+  transpose: __webpack_require__(572),
+  traverse: __webpack_require__(573),
+  trim: __webpack_require__(574),
+  tryCatch: __webpack_require__(575),
   type: __webpack_require__(95),
-  unapply: __webpack_require__(580),
-  unary: __webpack_require__(581),
-  uncurryN: __webpack_require__(582),
-  unfold: __webpack_require__(583),
-  union: __webpack_require__(584),
-  unionWith: __webpack_require__(585),
+  unapply: __webpack_require__(576),
+  unary: __webpack_require__(577),
+  uncurryN: __webpack_require__(578),
+  unfold: __webpack_require__(579),
+  union: __webpack_require__(580),
+  unionWith: __webpack_require__(581),
   uniq: __webpack_require__(96),
   uniqBy: __webpack_require__(318),
   uniqWith: __webpack_require__(97),
-  unless: __webpack_require__(586),
-  unnest: __webpack_require__(587),
-  until: __webpack_require__(588),
+  unless: __webpack_require__(582),
+  unnest: __webpack_require__(583),
+  until: __webpack_require__(584),
   update: __webpack_require__(319),
   useWith: __webpack_require__(320),
   values: __webpack_require__(321),
-  valuesIn: __webpack_require__(589),
-  view: __webpack_require__(590),
-  when: __webpack_require__(591),
+  valuesIn: __webpack_require__(585),
+  view: __webpack_require__(586),
+  when: __webpack_require__(587),
   where: __webpack_require__(322),
-  whereEq: __webpack_require__(592),
-  without: __webpack_require__(593),
-  xprod: __webpack_require__(594),
-  zip: __webpack_require__(595),
-  zipObj: __webpack_require__(596),
-  zipWith: __webpack_require__(597)
+  whereEq: __webpack_require__(588),
+  without: __webpack_require__(589),
+  xprod: __webpack_require__(590),
+  zip: __webpack_require__(591),
+  zipObj: __webpack_require__(592),
+  zipWith: __webpack_require__(593)
 };
 
 
@@ -38461,7 +38740,7 @@ module.exports = _curry2(function constructN(n, Fn) {
 var _curry2 = __webpack_require__(0);
 var _map = __webpack_require__(66);
 var curryN = __webpack_require__(14);
-var max = __webpack_require__(38);
+var max = __webpack_require__(39);
 var pluck = __webpack_require__(49);
 var reduce = __webpack_require__(25);
 
@@ -38664,7 +38943,7 @@ module.exports = _curry2(function dissoc(prop, obj) {
 
 var _curry2 = __webpack_require__(0);
 var _dispatchable = __webpack_require__(10);
-var _xdrop = __webpack_require__(482);
+var _xdrop = __webpack_require__(478);
 var slice = __webpack_require__(33);
 
 
@@ -39643,7 +39922,7 @@ module.exports = _curry2(function pickAll(names, obj) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var _arity = __webpack_require__(23);
-var _pipe = __webpack_require__(473);
+var _pipe = __webpack_require__(469);
 var reduce = __webpack_require__(25);
 var tail = __webpack_require__(94);
 
@@ -39685,7 +39964,7 @@ module.exports = function pipe() {
 /***/ (function(module, exports, __webpack_require__) {
 
 var _arity = __webpack_require__(23);
-var _pipeP = __webpack_require__(474);
+var _pipeP = __webpack_require__(470);
 var reduce = __webpack_require__(25);
 var tail = __webpack_require__(94);
 
@@ -39882,7 +40161,7 @@ module.exports = reduce(add, 0);
 
 var _curry2 = __webpack_require__(0);
 var _dispatchable = __webpack_require__(10);
-var _xtake = __webpack_require__(493);
+var _xtake = __webpack_require__(489);
 var slice = __webpack_require__(33);
 
 
@@ -39984,7 +40263,7 @@ module.exports = _curry2(function times(fn, n) {
 /* 318 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var _Set = __webpack_require__(461);
+var _Set = __webpack_require__(457);
 var _curry2 = __webpack_require__(0);
 
 
@@ -40030,7 +40309,7 @@ module.exports = _curry2(function uniqBy(fn, list) {
 
 var _curry3 = __webpack_require__(6);
 var adjust = __webpack_require__(266);
-var always = __webpack_require__(37);
+var always = __webpack_require__(38);
 
 
 /**
@@ -40498,7 +40777,7 @@ var DOMProperty = __webpack_require__(31);
 var ReactDOMComponentTree = __webpack_require__(11);
 var ReactInstrumentation = __webpack_require__(20);
 
-var quoteAttributeValueForBrowser = __webpack_require__(666);
+var quoteAttributeValueForBrowser = __webpack_require__(662);
 var warning = __webpack_require__(7);
 
 var VALID_ATTRIBUTE_NAME_REGEX = new RegExp('^[' + DOMProperty.ATTRIBUTE_NAME_START_CHAR + '][' + DOMProperty.ATTRIBUTE_NAME_CHAR + ']*$');
@@ -41102,11 +41381,11 @@ module.exports = ReactHostComponent;
 
 
 
-var ReactDOMSelection = __webpack_require__(621);
+var ReactDOMSelection = __webpack_require__(617);
 
-var containsNode = __webpack_require__(385);
-var focusNode = __webpack_require__(144);
-var getActiveElement = __webpack_require__(145);
+var containsNode = __webpack_require__(382);
+var focusNode = __webpack_require__(145);
+var getActiveElement = __webpack_require__(146);
 
 function isInDocument(node) {
   return containsNode(document.documentElement, node);
@@ -41233,23 +41512,23 @@ module.exports = ReactInputSelection;
 
 var _prodInvariant = __webpack_require__(8);
 
-var DOMLazyTree = __webpack_require__(39);
+var DOMLazyTree = __webpack_require__(40);
 var DOMProperty = __webpack_require__(31);
-var React = __webpack_require__(41);
+var React = __webpack_require__(42);
 var ReactBrowserEventEmitter = __webpack_require__(74);
 var ReactCurrentOwner = __webpack_require__(27);
 var ReactDOMComponentTree = __webpack_require__(11);
-var ReactDOMContainerInfo = __webpack_require__(613);
-var ReactDOMFeatureFlags = __webpack_require__(615);
+var ReactDOMContainerInfo = __webpack_require__(609);
+var ReactDOMFeatureFlags = __webpack_require__(611);
 var ReactFeatureFlags = __webpack_require__(329);
 var ReactInstanceMap = __webpack_require__(53);
 var ReactInstrumentation = __webpack_require__(20);
-var ReactMarkupChecksum = __webpack_require__(635);
-var ReactReconciler = __webpack_require__(40);
+var ReactMarkupChecksum = __webpack_require__(631);
+var ReactReconciler = __webpack_require__(41);
 var ReactUpdateQueue = __webpack_require__(105);
 var ReactUpdates = __webpack_require__(26);
 
-var emptyObject = __webpack_require__(42);
+var emptyObject = __webpack_require__(43);
 var instantiateReactComponent = __webpack_require__(340);
 var invariant = __webpack_require__(5);
 var setInnerHTML = __webpack_require__(78);
@@ -41778,7 +42057,7 @@ module.exports = ReactMount;
 
 var _prodInvariant = __webpack_require__(8);
 
-var React = __webpack_require__(41);
+var React = __webpack_require__(42);
 
 var invariant = __webpack_require__(5);
 
@@ -42051,11 +42330,11 @@ module.exports = getTextContentAccessor;
 var _prodInvariant = __webpack_require__(8),
     _assign = __webpack_require__(9);
 
-var ReactCompositeComponent = __webpack_require__(610);
+var ReactCompositeComponent = __webpack_require__(606);
 var ReactEmptyComponent = __webpack_require__(328);
 var ReactHostComponent = __webpack_require__(330);
 
-var getNextDebugID = __webpack_require__(678);
+var getNextDebugID = __webpack_require__(674);
 var invariant = __webpack_require__(5);
 var warning = __webpack_require__(7);
 
@@ -42299,9 +42578,9 @@ module.exports = setTextContent;
 var _prodInvariant = __webpack_require__(8);
 
 var ReactCurrentOwner = __webpack_require__(27);
-var REACT_ELEMENT_TYPE = __webpack_require__(629);
+var REACT_ELEMENT_TYPE = __webpack_require__(625);
 
-var getIteratorFn = __webpack_require__(663);
+var getIteratorFn = __webpack_require__(659);
 var invariant = __webpack_require__(5);
 var KeyEscapeUtils = __webpack_require__(101);
 var warning = __webpack_require__(7);
@@ -42514,7 +42793,7 @@ var ReactCurrentOwner = __webpack_require__(27);
 var ReactComponentTreeHook = __webpack_require__(17);
 var ReactElement = __webpack_require__(35);
 
-var checkReactTypeSpec = __webpack_require__(677);
+var checkReactTypeSpec = __webpack_require__(673);
 
 var canDefineProperty = __webpack_require__(79);
 var getIteratorFn = __webpack_require__(347);
@@ -42829,7 +43108,7 @@ module.exports = getIteratorFn;
 "use strict";
 
 
-module.exports = __webpack_require__(41);
+module.exports = __webpack_require__(42);
 
 
 /***/ }),
@@ -55189,7 +55468,7 @@ module.exports = __webpack_require__(41);
   }
 }.call(this));
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(370)(module), __webpack_require__(80)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(370)(module), __webpack_require__(140)))
 
 /***/ }),
 /* 350 */
@@ -56231,24 +56510,6 @@ module.exports = function(module) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_ramda__ = __webpack_require__(265);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_ramda___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_ramda__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_kefir_atom__ = __webpack_require__(141);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_kefir__ = __webpack_require__(57);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_kefir___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_kefir__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_infestines__ = __webpack_require__(43);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_partial_lenses__ = __webpack_require__(81);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_kefir_combines__ = __webpack_require__(398);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_karet__ = __webpack_require__(140);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_prop_types__ = __webpack_require__(403);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_prop_types___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_7_prop_types__);
-/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "lift", function() { return __WEBPACK_IMPORTED_MODULE_5_kefir_combines__["a"]; });
-/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "lift1", function() { return __WEBPACK_IMPORTED_MODULE_5_kefir_combines__["d"]; });
-/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "lift1Shallow", function() { return __WEBPACK_IMPORTED_MODULE_5_kefir_combines__["c"]; });
-/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "fromKefir", function() { return __WEBPACK_IMPORTED_MODULE_6_karet__["fromKefir"]; });
-/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "seq", function() { return __WEBPACK_IMPORTED_MODULE_3_infestines__["d"]; });
-/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "seqPartial", function() { return __WEBPACK_IMPORTED_MODULE_3_infestines__["m"]; });
-/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "holding", function() { return __WEBPACK_IMPORTED_MODULE_1_kefir_atom__["holding"]; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "liftStaged", function() { return liftStaged; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "template", function() { return template; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "debounce", function() { return debounce; });
@@ -56556,6 +56817,25 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "trunc", function() { return trunc; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "indices", function() { return indices; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mapElems", function() { return mapElems; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "mapElemsWithIds", function() { return mapElemsWithIds; });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_ramda__ = __webpack_require__(265);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_ramda___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_ramda__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_kefir_atom__ = __webpack_require__(142);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_kefir__ = __webpack_require__(57);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_kefir___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_kefir__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3_infestines__ = __webpack_require__(37);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4_partial_lenses__ = __webpack_require__(80);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5_kefir_combines__ = __webpack_require__(394);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_6_karet__ = __webpack_require__(141);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_prop_types__ = __webpack_require__(399);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_7_prop_types___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_7_prop_types__);
+/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "lift", function() { return __WEBPACK_IMPORTED_MODULE_5_kefir_combines__["a"]; });
+/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "lift1", function() { return __WEBPACK_IMPORTED_MODULE_5_kefir_combines__["d"]; });
+/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "lift1Shallow", function() { return __WEBPACK_IMPORTED_MODULE_5_kefir_combines__["c"]; });
+/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "fromKefir", function() { return __WEBPACK_IMPORTED_MODULE_6_karet__["fromKefir"]; });
+/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "seq", function() { return __WEBPACK_IMPORTED_MODULE_3_infestines__["d"]; });
+/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "seqPartial", function() { return __WEBPACK_IMPORTED_MODULE_3_infestines__["m"]; });
+/* harmony reexport (binding) */ __webpack_require__.d(__webpack_exports__, "holding", function() { return __WEBPACK_IMPORTED_MODULE_1_kefir_atom__["holding"]; });
 
 
 
@@ -57259,6 +57539,41 @@ var mapElems = /*#__PURE__*/__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_3_in
   }, []), skipDuplicates(__WEBPACK_IMPORTED_MODULE_3_infestines__["l" /* identicalU */]));
 });
 
+//
+
+var mapElemsWithIds = /*#__PURE__*/__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_3_infestines__["c" /* curry */])(function (idOf, xi2y, xsIn) {
+  var id2info = {};
+  var find$$1 = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_4_partial_lenses__["findHint"])(function (x, info) {
+    return idOf(x) === info.id;
+  });
+  return __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_3_infestines__["d" /* seq */])(xsIn, foldPast(function (ysOld, xs) {
+    var n = xs.length;
+    var ys = ysOld.length === n ? ysOld : Array(n);
+    for (var i = 0; i < n; ++i) {
+      var _id2 = idOf(xs[i]);
+      var info = id2info[_id2];
+      if (void 0 === info) {
+        info = id2info[_id2] = {};
+        info.id = _id2;
+        info.hint = i;
+        info.elem = xi2y(view(find$$1(info), xsIn), _id2);
+      }
+      if (ys[i] !== info.elem) {
+        info.hint = i;
+        if (ys === ysOld) ys = ys.slice(0);
+        ys[i] = info.elem;
+      }
+    }
+    if (ys !== ysOld) {
+      for (var _id3 in id2info) {
+        var _info = id2info[_id3];
+        if (ys[_info.hint] !== _info.elem) delete id2info[_id3];
+      }
+    }
+    return ys;
+  }, []), skipDuplicates(__WEBPACK_IMPORTED_MODULE_3_infestines__["l" /* identicalU */]));
+});
+
 /* harmony default export */ __webpack_exports__["default"] = (__WEBPACK_IMPORTED_MODULE_5_kefir_combines__["b" /* default */]);
 
 
@@ -57269,7 +57584,7 @@ var mapElems = /*#__PURE__*/__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_3_in
 "use strict";
 
 
-module.exports = __webpack_require__(611);
+module.exports = __webpack_require__(607);
 
 
 /***/ }),
@@ -57279,10 +57594,10 @@ module.exports = __webpack_require__(611);
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(378);
+var content = __webpack_require__(375);
 if(typeof content === 'string') content = [[module.i, content, '']];
 // add the styles to the DOM
-var update = __webpack_require__(687)(content, {});
+var update = __webpack_require__(683)(content, {});
 if(content.locals) module.exports = content.locals;
 // Hot Module Replacement
 if(false) {
@@ -57305,7 +57620,7 @@ if(false) {
 "use strict";
 
 
-var _karet = __webpack_require__(140);
+var _karet = __webpack_require__(141);
 
 var _karet2 = _interopRequireDefault(_karet);
 
@@ -57317,11 +57632,11 @@ var _bootstrap = __webpack_require__(373);
 
 var _bootstrap2 = _interopRequireDefault(_bootstrap);
 
-var _kefir = __webpack_require__(141);
+var _kefir = __webpack_require__(142);
 
 var _kefir2 = _interopRequireDefault(_kefir);
 
-var _partial = __webpack_require__(81);
+var _partial = __webpack_require__(80);
 
 var _partial2 = _interopRequireDefault(_partial);
 
@@ -57329,7 +57644,7 @@ var _karet3 = __webpack_require__(371);
 
 var _karet4 = _interopRequireDefault(_karet3);
 
-var _signalkSchema = __webpack_require__(142);
+var _signalkSchema = __webpack_require__(143);
 
 var _signalkSchema2 = _interopRequireDefault(_signalkSchema);
 
@@ -57344,7 +57659,7 @@ var deltaData = {
       "type": "NMEA2000",
       "src": "017",
       "pgn": 127488,
-      "label": "N2000-01.017"
+      "label": "N2000-01"
     },
     "timestamp": "2010-01-07T07:18:44Z",
     "values": [{
@@ -57675,1950 +57990,21 @@ _reactDom2.default.render(_karet2.default.createElement(foo), document.getElemen
 /* 375 */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
-
-
-exports.byteLength = byteLength
-exports.toByteArray = toByteArray
-exports.fromByteArray = fromByteArray
-
-var lookup = []
-var revLookup = []
-var Arr = typeof Uint8Array !== 'undefined' ? Uint8Array : Array
-
-var code = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-for (var i = 0, len = code.length; i < len; ++i) {
-  lookup[i] = code[i]
-  revLookup[code.charCodeAt(i)] = i
-}
-
-revLookup['-'.charCodeAt(0)] = 62
-revLookup['_'.charCodeAt(0)] = 63
-
-function placeHoldersCount (b64) {
-  var len = b64.length
-  if (len % 4 > 0) {
-    throw new Error('Invalid string. Length must be a multiple of 4')
-  }
-
-  // the number of equal signs (place holders)
-  // if there are two placeholders, than the two characters before it
-  // represent one byte
-  // if there is only one, then the three characters before it represent 2 bytes
-  // this is just a cheap hack to not do indexOf twice
-  return b64[len - 2] === '=' ? 2 : b64[len - 1] === '=' ? 1 : 0
-}
-
-function byteLength (b64) {
-  // base64 is 4/3 + up to two characters of the original data
-  return b64.length * 3 / 4 - placeHoldersCount(b64)
-}
-
-function toByteArray (b64) {
-  var i, j, l, tmp, placeHolders, arr
-  var len = b64.length
-  placeHolders = placeHoldersCount(b64)
-
-  arr = new Arr(len * 3 / 4 - placeHolders)
-
-  // if there are placeholders, only get up to the last complete 4 chars
-  l = placeHolders > 0 ? len - 4 : len
-
-  var L = 0
-
-  for (i = 0, j = 0; i < l; i += 4, j += 3) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 18) | (revLookup[b64.charCodeAt(i + 1)] << 12) | (revLookup[b64.charCodeAt(i + 2)] << 6) | revLookup[b64.charCodeAt(i + 3)]
-    arr[L++] = (tmp >> 16) & 0xFF
-    arr[L++] = (tmp >> 8) & 0xFF
-    arr[L++] = tmp & 0xFF
-  }
-
-  if (placeHolders === 2) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 2) | (revLookup[b64.charCodeAt(i + 1)] >> 4)
-    arr[L++] = tmp & 0xFF
-  } else if (placeHolders === 1) {
-    tmp = (revLookup[b64.charCodeAt(i)] << 10) | (revLookup[b64.charCodeAt(i + 1)] << 4) | (revLookup[b64.charCodeAt(i + 2)] >> 2)
-    arr[L++] = (tmp >> 8) & 0xFF
-    arr[L++] = tmp & 0xFF
-  }
-
-  return arr
-}
-
-function tripletToBase64 (num) {
-  return lookup[num >> 18 & 0x3F] + lookup[num >> 12 & 0x3F] + lookup[num >> 6 & 0x3F] + lookup[num & 0x3F]
-}
-
-function encodeChunk (uint8, start, end) {
-  var tmp
-  var output = []
-  for (var i = start; i < end; i += 3) {
-    tmp = (uint8[i] << 16) + (uint8[i + 1] << 8) + (uint8[i + 2])
-    output.push(tripletToBase64(tmp))
-  }
-  return output.join('')
-}
-
-function fromByteArray (uint8) {
-  var tmp
-  var len = uint8.length
-  var extraBytes = len % 3 // if we have 1 byte left, pad 2 bytes
-  var output = ''
-  var parts = []
-  var maxChunkLength = 16383 // must be multiple of 3
-
-  // go through the array every three bytes, we'll deal with trailing stuff later
-  for (var i = 0, len2 = len - extraBytes; i < len2; i += maxChunkLength) {
-    parts.push(encodeChunk(uint8, i, (i + maxChunkLength) > len2 ? len2 : (i + maxChunkLength)))
-  }
-
-  // pad the end with zeros, but make sure to not forget the extra bytes
-  if (extraBytes === 1) {
-    tmp = uint8[len - 1]
-    output += lookup[tmp >> 2]
-    output += lookup[(tmp << 4) & 0x3F]
-    output += '=='
-  } else if (extraBytes === 2) {
-    tmp = (uint8[len - 2] << 8) + (uint8[len - 1])
-    output += lookup[tmp >> 10]
-    output += lookup[(tmp >> 4) & 0x3F]
-    output += lookup[(tmp << 2) & 0x3F]
-    output += '='
-  }
-
-  parts.push(output)
-
-  return parts.join('')
-}
-
-
-/***/ }),
-/* 376 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-/* WEBPACK VAR INJECTION */(function(global) {/*!
- * The buffer module from node.js, for the browser.
- *
- * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
- * @license  MIT
- */
-/* eslint-disable no-proto */
-
-
-
-var base64 = __webpack_require__(375)
-var ieee754 = __webpack_require__(397)
-var isArray = __webpack_require__(377)
-
-exports.Buffer = Buffer
-exports.SlowBuffer = SlowBuffer
-exports.INSPECT_MAX_BYTES = 50
-
-/**
- * If `Buffer.TYPED_ARRAY_SUPPORT`:
- *   === true    Use Uint8Array implementation (fastest)
- *   === false   Use Object implementation (most compatible, even IE6)
- *
- * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
- * Opera 11.6+, iOS 4.2+.
- *
- * Due to various browser bugs, sometimes the Object implementation will be used even
- * when the browser supports typed arrays.
- *
- * Note:
- *
- *   - Firefox 4-29 lacks support for adding new properties to `Uint8Array` instances,
- *     See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438.
- *
- *   - Chrome 9-10 is missing the `TypedArray.prototype.subarray` function.
- *
- *   - IE10 has a broken `TypedArray.prototype.subarray` function which returns arrays of
- *     incorrect length in some situations.
-
- * We detect these buggy browsers and set `Buffer.TYPED_ARRAY_SUPPORT` to `false` so they
- * get the Object implementation, which is slower but behaves correctly.
- */
-Buffer.TYPED_ARRAY_SUPPORT = global.TYPED_ARRAY_SUPPORT !== undefined
-  ? global.TYPED_ARRAY_SUPPORT
-  : typedArraySupport()
-
-/*
- * Export kMaxLength after typed array support is determined.
- */
-exports.kMaxLength = kMaxLength()
-
-function typedArraySupport () {
-  try {
-    var arr = new Uint8Array(1)
-    arr.__proto__ = {__proto__: Uint8Array.prototype, foo: function () { return 42 }}
-    return arr.foo() === 42 && // typed array instances can be augmented
-        typeof arr.subarray === 'function' && // chrome 9-10 lack `subarray`
-        arr.subarray(1, 1).byteLength === 0 // ie10 has broken `subarray`
-  } catch (e) {
-    return false
-  }
-}
-
-function kMaxLength () {
-  return Buffer.TYPED_ARRAY_SUPPORT
-    ? 0x7fffffff
-    : 0x3fffffff
-}
-
-function createBuffer (that, length) {
-  if (kMaxLength() < length) {
-    throw new RangeError('Invalid typed array length')
-  }
-  if (Buffer.TYPED_ARRAY_SUPPORT) {
-    // Return an augmented `Uint8Array` instance, for best performance
-    that = new Uint8Array(length)
-    that.__proto__ = Buffer.prototype
-  } else {
-    // Fallback: Return an object instance of the Buffer class
-    if (that === null) {
-      that = new Buffer(length)
-    }
-    that.length = length
-  }
-
-  return that
-}
-
-/**
- * The Buffer constructor returns instances of `Uint8Array` that have their
- * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
- * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
- * and the `Uint8Array` methods. Square bracket notation works as expected -- it
- * returns a single octet.
- *
- * The `Uint8Array` prototype remains unmodified.
- */
-
-function Buffer (arg, encodingOrOffset, length) {
-  if (!Buffer.TYPED_ARRAY_SUPPORT && !(this instanceof Buffer)) {
-    return new Buffer(arg, encodingOrOffset, length)
-  }
-
-  // Common case.
-  if (typeof arg === 'number') {
-    if (typeof encodingOrOffset === 'string') {
-      throw new Error(
-        'If encoding is specified then the first argument must be a string'
-      )
-    }
-    return allocUnsafe(this, arg)
-  }
-  return from(this, arg, encodingOrOffset, length)
-}
-
-Buffer.poolSize = 8192 // not used by this implementation
-
-// TODO: Legacy, not needed anymore. Remove in next major version.
-Buffer._augment = function (arr) {
-  arr.__proto__ = Buffer.prototype
-  return arr
-}
-
-function from (that, value, encodingOrOffset, length) {
-  if (typeof value === 'number') {
-    throw new TypeError('"value" argument must not be a number')
-  }
-
-  if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
-    return fromArrayBuffer(that, value, encodingOrOffset, length)
-  }
-
-  if (typeof value === 'string') {
-    return fromString(that, value, encodingOrOffset)
-  }
-
-  return fromObject(that, value)
-}
-
-/**
- * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
- * if value is a number.
- * Buffer.from(str[, encoding])
- * Buffer.from(array)
- * Buffer.from(buffer)
- * Buffer.from(arrayBuffer[, byteOffset[, length]])
- **/
-Buffer.from = function (value, encodingOrOffset, length) {
-  return from(null, value, encodingOrOffset, length)
-}
-
-if (Buffer.TYPED_ARRAY_SUPPORT) {
-  Buffer.prototype.__proto__ = Uint8Array.prototype
-  Buffer.__proto__ = Uint8Array
-  if (typeof Symbol !== 'undefined' && Symbol.species &&
-      Buffer[Symbol.species] === Buffer) {
-    // Fix subarray() in ES2016. See: https://github.com/feross/buffer/pull/97
-    Object.defineProperty(Buffer, Symbol.species, {
-      value: null,
-      configurable: true
-    })
-  }
-}
-
-function assertSize (size) {
-  if (typeof size !== 'number') {
-    throw new TypeError('"size" argument must be a number')
-  } else if (size < 0) {
-    throw new RangeError('"size" argument must not be negative')
-  }
-}
-
-function alloc (that, size, fill, encoding) {
-  assertSize(size)
-  if (size <= 0) {
-    return createBuffer(that, size)
-  }
-  if (fill !== undefined) {
-    // Only pay attention to encoding if it's a string. This
-    // prevents accidentally sending in a number that would
-    // be interpretted as a start offset.
-    return typeof encoding === 'string'
-      ? createBuffer(that, size).fill(fill, encoding)
-      : createBuffer(that, size).fill(fill)
-  }
-  return createBuffer(that, size)
-}
-
-/**
- * Creates a new filled Buffer instance.
- * alloc(size[, fill[, encoding]])
- **/
-Buffer.alloc = function (size, fill, encoding) {
-  return alloc(null, size, fill, encoding)
-}
-
-function allocUnsafe (that, size) {
-  assertSize(size)
-  that = createBuffer(that, size < 0 ? 0 : checked(size) | 0)
-  if (!Buffer.TYPED_ARRAY_SUPPORT) {
-    for (var i = 0; i < size; ++i) {
-      that[i] = 0
-    }
-  }
-  return that
-}
-
-/**
- * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
- * */
-Buffer.allocUnsafe = function (size) {
-  return allocUnsafe(null, size)
-}
-/**
- * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
- */
-Buffer.allocUnsafeSlow = function (size) {
-  return allocUnsafe(null, size)
-}
-
-function fromString (that, string, encoding) {
-  if (typeof encoding !== 'string' || encoding === '') {
-    encoding = 'utf8'
-  }
-
-  if (!Buffer.isEncoding(encoding)) {
-    throw new TypeError('"encoding" must be a valid string encoding')
-  }
-
-  var length = byteLength(string, encoding) | 0
-  that = createBuffer(that, length)
-
-  var actual = that.write(string, encoding)
-
-  if (actual !== length) {
-    // Writing a hex string, for example, that contains invalid characters will
-    // cause everything after the first invalid character to be ignored. (e.g.
-    // 'abxxcd' will be treated as 'ab')
-    that = that.slice(0, actual)
-  }
-
-  return that
-}
-
-function fromArrayLike (that, array) {
-  var length = array.length < 0 ? 0 : checked(array.length) | 0
-  that = createBuffer(that, length)
-  for (var i = 0; i < length; i += 1) {
-    that[i] = array[i] & 255
-  }
-  return that
-}
-
-function fromArrayBuffer (that, array, byteOffset, length) {
-  array.byteLength // this throws if `array` is not a valid ArrayBuffer
-
-  if (byteOffset < 0 || array.byteLength < byteOffset) {
-    throw new RangeError('\'offset\' is out of bounds')
-  }
-
-  if (array.byteLength < byteOffset + (length || 0)) {
-    throw new RangeError('\'length\' is out of bounds')
-  }
-
-  if (byteOffset === undefined && length === undefined) {
-    array = new Uint8Array(array)
-  } else if (length === undefined) {
-    array = new Uint8Array(array, byteOffset)
-  } else {
-    array = new Uint8Array(array, byteOffset, length)
-  }
-
-  if (Buffer.TYPED_ARRAY_SUPPORT) {
-    // Return an augmented `Uint8Array` instance, for best performance
-    that = array
-    that.__proto__ = Buffer.prototype
-  } else {
-    // Fallback: Return an object instance of the Buffer class
-    that = fromArrayLike(that, array)
-  }
-  return that
-}
-
-function fromObject (that, obj) {
-  if (Buffer.isBuffer(obj)) {
-    var len = checked(obj.length) | 0
-    that = createBuffer(that, len)
-
-    if (that.length === 0) {
-      return that
-    }
-
-    obj.copy(that, 0, 0, len)
-    return that
-  }
-
-  if (obj) {
-    if ((typeof ArrayBuffer !== 'undefined' &&
-        obj.buffer instanceof ArrayBuffer) || 'length' in obj) {
-      if (typeof obj.length !== 'number' || isnan(obj.length)) {
-        return createBuffer(that, 0)
-      }
-      return fromArrayLike(that, obj)
-    }
-
-    if (obj.type === 'Buffer' && isArray(obj.data)) {
-      return fromArrayLike(that, obj.data)
-    }
-  }
-
-  throw new TypeError('First argument must be a string, Buffer, ArrayBuffer, Array, or array-like object.')
-}
-
-function checked (length) {
-  // Note: cannot use `length < kMaxLength()` here because that fails when
-  // length is NaN (which is otherwise coerced to zero.)
-  if (length >= kMaxLength()) {
-    throw new RangeError('Attempt to allocate Buffer larger than maximum ' +
-                         'size: 0x' + kMaxLength().toString(16) + ' bytes')
-  }
-  return length | 0
-}
-
-function SlowBuffer (length) {
-  if (+length != length) { // eslint-disable-line eqeqeq
-    length = 0
-  }
-  return Buffer.alloc(+length)
-}
-
-Buffer.isBuffer = function isBuffer (b) {
-  return !!(b != null && b._isBuffer)
-}
-
-Buffer.compare = function compare (a, b) {
-  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
-    throw new TypeError('Arguments must be Buffers')
-  }
-
-  if (a === b) return 0
-
-  var x = a.length
-  var y = b.length
-
-  for (var i = 0, len = Math.min(x, y); i < len; ++i) {
-    if (a[i] !== b[i]) {
-      x = a[i]
-      y = b[i]
-      break
-    }
-  }
-
-  if (x < y) return -1
-  if (y < x) return 1
-  return 0
-}
-
-Buffer.isEncoding = function isEncoding (encoding) {
-  switch (String(encoding).toLowerCase()) {
-    case 'hex':
-    case 'utf8':
-    case 'utf-8':
-    case 'ascii':
-    case 'latin1':
-    case 'binary':
-    case 'base64':
-    case 'ucs2':
-    case 'ucs-2':
-    case 'utf16le':
-    case 'utf-16le':
-      return true
-    default:
-      return false
-  }
-}
-
-Buffer.concat = function concat (list, length) {
-  if (!isArray(list)) {
-    throw new TypeError('"list" argument must be an Array of Buffers')
-  }
-
-  if (list.length === 0) {
-    return Buffer.alloc(0)
-  }
-
-  var i
-  if (length === undefined) {
-    length = 0
-    for (i = 0; i < list.length; ++i) {
-      length += list[i].length
-    }
-  }
-
-  var buffer = Buffer.allocUnsafe(length)
-  var pos = 0
-  for (i = 0; i < list.length; ++i) {
-    var buf = list[i]
-    if (!Buffer.isBuffer(buf)) {
-      throw new TypeError('"list" argument must be an Array of Buffers')
-    }
-    buf.copy(buffer, pos)
-    pos += buf.length
-  }
-  return buffer
-}
-
-function byteLength (string, encoding) {
-  if (Buffer.isBuffer(string)) {
-    return string.length
-  }
-  if (typeof ArrayBuffer !== 'undefined' && typeof ArrayBuffer.isView === 'function' &&
-      (ArrayBuffer.isView(string) || string instanceof ArrayBuffer)) {
-    return string.byteLength
-  }
-  if (typeof string !== 'string') {
-    string = '' + string
-  }
-
-  var len = string.length
-  if (len === 0) return 0
-
-  // Use a for loop to avoid recursion
-  var loweredCase = false
-  for (;;) {
-    switch (encoding) {
-      case 'ascii':
-      case 'latin1':
-      case 'binary':
-        return len
-      case 'utf8':
-      case 'utf-8':
-      case undefined:
-        return utf8ToBytes(string).length
-      case 'ucs2':
-      case 'ucs-2':
-      case 'utf16le':
-      case 'utf-16le':
-        return len * 2
-      case 'hex':
-        return len >>> 1
-      case 'base64':
-        return base64ToBytes(string).length
-      default:
-        if (loweredCase) return utf8ToBytes(string).length // assume utf8
-        encoding = ('' + encoding).toLowerCase()
-        loweredCase = true
-    }
-  }
-}
-Buffer.byteLength = byteLength
-
-function slowToString (encoding, start, end) {
-  var loweredCase = false
-
-  // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
-  // property of a typed array.
-
-  // This behaves neither like String nor Uint8Array in that we set start/end
-  // to their upper/lower bounds if the value passed is out of range.
-  // undefined is handled specially as per ECMA-262 6th Edition,
-  // Section 13.3.3.7 Runtime Semantics: KeyedBindingInitialization.
-  if (start === undefined || start < 0) {
-    start = 0
-  }
-  // Return early if start > this.length. Done here to prevent potential uint32
-  // coercion fail below.
-  if (start > this.length) {
-    return ''
-  }
-
-  if (end === undefined || end > this.length) {
-    end = this.length
-  }
-
-  if (end <= 0) {
-    return ''
-  }
-
-  // Force coersion to uint32. This will also coerce falsey/NaN values to 0.
-  end >>>= 0
-  start >>>= 0
-
-  if (end <= start) {
-    return ''
-  }
-
-  if (!encoding) encoding = 'utf8'
-
-  while (true) {
-    switch (encoding) {
-      case 'hex':
-        return hexSlice(this, start, end)
-
-      case 'utf8':
-      case 'utf-8':
-        return utf8Slice(this, start, end)
-
-      case 'ascii':
-        return asciiSlice(this, start, end)
-
-      case 'latin1':
-      case 'binary':
-        return latin1Slice(this, start, end)
-
-      case 'base64':
-        return base64Slice(this, start, end)
-
-      case 'ucs2':
-      case 'ucs-2':
-      case 'utf16le':
-      case 'utf-16le':
-        return utf16leSlice(this, start, end)
-
-      default:
-        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
-        encoding = (encoding + '').toLowerCase()
-        loweredCase = true
-    }
-  }
-}
-
-// The property is used by `Buffer.isBuffer` and `is-buffer` (in Safari 5-7) to detect
-// Buffer instances.
-Buffer.prototype._isBuffer = true
-
-function swap (b, n, m) {
-  var i = b[n]
-  b[n] = b[m]
-  b[m] = i
-}
-
-Buffer.prototype.swap16 = function swap16 () {
-  var len = this.length
-  if (len % 2 !== 0) {
-    throw new RangeError('Buffer size must be a multiple of 16-bits')
-  }
-  for (var i = 0; i < len; i += 2) {
-    swap(this, i, i + 1)
-  }
-  return this
-}
-
-Buffer.prototype.swap32 = function swap32 () {
-  var len = this.length
-  if (len % 4 !== 0) {
-    throw new RangeError('Buffer size must be a multiple of 32-bits')
-  }
-  for (var i = 0; i < len; i += 4) {
-    swap(this, i, i + 3)
-    swap(this, i + 1, i + 2)
-  }
-  return this
-}
-
-Buffer.prototype.swap64 = function swap64 () {
-  var len = this.length
-  if (len % 8 !== 0) {
-    throw new RangeError('Buffer size must be a multiple of 64-bits')
-  }
-  for (var i = 0; i < len; i += 8) {
-    swap(this, i, i + 7)
-    swap(this, i + 1, i + 6)
-    swap(this, i + 2, i + 5)
-    swap(this, i + 3, i + 4)
-  }
-  return this
-}
-
-Buffer.prototype.toString = function toString () {
-  var length = this.length | 0
-  if (length === 0) return ''
-  if (arguments.length === 0) return utf8Slice(this, 0, length)
-  return slowToString.apply(this, arguments)
-}
-
-Buffer.prototype.equals = function equals (b) {
-  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer')
-  if (this === b) return true
-  return Buffer.compare(this, b) === 0
-}
-
-Buffer.prototype.inspect = function inspect () {
-  var str = ''
-  var max = exports.INSPECT_MAX_BYTES
-  if (this.length > 0) {
-    str = this.toString('hex', 0, max).match(/.{2}/g).join(' ')
-    if (this.length > max) str += ' ... '
-  }
-  return '<Buffer ' + str + '>'
-}
-
-Buffer.prototype.compare = function compare (target, start, end, thisStart, thisEnd) {
-  if (!Buffer.isBuffer(target)) {
-    throw new TypeError('Argument must be a Buffer')
-  }
-
-  if (start === undefined) {
-    start = 0
-  }
-  if (end === undefined) {
-    end = target ? target.length : 0
-  }
-  if (thisStart === undefined) {
-    thisStart = 0
-  }
-  if (thisEnd === undefined) {
-    thisEnd = this.length
-  }
-
-  if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
-    throw new RangeError('out of range index')
-  }
-
-  if (thisStart >= thisEnd && start >= end) {
-    return 0
-  }
-  if (thisStart >= thisEnd) {
-    return -1
-  }
-  if (start >= end) {
-    return 1
-  }
-
-  start >>>= 0
-  end >>>= 0
-  thisStart >>>= 0
-  thisEnd >>>= 0
-
-  if (this === target) return 0
-
-  var x = thisEnd - thisStart
-  var y = end - start
-  var len = Math.min(x, y)
-
-  var thisCopy = this.slice(thisStart, thisEnd)
-  var targetCopy = target.slice(start, end)
-
-  for (var i = 0; i < len; ++i) {
-    if (thisCopy[i] !== targetCopy[i]) {
-      x = thisCopy[i]
-      y = targetCopy[i]
-      break
-    }
-  }
-
-  if (x < y) return -1
-  if (y < x) return 1
-  return 0
-}
-
-// Finds either the first index of `val` in `buffer` at offset >= `byteOffset`,
-// OR the last index of `val` in `buffer` at offset <= `byteOffset`.
-//
-// Arguments:
-// - buffer - a Buffer to search
-// - val - a string, Buffer, or number
-// - byteOffset - an index into `buffer`; will be clamped to an int32
-// - encoding - an optional encoding, relevant is val is a string
-// - dir - true for indexOf, false for lastIndexOf
-function bidirectionalIndexOf (buffer, val, byteOffset, encoding, dir) {
-  // Empty buffer means no match
-  if (buffer.length === 0) return -1
-
-  // Normalize byteOffset
-  if (typeof byteOffset === 'string') {
-    encoding = byteOffset
-    byteOffset = 0
-  } else if (byteOffset > 0x7fffffff) {
-    byteOffset = 0x7fffffff
-  } else if (byteOffset < -0x80000000) {
-    byteOffset = -0x80000000
-  }
-  byteOffset = +byteOffset  // Coerce to Number.
-  if (isNaN(byteOffset)) {
-    // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
-    byteOffset = dir ? 0 : (buffer.length - 1)
-  }
-
-  // Normalize byteOffset: negative offsets start from the end of the buffer
-  if (byteOffset < 0) byteOffset = buffer.length + byteOffset
-  if (byteOffset >= buffer.length) {
-    if (dir) return -1
-    else byteOffset = buffer.length - 1
-  } else if (byteOffset < 0) {
-    if (dir) byteOffset = 0
-    else return -1
-  }
-
-  // Normalize val
-  if (typeof val === 'string') {
-    val = Buffer.from(val, encoding)
-  }
-
-  // Finally, search either indexOf (if dir is true) or lastIndexOf
-  if (Buffer.isBuffer(val)) {
-    // Special case: looking for empty string/buffer always fails
-    if (val.length === 0) {
-      return -1
-    }
-    return arrayIndexOf(buffer, val, byteOffset, encoding, dir)
-  } else if (typeof val === 'number') {
-    val = val & 0xFF // Search for a byte value [0-255]
-    if (Buffer.TYPED_ARRAY_SUPPORT &&
-        typeof Uint8Array.prototype.indexOf === 'function') {
-      if (dir) {
-        return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset)
-      } else {
-        return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset)
-      }
-    }
-    return arrayIndexOf(buffer, [ val ], byteOffset, encoding, dir)
-  }
-
-  throw new TypeError('val must be string, number or Buffer')
-}
-
-function arrayIndexOf (arr, val, byteOffset, encoding, dir) {
-  var indexSize = 1
-  var arrLength = arr.length
-  var valLength = val.length
-
-  if (encoding !== undefined) {
-    encoding = String(encoding).toLowerCase()
-    if (encoding === 'ucs2' || encoding === 'ucs-2' ||
-        encoding === 'utf16le' || encoding === 'utf-16le') {
-      if (arr.length < 2 || val.length < 2) {
-        return -1
-      }
-      indexSize = 2
-      arrLength /= 2
-      valLength /= 2
-      byteOffset /= 2
-    }
-  }
-
-  function read (buf, i) {
-    if (indexSize === 1) {
-      return buf[i]
-    } else {
-      return buf.readUInt16BE(i * indexSize)
-    }
-  }
-
-  var i
-  if (dir) {
-    var foundIndex = -1
-    for (i = byteOffset; i < arrLength; i++) {
-      if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
-        if (foundIndex === -1) foundIndex = i
-        if (i - foundIndex + 1 === valLength) return foundIndex * indexSize
-      } else {
-        if (foundIndex !== -1) i -= i - foundIndex
-        foundIndex = -1
-      }
-    }
-  } else {
-    if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength
-    for (i = byteOffset; i >= 0; i--) {
-      var found = true
-      for (var j = 0; j < valLength; j++) {
-        if (read(arr, i + j) !== read(val, j)) {
-          found = false
-          break
-        }
-      }
-      if (found) return i
-    }
-  }
-
-  return -1
-}
-
-Buffer.prototype.includes = function includes (val, byteOffset, encoding) {
-  return this.indexOf(val, byteOffset, encoding) !== -1
-}
-
-Buffer.prototype.indexOf = function indexOf (val, byteOffset, encoding) {
-  return bidirectionalIndexOf(this, val, byteOffset, encoding, true)
-}
-
-Buffer.prototype.lastIndexOf = function lastIndexOf (val, byteOffset, encoding) {
-  return bidirectionalIndexOf(this, val, byteOffset, encoding, false)
-}
-
-function hexWrite (buf, string, offset, length) {
-  offset = Number(offset) || 0
-  var remaining = buf.length - offset
-  if (!length) {
-    length = remaining
-  } else {
-    length = Number(length)
-    if (length > remaining) {
-      length = remaining
-    }
-  }
-
-  // must be an even number of digits
-  var strLen = string.length
-  if (strLen % 2 !== 0) throw new TypeError('Invalid hex string')
-
-  if (length > strLen / 2) {
-    length = strLen / 2
-  }
-  for (var i = 0; i < length; ++i) {
-    var parsed = parseInt(string.substr(i * 2, 2), 16)
-    if (isNaN(parsed)) return i
-    buf[offset + i] = parsed
-  }
-  return i
-}
-
-function utf8Write (buf, string, offset, length) {
-  return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length)
-}
-
-function asciiWrite (buf, string, offset, length) {
-  return blitBuffer(asciiToBytes(string), buf, offset, length)
-}
-
-function latin1Write (buf, string, offset, length) {
-  return asciiWrite(buf, string, offset, length)
-}
-
-function base64Write (buf, string, offset, length) {
-  return blitBuffer(base64ToBytes(string), buf, offset, length)
-}
-
-function ucs2Write (buf, string, offset, length) {
-  return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length)
-}
-
-Buffer.prototype.write = function write (string, offset, length, encoding) {
-  // Buffer#write(string)
-  if (offset === undefined) {
-    encoding = 'utf8'
-    length = this.length
-    offset = 0
-  // Buffer#write(string, encoding)
-  } else if (length === undefined && typeof offset === 'string') {
-    encoding = offset
-    length = this.length
-    offset = 0
-  // Buffer#write(string, offset[, length][, encoding])
-  } else if (isFinite(offset)) {
-    offset = offset | 0
-    if (isFinite(length)) {
-      length = length | 0
-      if (encoding === undefined) encoding = 'utf8'
-    } else {
-      encoding = length
-      length = undefined
-    }
-  // legacy write(string, encoding, offset, length) - remove in v0.13
-  } else {
-    throw new Error(
-      'Buffer.write(string, encoding, offset[, length]) is no longer supported'
-    )
-  }
-
-  var remaining = this.length - offset
-  if (length === undefined || length > remaining) length = remaining
-
-  if ((string.length > 0 && (length < 0 || offset < 0)) || offset > this.length) {
-    throw new RangeError('Attempt to write outside buffer bounds')
-  }
-
-  if (!encoding) encoding = 'utf8'
-
-  var loweredCase = false
-  for (;;) {
-    switch (encoding) {
-      case 'hex':
-        return hexWrite(this, string, offset, length)
-
-      case 'utf8':
-      case 'utf-8':
-        return utf8Write(this, string, offset, length)
-
-      case 'ascii':
-        return asciiWrite(this, string, offset, length)
-
-      case 'latin1':
-      case 'binary':
-        return latin1Write(this, string, offset, length)
-
-      case 'base64':
-        // Warning: maxLength not taken into account in base64Write
-        return base64Write(this, string, offset, length)
-
-      case 'ucs2':
-      case 'ucs-2':
-      case 'utf16le':
-      case 'utf-16le':
-        return ucs2Write(this, string, offset, length)
-
-      default:
-        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding)
-        encoding = ('' + encoding).toLowerCase()
-        loweredCase = true
-    }
-  }
-}
-
-Buffer.prototype.toJSON = function toJSON () {
-  return {
-    type: 'Buffer',
-    data: Array.prototype.slice.call(this._arr || this, 0)
-  }
-}
-
-function base64Slice (buf, start, end) {
-  if (start === 0 && end === buf.length) {
-    return base64.fromByteArray(buf)
-  } else {
-    return base64.fromByteArray(buf.slice(start, end))
-  }
-}
-
-function utf8Slice (buf, start, end) {
-  end = Math.min(buf.length, end)
-  var res = []
-
-  var i = start
-  while (i < end) {
-    var firstByte = buf[i]
-    var codePoint = null
-    var bytesPerSequence = (firstByte > 0xEF) ? 4
-      : (firstByte > 0xDF) ? 3
-      : (firstByte > 0xBF) ? 2
-      : 1
-
-    if (i + bytesPerSequence <= end) {
-      var secondByte, thirdByte, fourthByte, tempCodePoint
-
-      switch (bytesPerSequence) {
-        case 1:
-          if (firstByte < 0x80) {
-            codePoint = firstByte
-          }
-          break
-        case 2:
-          secondByte = buf[i + 1]
-          if ((secondByte & 0xC0) === 0x80) {
-            tempCodePoint = (firstByte & 0x1F) << 0x6 | (secondByte & 0x3F)
-            if (tempCodePoint > 0x7F) {
-              codePoint = tempCodePoint
-            }
-          }
-          break
-        case 3:
-          secondByte = buf[i + 1]
-          thirdByte = buf[i + 2]
-          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
-            tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | (thirdByte & 0x3F)
-            if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
-              codePoint = tempCodePoint
-            }
-          }
-          break
-        case 4:
-          secondByte = buf[i + 1]
-          thirdByte = buf[i + 2]
-          fourthByte = buf[i + 3]
-          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
-            tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | (fourthByte & 0x3F)
-            if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
-              codePoint = tempCodePoint
-            }
-          }
-      }
-    }
-
-    if (codePoint === null) {
-      // we did not generate a valid codePoint so insert a
-      // replacement char (U+FFFD) and advance only 1 byte
-      codePoint = 0xFFFD
-      bytesPerSequence = 1
-    } else if (codePoint > 0xFFFF) {
-      // encode to utf16 (surrogate pair dance)
-      codePoint -= 0x10000
-      res.push(codePoint >>> 10 & 0x3FF | 0xD800)
-      codePoint = 0xDC00 | codePoint & 0x3FF
-    }
-
-    res.push(codePoint)
-    i += bytesPerSequence
-  }
-
-  return decodeCodePointsArray(res)
-}
-
-// Based on http://stackoverflow.com/a/22747272/680742, the browser with
-// the lowest limit is Chrome, with 0x10000 args.
-// We go 1 magnitude less, for safety
-var MAX_ARGUMENTS_LENGTH = 0x1000
-
-function decodeCodePointsArray (codePoints) {
-  var len = codePoints.length
-  if (len <= MAX_ARGUMENTS_LENGTH) {
-    return String.fromCharCode.apply(String, codePoints) // avoid extra slice()
-  }
-
-  // Decode in chunks to avoid "call stack size exceeded".
-  var res = ''
-  var i = 0
-  while (i < len) {
-    res += String.fromCharCode.apply(
-      String,
-      codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH)
-    )
-  }
-  return res
-}
-
-function asciiSlice (buf, start, end) {
-  var ret = ''
-  end = Math.min(buf.length, end)
-
-  for (var i = start; i < end; ++i) {
-    ret += String.fromCharCode(buf[i] & 0x7F)
-  }
-  return ret
-}
-
-function latin1Slice (buf, start, end) {
-  var ret = ''
-  end = Math.min(buf.length, end)
-
-  for (var i = start; i < end; ++i) {
-    ret += String.fromCharCode(buf[i])
-  }
-  return ret
-}
-
-function hexSlice (buf, start, end) {
-  var len = buf.length
-
-  if (!start || start < 0) start = 0
-  if (!end || end < 0 || end > len) end = len
-
-  var out = ''
-  for (var i = start; i < end; ++i) {
-    out += toHex(buf[i])
-  }
-  return out
-}
-
-function utf16leSlice (buf, start, end) {
-  var bytes = buf.slice(start, end)
-  var res = ''
-  for (var i = 0; i < bytes.length; i += 2) {
-    res += String.fromCharCode(bytes[i] + bytes[i + 1] * 256)
-  }
-  return res
-}
-
-Buffer.prototype.slice = function slice (start, end) {
-  var len = this.length
-  start = ~~start
-  end = end === undefined ? len : ~~end
-
-  if (start < 0) {
-    start += len
-    if (start < 0) start = 0
-  } else if (start > len) {
-    start = len
-  }
-
-  if (end < 0) {
-    end += len
-    if (end < 0) end = 0
-  } else if (end > len) {
-    end = len
-  }
-
-  if (end < start) end = start
-
-  var newBuf
-  if (Buffer.TYPED_ARRAY_SUPPORT) {
-    newBuf = this.subarray(start, end)
-    newBuf.__proto__ = Buffer.prototype
-  } else {
-    var sliceLen = end - start
-    newBuf = new Buffer(sliceLen, undefined)
-    for (var i = 0; i < sliceLen; ++i) {
-      newBuf[i] = this[i + start]
-    }
-  }
-
-  return newBuf
-}
-
-/*
- * Need to make sure that buffer isn't trying to write out of bounds.
- */
-function checkOffset (offset, ext, length) {
-  if ((offset % 1) !== 0 || offset < 0) throw new RangeError('offset is not uint')
-  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length')
-}
-
-Buffer.prototype.readUIntLE = function readUIntLE (offset, byteLength, noAssert) {
-  offset = offset | 0
-  byteLength = byteLength | 0
-  if (!noAssert) checkOffset(offset, byteLength, this.length)
-
-  var val = this[offset]
-  var mul = 1
-  var i = 0
-  while (++i < byteLength && (mul *= 0x100)) {
-    val += this[offset + i] * mul
-  }
-
-  return val
-}
-
-Buffer.prototype.readUIntBE = function readUIntBE (offset, byteLength, noAssert) {
-  offset = offset | 0
-  byteLength = byteLength | 0
-  if (!noAssert) {
-    checkOffset(offset, byteLength, this.length)
-  }
-
-  var val = this[offset + --byteLength]
-  var mul = 1
-  while (byteLength > 0 && (mul *= 0x100)) {
-    val += this[offset + --byteLength] * mul
-  }
-
-  return val
-}
-
-Buffer.prototype.readUInt8 = function readUInt8 (offset, noAssert) {
-  if (!noAssert) checkOffset(offset, 1, this.length)
-  return this[offset]
-}
-
-Buffer.prototype.readUInt16LE = function readUInt16LE (offset, noAssert) {
-  if (!noAssert) checkOffset(offset, 2, this.length)
-  return this[offset] | (this[offset + 1] << 8)
-}
-
-Buffer.prototype.readUInt16BE = function readUInt16BE (offset, noAssert) {
-  if (!noAssert) checkOffset(offset, 2, this.length)
-  return (this[offset] << 8) | this[offset + 1]
-}
-
-Buffer.prototype.readUInt32LE = function readUInt32LE (offset, noAssert) {
-  if (!noAssert) checkOffset(offset, 4, this.length)
-
-  return ((this[offset]) |
-      (this[offset + 1] << 8) |
-      (this[offset + 2] << 16)) +
-      (this[offset + 3] * 0x1000000)
-}
-
-Buffer.prototype.readUInt32BE = function readUInt32BE (offset, noAssert) {
-  if (!noAssert) checkOffset(offset, 4, this.length)
-
-  return (this[offset] * 0x1000000) +
-    ((this[offset + 1] << 16) |
-    (this[offset + 2] << 8) |
-    this[offset + 3])
-}
-
-Buffer.prototype.readIntLE = function readIntLE (offset, byteLength, noAssert) {
-  offset = offset | 0
-  byteLength = byteLength | 0
-  if (!noAssert) checkOffset(offset, byteLength, this.length)
-
-  var val = this[offset]
-  var mul = 1
-  var i = 0
-  while (++i < byteLength && (mul *= 0x100)) {
-    val += this[offset + i] * mul
-  }
-  mul *= 0x80
-
-  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
-
-  return val
-}
-
-Buffer.prototype.readIntBE = function readIntBE (offset, byteLength, noAssert) {
-  offset = offset | 0
-  byteLength = byteLength | 0
-  if (!noAssert) checkOffset(offset, byteLength, this.length)
-
-  var i = byteLength
-  var mul = 1
-  var val = this[offset + --i]
-  while (i > 0 && (mul *= 0x100)) {
-    val += this[offset + --i] * mul
-  }
-  mul *= 0x80
-
-  if (val >= mul) val -= Math.pow(2, 8 * byteLength)
-
-  return val
-}
-
-Buffer.prototype.readInt8 = function readInt8 (offset, noAssert) {
-  if (!noAssert) checkOffset(offset, 1, this.length)
-  if (!(this[offset] & 0x80)) return (this[offset])
-  return ((0xff - this[offset] + 1) * -1)
-}
-
-Buffer.prototype.readInt16LE = function readInt16LE (offset, noAssert) {
-  if (!noAssert) checkOffset(offset, 2, this.length)
-  var val = this[offset] | (this[offset + 1] << 8)
-  return (val & 0x8000) ? val | 0xFFFF0000 : val
-}
-
-Buffer.prototype.readInt16BE = function readInt16BE (offset, noAssert) {
-  if (!noAssert) checkOffset(offset, 2, this.length)
-  var val = this[offset + 1] | (this[offset] << 8)
-  return (val & 0x8000) ? val | 0xFFFF0000 : val
-}
-
-Buffer.prototype.readInt32LE = function readInt32LE (offset, noAssert) {
-  if (!noAssert) checkOffset(offset, 4, this.length)
-
-  return (this[offset]) |
-    (this[offset + 1] << 8) |
-    (this[offset + 2] << 16) |
-    (this[offset + 3] << 24)
-}
-
-Buffer.prototype.readInt32BE = function readInt32BE (offset, noAssert) {
-  if (!noAssert) checkOffset(offset, 4, this.length)
-
-  return (this[offset] << 24) |
-    (this[offset + 1] << 16) |
-    (this[offset + 2] << 8) |
-    (this[offset + 3])
-}
-
-Buffer.prototype.readFloatLE = function readFloatLE (offset, noAssert) {
-  if (!noAssert) checkOffset(offset, 4, this.length)
-  return ieee754.read(this, offset, true, 23, 4)
-}
-
-Buffer.prototype.readFloatBE = function readFloatBE (offset, noAssert) {
-  if (!noAssert) checkOffset(offset, 4, this.length)
-  return ieee754.read(this, offset, false, 23, 4)
-}
-
-Buffer.prototype.readDoubleLE = function readDoubleLE (offset, noAssert) {
-  if (!noAssert) checkOffset(offset, 8, this.length)
-  return ieee754.read(this, offset, true, 52, 8)
-}
-
-Buffer.prototype.readDoubleBE = function readDoubleBE (offset, noAssert) {
-  if (!noAssert) checkOffset(offset, 8, this.length)
-  return ieee754.read(this, offset, false, 52, 8)
-}
-
-function checkInt (buf, value, offset, ext, max, min) {
-  if (!Buffer.isBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance')
-  if (value > max || value < min) throw new RangeError('"value" argument is out of bounds')
-  if (offset + ext > buf.length) throw new RangeError('Index out of range')
-}
-
-Buffer.prototype.writeUIntLE = function writeUIntLE (value, offset, byteLength, noAssert) {
-  value = +value
-  offset = offset | 0
-  byteLength = byteLength | 0
-  if (!noAssert) {
-    var maxBytes = Math.pow(2, 8 * byteLength) - 1
-    checkInt(this, value, offset, byteLength, maxBytes, 0)
-  }
-
-  var mul = 1
-  var i = 0
-  this[offset] = value & 0xFF
-  while (++i < byteLength && (mul *= 0x100)) {
-    this[offset + i] = (value / mul) & 0xFF
-  }
-
-  return offset + byteLength
-}
-
-Buffer.prototype.writeUIntBE = function writeUIntBE (value, offset, byteLength, noAssert) {
-  value = +value
-  offset = offset | 0
-  byteLength = byteLength | 0
-  if (!noAssert) {
-    var maxBytes = Math.pow(2, 8 * byteLength) - 1
-    checkInt(this, value, offset, byteLength, maxBytes, 0)
-  }
-
-  var i = byteLength - 1
-  var mul = 1
-  this[offset + i] = value & 0xFF
-  while (--i >= 0 && (mul *= 0x100)) {
-    this[offset + i] = (value / mul) & 0xFF
-  }
-
-  return offset + byteLength
-}
-
-Buffer.prototype.writeUInt8 = function writeUInt8 (value, offset, noAssert) {
-  value = +value
-  offset = offset | 0
-  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0)
-  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
-  this[offset] = (value & 0xff)
-  return offset + 1
-}
-
-function objectWriteUInt16 (buf, value, offset, littleEndian) {
-  if (value < 0) value = 0xffff + value + 1
-  for (var i = 0, j = Math.min(buf.length - offset, 2); i < j; ++i) {
-    buf[offset + i] = (value & (0xff << (8 * (littleEndian ? i : 1 - i)))) >>>
-      (littleEndian ? i : 1 - i) * 8
-  }
-}
-
-Buffer.prototype.writeUInt16LE = function writeUInt16LE (value, offset, noAssert) {
-  value = +value
-  offset = offset | 0
-  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
-  if (Buffer.TYPED_ARRAY_SUPPORT) {
-    this[offset] = (value & 0xff)
-    this[offset + 1] = (value >>> 8)
-  } else {
-    objectWriteUInt16(this, value, offset, true)
-  }
-  return offset + 2
-}
-
-Buffer.prototype.writeUInt16BE = function writeUInt16BE (value, offset, noAssert) {
-  value = +value
-  offset = offset | 0
-  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0)
-  if (Buffer.TYPED_ARRAY_SUPPORT) {
-    this[offset] = (value >>> 8)
-    this[offset + 1] = (value & 0xff)
-  } else {
-    objectWriteUInt16(this, value, offset, false)
-  }
-  return offset + 2
-}
-
-function objectWriteUInt32 (buf, value, offset, littleEndian) {
-  if (value < 0) value = 0xffffffff + value + 1
-  for (var i = 0, j = Math.min(buf.length - offset, 4); i < j; ++i) {
-    buf[offset + i] = (value >>> (littleEndian ? i : 3 - i) * 8) & 0xff
-  }
-}
-
-Buffer.prototype.writeUInt32LE = function writeUInt32LE (value, offset, noAssert) {
-  value = +value
-  offset = offset | 0
-  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
-  if (Buffer.TYPED_ARRAY_SUPPORT) {
-    this[offset + 3] = (value >>> 24)
-    this[offset + 2] = (value >>> 16)
-    this[offset + 1] = (value >>> 8)
-    this[offset] = (value & 0xff)
-  } else {
-    objectWriteUInt32(this, value, offset, true)
-  }
-  return offset + 4
-}
-
-Buffer.prototype.writeUInt32BE = function writeUInt32BE (value, offset, noAssert) {
-  value = +value
-  offset = offset | 0
-  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0)
-  if (Buffer.TYPED_ARRAY_SUPPORT) {
-    this[offset] = (value >>> 24)
-    this[offset + 1] = (value >>> 16)
-    this[offset + 2] = (value >>> 8)
-    this[offset + 3] = (value & 0xff)
-  } else {
-    objectWriteUInt32(this, value, offset, false)
-  }
-  return offset + 4
-}
-
-Buffer.prototype.writeIntLE = function writeIntLE (value, offset, byteLength, noAssert) {
-  value = +value
-  offset = offset | 0
-  if (!noAssert) {
-    var limit = Math.pow(2, 8 * byteLength - 1)
-
-    checkInt(this, value, offset, byteLength, limit - 1, -limit)
-  }
-
-  var i = 0
-  var mul = 1
-  var sub = 0
-  this[offset] = value & 0xFF
-  while (++i < byteLength && (mul *= 0x100)) {
-    if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
-      sub = 1
-    }
-    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
-  }
-
-  return offset + byteLength
-}
-
-Buffer.prototype.writeIntBE = function writeIntBE (value, offset, byteLength, noAssert) {
-  value = +value
-  offset = offset | 0
-  if (!noAssert) {
-    var limit = Math.pow(2, 8 * byteLength - 1)
-
-    checkInt(this, value, offset, byteLength, limit - 1, -limit)
-  }
-
-  var i = byteLength - 1
-  var mul = 1
-  var sub = 0
-  this[offset + i] = value & 0xFF
-  while (--i >= 0 && (mul *= 0x100)) {
-    if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
-      sub = 1
-    }
-    this[offset + i] = ((value / mul) >> 0) - sub & 0xFF
-  }
-
-  return offset + byteLength
-}
-
-Buffer.prototype.writeInt8 = function writeInt8 (value, offset, noAssert) {
-  value = +value
-  offset = offset | 0
-  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80)
-  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value)
-  if (value < 0) value = 0xff + value + 1
-  this[offset] = (value & 0xff)
-  return offset + 1
-}
-
-Buffer.prototype.writeInt16LE = function writeInt16LE (value, offset, noAssert) {
-  value = +value
-  offset = offset | 0
-  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
-  if (Buffer.TYPED_ARRAY_SUPPORT) {
-    this[offset] = (value & 0xff)
-    this[offset + 1] = (value >>> 8)
-  } else {
-    objectWriteUInt16(this, value, offset, true)
-  }
-  return offset + 2
-}
-
-Buffer.prototype.writeInt16BE = function writeInt16BE (value, offset, noAssert) {
-  value = +value
-  offset = offset | 0
-  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000)
-  if (Buffer.TYPED_ARRAY_SUPPORT) {
-    this[offset] = (value >>> 8)
-    this[offset + 1] = (value & 0xff)
-  } else {
-    objectWriteUInt16(this, value, offset, false)
-  }
-  return offset + 2
-}
-
-Buffer.prototype.writeInt32LE = function writeInt32LE (value, offset, noAssert) {
-  value = +value
-  offset = offset | 0
-  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
-  if (Buffer.TYPED_ARRAY_SUPPORT) {
-    this[offset] = (value & 0xff)
-    this[offset + 1] = (value >>> 8)
-    this[offset + 2] = (value >>> 16)
-    this[offset + 3] = (value >>> 24)
-  } else {
-    objectWriteUInt32(this, value, offset, true)
-  }
-  return offset + 4
-}
-
-Buffer.prototype.writeInt32BE = function writeInt32BE (value, offset, noAssert) {
-  value = +value
-  offset = offset | 0
-  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000)
-  if (value < 0) value = 0xffffffff + value + 1
-  if (Buffer.TYPED_ARRAY_SUPPORT) {
-    this[offset] = (value >>> 24)
-    this[offset + 1] = (value >>> 16)
-    this[offset + 2] = (value >>> 8)
-    this[offset + 3] = (value & 0xff)
-  } else {
-    objectWriteUInt32(this, value, offset, false)
-  }
-  return offset + 4
-}
-
-function checkIEEE754 (buf, value, offset, ext, max, min) {
-  if (offset + ext > buf.length) throw new RangeError('Index out of range')
-  if (offset < 0) throw new RangeError('Index out of range')
-}
-
-function writeFloat (buf, value, offset, littleEndian, noAssert) {
-  if (!noAssert) {
-    checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38)
-  }
-  ieee754.write(buf, value, offset, littleEndian, 23, 4)
-  return offset + 4
-}
-
-Buffer.prototype.writeFloatLE = function writeFloatLE (value, offset, noAssert) {
-  return writeFloat(this, value, offset, true, noAssert)
-}
-
-Buffer.prototype.writeFloatBE = function writeFloatBE (value, offset, noAssert) {
-  return writeFloat(this, value, offset, false, noAssert)
-}
-
-function writeDouble (buf, value, offset, littleEndian, noAssert) {
-  if (!noAssert) {
-    checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308)
-  }
-  ieee754.write(buf, value, offset, littleEndian, 52, 8)
-  return offset + 8
-}
-
-Buffer.prototype.writeDoubleLE = function writeDoubleLE (value, offset, noAssert) {
-  return writeDouble(this, value, offset, true, noAssert)
-}
-
-Buffer.prototype.writeDoubleBE = function writeDoubleBE (value, offset, noAssert) {
-  return writeDouble(this, value, offset, false, noAssert)
-}
-
-// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
-Buffer.prototype.copy = function copy (target, targetStart, start, end) {
-  if (!start) start = 0
-  if (!end && end !== 0) end = this.length
-  if (targetStart >= target.length) targetStart = target.length
-  if (!targetStart) targetStart = 0
-  if (end > 0 && end < start) end = start
-
-  // Copy 0 bytes; we're done
-  if (end === start) return 0
-  if (target.length === 0 || this.length === 0) return 0
-
-  // Fatal error conditions
-  if (targetStart < 0) {
-    throw new RangeError('targetStart out of bounds')
-  }
-  if (start < 0 || start >= this.length) throw new RangeError('sourceStart out of bounds')
-  if (end < 0) throw new RangeError('sourceEnd out of bounds')
-
-  // Are we oob?
-  if (end > this.length) end = this.length
-  if (target.length - targetStart < end - start) {
-    end = target.length - targetStart + start
-  }
-
-  var len = end - start
-  var i
-
-  if (this === target && start < targetStart && targetStart < end) {
-    // descending copy from end
-    for (i = len - 1; i >= 0; --i) {
-      target[i + targetStart] = this[i + start]
-    }
-  } else if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
-    // ascending copy from start
-    for (i = 0; i < len; ++i) {
-      target[i + targetStart] = this[i + start]
-    }
-  } else {
-    Uint8Array.prototype.set.call(
-      target,
-      this.subarray(start, start + len),
-      targetStart
-    )
-  }
-
-  return len
-}
-
-// Usage:
-//    buffer.fill(number[, offset[, end]])
-//    buffer.fill(buffer[, offset[, end]])
-//    buffer.fill(string[, offset[, end]][, encoding])
-Buffer.prototype.fill = function fill (val, start, end, encoding) {
-  // Handle string cases:
-  if (typeof val === 'string') {
-    if (typeof start === 'string') {
-      encoding = start
-      start = 0
-      end = this.length
-    } else if (typeof end === 'string') {
-      encoding = end
-      end = this.length
-    }
-    if (val.length === 1) {
-      var code = val.charCodeAt(0)
-      if (code < 256) {
-        val = code
-      }
-    }
-    if (encoding !== undefined && typeof encoding !== 'string') {
-      throw new TypeError('encoding must be a string')
-    }
-    if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
-      throw new TypeError('Unknown encoding: ' + encoding)
-    }
-  } else if (typeof val === 'number') {
-    val = val & 255
-  }
-
-  // Invalid ranges are not set to a default, so can range check early.
-  if (start < 0 || this.length < start || this.length < end) {
-    throw new RangeError('Out of range index')
-  }
-
-  if (end <= start) {
-    return this
-  }
-
-  start = start >>> 0
-  end = end === undefined ? this.length : end >>> 0
-
-  if (!val) val = 0
-
-  var i
-  if (typeof val === 'number') {
-    for (i = start; i < end; ++i) {
-      this[i] = val
-    }
-  } else {
-    var bytes = Buffer.isBuffer(val)
-      ? val
-      : utf8ToBytes(new Buffer(val, encoding).toString())
-    var len = bytes.length
-    for (i = 0; i < end - start; ++i) {
-      this[i + start] = bytes[i % len]
-    }
-  }
-
-  return this
-}
-
-// HELPER FUNCTIONS
-// ================
-
-var INVALID_BASE64_RE = /[^+\/0-9A-Za-z-_]/g
-
-function base64clean (str) {
-  // Node strips out invalid characters like \n and \t from the string, base64-js does not
-  str = stringtrim(str).replace(INVALID_BASE64_RE, '')
-  // Node converts strings with length < 2 to ''
-  if (str.length < 2) return ''
-  // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
-  while (str.length % 4 !== 0) {
-    str = str + '='
-  }
-  return str
-}
-
-function stringtrim (str) {
-  if (str.trim) return str.trim()
-  return str.replace(/^\s+|\s+$/g, '')
-}
-
-function toHex (n) {
-  if (n < 16) return '0' + n.toString(16)
-  return n.toString(16)
-}
-
-function utf8ToBytes (string, units) {
-  units = units || Infinity
-  var codePoint
-  var length = string.length
-  var leadSurrogate = null
-  var bytes = []
-
-  for (var i = 0; i < length; ++i) {
-    codePoint = string.charCodeAt(i)
-
-    // is surrogate component
-    if (codePoint > 0xD7FF && codePoint < 0xE000) {
-      // last char was a lead
-      if (!leadSurrogate) {
-        // no lead yet
-        if (codePoint > 0xDBFF) {
-          // unexpected trail
-          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
-          continue
-        } else if (i + 1 === length) {
-          // unpaired lead
-          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
-          continue
-        }
-
-        // valid lead
-        leadSurrogate = codePoint
-
-        continue
-      }
-
-      // 2 leads in a row
-      if (codePoint < 0xDC00) {
-        if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
-        leadSurrogate = codePoint
-        continue
-      }
-
-      // valid surrogate pair
-      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000
-    } else if (leadSurrogate) {
-      // valid bmp char, but last char was a lead
-      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD)
-    }
-
-    leadSurrogate = null
-
-    // encode utf8
-    if (codePoint < 0x80) {
-      if ((units -= 1) < 0) break
-      bytes.push(codePoint)
-    } else if (codePoint < 0x800) {
-      if ((units -= 2) < 0) break
-      bytes.push(
-        codePoint >> 0x6 | 0xC0,
-        codePoint & 0x3F | 0x80
-      )
-    } else if (codePoint < 0x10000) {
-      if ((units -= 3) < 0) break
-      bytes.push(
-        codePoint >> 0xC | 0xE0,
-        codePoint >> 0x6 & 0x3F | 0x80,
-        codePoint & 0x3F | 0x80
-      )
-    } else if (codePoint < 0x110000) {
-      if ((units -= 4) < 0) break
-      bytes.push(
-        codePoint >> 0x12 | 0xF0,
-        codePoint >> 0xC & 0x3F | 0x80,
-        codePoint >> 0x6 & 0x3F | 0x80,
-        codePoint & 0x3F | 0x80
-      )
-    } else {
-      throw new Error('Invalid code point')
-    }
-  }
-
-  return bytes
-}
-
-function asciiToBytes (str) {
-  var byteArray = []
-  for (var i = 0; i < str.length; ++i) {
-    // Node's code seems to be doing this and not & 0x7F..
-    byteArray.push(str.charCodeAt(i) & 0xFF)
-  }
-  return byteArray
-}
-
-function utf16leToBytes (str, units) {
-  var c, hi, lo
-  var byteArray = []
-  for (var i = 0; i < str.length; ++i) {
-    if ((units -= 2) < 0) break
-
-    c = str.charCodeAt(i)
-    hi = c >> 8
-    lo = c % 256
-    byteArray.push(lo)
-    byteArray.push(hi)
-  }
-
-  return byteArray
-}
-
-function base64ToBytes (str) {
-  return base64.toByteArray(base64clean(str))
-}
-
-function blitBuffer (src, dst, offset, length) {
-  for (var i = 0; i < length; ++i) {
-    if ((i + offset >= dst.length) || (i >= src.length)) break
-    dst[i + offset] = src[i]
-  }
-  return i
-}
-
-function isnan (val) {
-  return val !== val // eslint-disable-line no-self-compare
-}
-
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(80)))
-
-/***/ }),
-/* 377 */
-/***/ (function(module, exports) {
-
-var toString = {}.toString;
-
-module.exports = Array.isArray || function (arr) {
-  return toString.call(arr) == '[object Array]';
-};
-
-
-/***/ }),
-/* 378 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(379)(undefined);
+exports = module.exports = __webpack_require__(376)(undefined);
 // imports
 
 
 // module
-exports.push([module.i, "/*!\n * Bootstrap v3.3.7 (http://getbootstrap.com)\n * Copyright 2011-2016 Twitter, Inc.\n * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)\n */\n/*! normalize.css v3.0.3 | MIT License | github.com/necolas/normalize.css */\nhtml {\n  font-family: sans-serif;\n  -webkit-text-size-adjust: 100%;\n      -ms-text-size-adjust: 100%;\n}\nbody {\n  margin: 0;\n}\narticle,\naside,\ndetails,\nfigcaption,\nfigure,\nfooter,\nheader,\nhgroup,\nmain,\nmenu,\nnav,\nsection,\nsummary {\n  display: block;\n}\naudio,\ncanvas,\nprogress,\nvideo {\n  display: inline-block;\n  vertical-align: baseline;\n}\naudio:not([controls]) {\n  display: none;\n  height: 0;\n}\n[hidden],\ntemplate {\n  display: none;\n}\na {\n  background-color: transparent;\n}\na:active,\na:hover {\n  outline: 0;\n}\nabbr[title] {\n  border-bottom: 1px dotted;\n}\nb,\nstrong {\n  font-weight: bold;\n}\ndfn {\n  font-style: italic;\n}\nh1 {\n  margin: .67em 0;\n  font-size: 2em;\n}\nmark {\n  color: #000;\n  background: #ff0;\n}\nsmall {\n  font-size: 80%;\n}\nsub,\nsup {\n  position: relative;\n  font-size: 75%;\n  line-height: 0;\n  vertical-align: baseline;\n}\nsup {\n  top: -.5em;\n}\nsub {\n  bottom: -.25em;\n}\nimg {\n  border: 0;\n}\nsvg:not(:root) {\n  overflow: hidden;\n}\nfigure {\n  margin: 1em 40px;\n}\nhr {\n  height: 0;\n  -webkit-box-sizing: content-box;\n     -moz-box-sizing: content-box;\n          box-sizing: content-box;\n}\npre {\n  overflow: auto;\n}\ncode,\nkbd,\npre,\nsamp {\n  font-family: monospace, monospace;\n  font-size: 1em;\n}\nbutton,\ninput,\noptgroup,\nselect,\ntextarea {\n  margin: 0;\n  font: inherit;\n  color: inherit;\n}\nbutton {\n  overflow: visible;\n}\nbutton,\nselect {\n  text-transform: none;\n}\nbutton,\nhtml input[type=\"button\"],\ninput[type=\"reset\"],\ninput[type=\"submit\"] {\n  -webkit-appearance: button;\n  cursor: pointer;\n}\nbutton[disabled],\nhtml input[disabled] {\n  cursor: default;\n}\nbutton::-moz-focus-inner,\ninput::-moz-focus-inner {\n  padding: 0;\n  border: 0;\n}\ninput {\n  line-height: normal;\n}\ninput[type=\"checkbox\"],\ninput[type=\"radio\"] {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n  padding: 0;\n}\ninput[type=\"number\"]::-webkit-inner-spin-button,\ninput[type=\"number\"]::-webkit-outer-spin-button {\n  height: auto;\n}\ninput[type=\"search\"] {\n  -webkit-box-sizing: content-box;\n     -moz-box-sizing: content-box;\n          box-sizing: content-box;\n  -webkit-appearance: textfield;\n}\ninput[type=\"search\"]::-webkit-search-cancel-button,\ninput[type=\"search\"]::-webkit-search-decoration {\n  -webkit-appearance: none;\n}\nfieldset {\n  padding: .35em .625em .75em;\n  margin: 0 2px;\n  border: 1px solid #c0c0c0;\n}\nlegend {\n  padding: 0;\n  border: 0;\n}\ntextarea {\n  overflow: auto;\n}\noptgroup {\n  font-weight: bold;\n}\ntable {\n  border-spacing: 0;\n  border-collapse: collapse;\n}\ntd,\nth {\n  padding: 0;\n}\n/*! Source: https://github.com/h5bp/html5-boilerplate/blob/master/src/css/main.css */\n@media print {\n  *,\n  *:before,\n  *:after {\n    color: #000 !important;\n    text-shadow: none !important;\n    background: transparent !important;\n    -webkit-box-shadow: none !important;\n            box-shadow: none !important;\n  }\n  a,\n  a:visited {\n    text-decoration: underline;\n  }\n  a[href]:after {\n    content: \" (\" attr(href) \")\";\n  }\n  abbr[title]:after {\n    content: \" (\" attr(title) \")\";\n  }\n  a[href^=\"#\"]:after,\n  a[href^=\"javascript:\"]:after {\n    content: \"\";\n  }\n  pre,\n  blockquote {\n    border: 1px solid #999;\n\n    page-break-inside: avoid;\n  }\n  thead {\n    display: table-header-group;\n  }\n  tr,\n  img {\n    page-break-inside: avoid;\n  }\n  img {\n    max-width: 100% !important;\n  }\n  p,\n  h2,\n  h3 {\n    orphans: 3;\n    widows: 3;\n  }\n  h2,\n  h3 {\n    page-break-after: avoid;\n  }\n  .navbar {\n    display: none;\n  }\n  .btn > .caret,\n  .dropup > .btn > .caret {\n    border-top-color: #000 !important;\n  }\n  .label {\n    border: 1px solid #000;\n  }\n  .table {\n    border-collapse: collapse !important;\n  }\n  .table td,\n  .table th {\n    background-color: #fff !important;\n  }\n  .table-bordered th,\n  .table-bordered td {\n    border: 1px solid #ddd !important;\n  }\n}\n@font-face {\n  font-family: 'Glyphicons Halflings';\n\n  src: url(" + __webpack_require__(146) + ");\n  src: url(" + __webpack_require__(146) + "?#iefix) format('embedded-opentype'), url(" + __webpack_require__(743) + ") format('woff2'), url(" + __webpack_require__(742) + ") format('woff'), url(" + __webpack_require__(744) + ") format('truetype'), url(" + __webpack_require__(745) + "#glyphicons_halflingsregular) format('svg');\n}\n.glyphicon {\n  position: relative;\n  top: 1px;\n  display: inline-block;\n  font-family: 'Glyphicons Halflings';\n  font-style: normal;\n  font-weight: normal;\n  line-height: 1;\n\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n}\n.glyphicon-asterisk:before {\n  content: \"*\";\n}\n.glyphicon-plus:before {\n  content: \"+\";\n}\n.glyphicon-euro:before,\n.glyphicon-eur:before {\n  content: \"\\20AC\";\n}\n.glyphicon-minus:before {\n  content: \"\\2212\";\n}\n.glyphicon-cloud:before {\n  content: \"\\2601\";\n}\n.glyphicon-envelope:before {\n  content: \"\\2709\";\n}\n.glyphicon-pencil:before {\n  content: \"\\270F\";\n}\n.glyphicon-glass:before {\n  content: \"\\E001\";\n}\n.glyphicon-music:before {\n  content: \"\\E002\";\n}\n.glyphicon-search:before {\n  content: \"\\E003\";\n}\n.glyphicon-heart:before {\n  content: \"\\E005\";\n}\n.glyphicon-star:before {\n  content: \"\\E006\";\n}\n.glyphicon-star-empty:before {\n  content: \"\\E007\";\n}\n.glyphicon-user:before {\n  content: \"\\E008\";\n}\n.glyphicon-film:before {\n  content: \"\\E009\";\n}\n.glyphicon-th-large:before {\n  content: \"\\E010\";\n}\n.glyphicon-th:before {\n  content: \"\\E011\";\n}\n.glyphicon-th-list:before {\n  content: \"\\E012\";\n}\n.glyphicon-ok:before {\n  content: \"\\E013\";\n}\n.glyphicon-remove:before {\n  content: \"\\E014\";\n}\n.glyphicon-zoom-in:before {\n  content: \"\\E015\";\n}\n.glyphicon-zoom-out:before {\n  content: \"\\E016\";\n}\n.glyphicon-off:before {\n  content: \"\\E017\";\n}\n.glyphicon-signal:before {\n  content: \"\\E018\";\n}\n.glyphicon-cog:before {\n  content: \"\\E019\";\n}\n.glyphicon-trash:before {\n  content: \"\\E020\";\n}\n.glyphicon-home:before {\n  content: \"\\E021\";\n}\n.glyphicon-file:before {\n  content: \"\\E022\";\n}\n.glyphicon-time:before {\n  content: \"\\E023\";\n}\n.glyphicon-road:before {\n  content: \"\\E024\";\n}\n.glyphicon-download-alt:before {\n  content: \"\\E025\";\n}\n.glyphicon-download:before {\n  content: \"\\E026\";\n}\n.glyphicon-upload:before {\n  content: \"\\E027\";\n}\n.glyphicon-inbox:before {\n  content: \"\\E028\";\n}\n.glyphicon-play-circle:before {\n  content: \"\\E029\";\n}\n.glyphicon-repeat:before {\n  content: \"\\E030\";\n}\n.glyphicon-refresh:before {\n  content: \"\\E031\";\n}\n.glyphicon-list-alt:before {\n  content: \"\\E032\";\n}\n.glyphicon-lock:before {\n  content: \"\\E033\";\n}\n.glyphicon-flag:before {\n  content: \"\\E034\";\n}\n.glyphicon-headphones:before {\n  content: \"\\E035\";\n}\n.glyphicon-volume-off:before {\n  content: \"\\E036\";\n}\n.glyphicon-volume-down:before {\n  content: \"\\E037\";\n}\n.glyphicon-volume-up:before {\n  content: \"\\E038\";\n}\n.glyphicon-qrcode:before {\n  content: \"\\E039\";\n}\n.glyphicon-barcode:before {\n  content: \"\\E040\";\n}\n.glyphicon-tag:before {\n  content: \"\\E041\";\n}\n.glyphicon-tags:before {\n  content: \"\\E042\";\n}\n.glyphicon-book:before {\n  content: \"\\E043\";\n}\n.glyphicon-bookmark:before {\n  content: \"\\E044\";\n}\n.glyphicon-print:before {\n  content: \"\\E045\";\n}\n.glyphicon-camera:before {\n  content: \"\\E046\";\n}\n.glyphicon-font:before {\n  content: \"\\E047\";\n}\n.glyphicon-bold:before {\n  content: \"\\E048\";\n}\n.glyphicon-italic:before {\n  content: \"\\E049\";\n}\n.glyphicon-text-height:before {\n  content: \"\\E050\";\n}\n.glyphicon-text-width:before {\n  content: \"\\E051\";\n}\n.glyphicon-align-left:before {\n  content: \"\\E052\";\n}\n.glyphicon-align-center:before {\n  content: \"\\E053\";\n}\n.glyphicon-align-right:before {\n  content: \"\\E054\";\n}\n.glyphicon-align-justify:before {\n  content: \"\\E055\";\n}\n.glyphicon-list:before {\n  content: \"\\E056\";\n}\n.glyphicon-indent-left:before {\n  content: \"\\E057\";\n}\n.glyphicon-indent-right:before {\n  content: \"\\E058\";\n}\n.glyphicon-facetime-video:before {\n  content: \"\\E059\";\n}\n.glyphicon-picture:before {\n  content: \"\\E060\";\n}\n.glyphicon-map-marker:before {\n  content: \"\\E062\";\n}\n.glyphicon-adjust:before {\n  content: \"\\E063\";\n}\n.glyphicon-tint:before {\n  content: \"\\E064\";\n}\n.glyphicon-edit:before {\n  content: \"\\E065\";\n}\n.glyphicon-share:before {\n  content: \"\\E066\";\n}\n.glyphicon-check:before {\n  content: \"\\E067\";\n}\n.glyphicon-move:before {\n  content: \"\\E068\";\n}\n.glyphicon-step-backward:before {\n  content: \"\\E069\";\n}\n.glyphicon-fast-backward:before {\n  content: \"\\E070\";\n}\n.glyphicon-backward:before {\n  content: \"\\E071\";\n}\n.glyphicon-play:before {\n  content: \"\\E072\";\n}\n.glyphicon-pause:before {\n  content: \"\\E073\";\n}\n.glyphicon-stop:before {\n  content: \"\\E074\";\n}\n.glyphicon-forward:before {\n  content: \"\\E075\";\n}\n.glyphicon-fast-forward:before {\n  content: \"\\E076\";\n}\n.glyphicon-step-forward:before {\n  content: \"\\E077\";\n}\n.glyphicon-eject:before {\n  content: \"\\E078\";\n}\n.glyphicon-chevron-left:before {\n  content: \"\\E079\";\n}\n.glyphicon-chevron-right:before {\n  content: \"\\E080\";\n}\n.glyphicon-plus-sign:before {\n  content: \"\\E081\";\n}\n.glyphicon-minus-sign:before {\n  content: \"\\E082\";\n}\n.glyphicon-remove-sign:before {\n  content: \"\\E083\";\n}\n.glyphicon-ok-sign:before {\n  content: \"\\E084\";\n}\n.glyphicon-question-sign:before {\n  content: \"\\E085\";\n}\n.glyphicon-info-sign:before {\n  content: \"\\E086\";\n}\n.glyphicon-screenshot:before {\n  content: \"\\E087\";\n}\n.glyphicon-remove-circle:before {\n  content: \"\\E088\";\n}\n.glyphicon-ok-circle:before {\n  content: \"\\E089\";\n}\n.glyphicon-ban-circle:before {\n  content: \"\\E090\";\n}\n.glyphicon-arrow-left:before {\n  content: \"\\E091\";\n}\n.glyphicon-arrow-right:before {\n  content: \"\\E092\";\n}\n.glyphicon-arrow-up:before {\n  content: \"\\E093\";\n}\n.glyphicon-arrow-down:before {\n  content: \"\\E094\";\n}\n.glyphicon-share-alt:before {\n  content: \"\\E095\";\n}\n.glyphicon-resize-full:before {\n  content: \"\\E096\";\n}\n.glyphicon-resize-small:before {\n  content: \"\\E097\";\n}\n.glyphicon-exclamation-sign:before {\n  content: \"\\E101\";\n}\n.glyphicon-gift:before {\n  content: \"\\E102\";\n}\n.glyphicon-leaf:before {\n  content: \"\\E103\";\n}\n.glyphicon-fire:before {\n  content: \"\\E104\";\n}\n.glyphicon-eye-open:before {\n  content: \"\\E105\";\n}\n.glyphicon-eye-close:before {\n  content: \"\\E106\";\n}\n.glyphicon-warning-sign:before {\n  content: \"\\E107\";\n}\n.glyphicon-plane:before {\n  content: \"\\E108\";\n}\n.glyphicon-calendar:before {\n  content: \"\\E109\";\n}\n.glyphicon-random:before {\n  content: \"\\E110\";\n}\n.glyphicon-comment:before {\n  content: \"\\E111\";\n}\n.glyphicon-magnet:before {\n  content: \"\\E112\";\n}\n.glyphicon-chevron-up:before {\n  content: \"\\E113\";\n}\n.glyphicon-chevron-down:before {\n  content: \"\\E114\";\n}\n.glyphicon-retweet:before {\n  content: \"\\E115\";\n}\n.glyphicon-shopping-cart:before {\n  content: \"\\E116\";\n}\n.glyphicon-folder-close:before {\n  content: \"\\E117\";\n}\n.glyphicon-folder-open:before {\n  content: \"\\E118\";\n}\n.glyphicon-resize-vertical:before {\n  content: \"\\E119\";\n}\n.glyphicon-resize-horizontal:before {\n  content: \"\\E120\";\n}\n.glyphicon-hdd:before {\n  content: \"\\E121\";\n}\n.glyphicon-bullhorn:before {\n  content: \"\\E122\";\n}\n.glyphicon-bell:before {\n  content: \"\\E123\";\n}\n.glyphicon-certificate:before {\n  content: \"\\E124\";\n}\n.glyphicon-thumbs-up:before {\n  content: \"\\E125\";\n}\n.glyphicon-thumbs-down:before {\n  content: \"\\E126\";\n}\n.glyphicon-hand-right:before {\n  content: \"\\E127\";\n}\n.glyphicon-hand-left:before {\n  content: \"\\E128\";\n}\n.glyphicon-hand-up:before {\n  content: \"\\E129\";\n}\n.glyphicon-hand-down:before {\n  content: \"\\E130\";\n}\n.glyphicon-circle-arrow-right:before {\n  content: \"\\E131\";\n}\n.glyphicon-circle-arrow-left:before {\n  content: \"\\E132\";\n}\n.glyphicon-circle-arrow-up:before {\n  content: \"\\E133\";\n}\n.glyphicon-circle-arrow-down:before {\n  content: \"\\E134\";\n}\n.glyphicon-globe:before {\n  content: \"\\E135\";\n}\n.glyphicon-wrench:before {\n  content: \"\\E136\";\n}\n.glyphicon-tasks:before {\n  content: \"\\E137\";\n}\n.glyphicon-filter:before {\n  content: \"\\E138\";\n}\n.glyphicon-briefcase:before {\n  content: \"\\E139\";\n}\n.glyphicon-fullscreen:before {\n  content: \"\\E140\";\n}\n.glyphicon-dashboard:before {\n  content: \"\\E141\";\n}\n.glyphicon-paperclip:before {\n  content: \"\\E142\";\n}\n.glyphicon-heart-empty:before {\n  content: \"\\E143\";\n}\n.glyphicon-link:before {\n  content: \"\\E144\";\n}\n.glyphicon-phone:before {\n  content: \"\\E145\";\n}\n.glyphicon-pushpin:before {\n  content: \"\\E146\";\n}\n.glyphicon-usd:before {\n  content: \"\\E148\";\n}\n.glyphicon-gbp:before {\n  content: \"\\E149\";\n}\n.glyphicon-sort:before {\n  content: \"\\E150\";\n}\n.glyphicon-sort-by-alphabet:before {\n  content: \"\\E151\";\n}\n.glyphicon-sort-by-alphabet-alt:before {\n  content: \"\\E152\";\n}\n.glyphicon-sort-by-order:before {\n  content: \"\\E153\";\n}\n.glyphicon-sort-by-order-alt:before {\n  content: \"\\E154\";\n}\n.glyphicon-sort-by-attributes:before {\n  content: \"\\E155\";\n}\n.glyphicon-sort-by-attributes-alt:before {\n  content: \"\\E156\";\n}\n.glyphicon-unchecked:before {\n  content: \"\\E157\";\n}\n.glyphicon-expand:before {\n  content: \"\\E158\";\n}\n.glyphicon-collapse-down:before {\n  content: \"\\E159\";\n}\n.glyphicon-collapse-up:before {\n  content: \"\\E160\";\n}\n.glyphicon-log-in:before {\n  content: \"\\E161\";\n}\n.glyphicon-flash:before {\n  content: \"\\E162\";\n}\n.glyphicon-log-out:before {\n  content: \"\\E163\";\n}\n.glyphicon-new-window:before {\n  content: \"\\E164\";\n}\n.glyphicon-record:before {\n  content: \"\\E165\";\n}\n.glyphicon-save:before {\n  content: \"\\E166\";\n}\n.glyphicon-open:before {\n  content: \"\\E167\";\n}\n.glyphicon-saved:before {\n  content: \"\\E168\";\n}\n.glyphicon-import:before {\n  content: \"\\E169\";\n}\n.glyphicon-export:before {\n  content: \"\\E170\";\n}\n.glyphicon-send:before {\n  content: \"\\E171\";\n}\n.glyphicon-floppy-disk:before {\n  content: \"\\E172\";\n}\n.glyphicon-floppy-saved:before {\n  content: \"\\E173\";\n}\n.glyphicon-floppy-remove:before {\n  content: \"\\E174\";\n}\n.glyphicon-floppy-save:before {\n  content: \"\\E175\";\n}\n.glyphicon-floppy-open:before {\n  content: \"\\E176\";\n}\n.glyphicon-credit-card:before {\n  content: \"\\E177\";\n}\n.glyphicon-transfer:before {\n  content: \"\\E178\";\n}\n.glyphicon-cutlery:before {\n  content: \"\\E179\";\n}\n.glyphicon-header:before {\n  content: \"\\E180\";\n}\n.glyphicon-compressed:before {\n  content: \"\\E181\";\n}\n.glyphicon-earphone:before {\n  content: \"\\E182\";\n}\n.glyphicon-phone-alt:before {\n  content: \"\\E183\";\n}\n.glyphicon-tower:before {\n  content: \"\\E184\";\n}\n.glyphicon-stats:before {\n  content: \"\\E185\";\n}\n.glyphicon-sd-video:before {\n  content: \"\\E186\";\n}\n.glyphicon-hd-video:before {\n  content: \"\\E187\";\n}\n.glyphicon-subtitles:before {\n  content: \"\\E188\";\n}\n.glyphicon-sound-stereo:before {\n  content: \"\\E189\";\n}\n.glyphicon-sound-dolby:before {\n  content: \"\\E190\";\n}\n.glyphicon-sound-5-1:before {\n  content: \"\\E191\";\n}\n.glyphicon-sound-6-1:before {\n  content: \"\\E192\";\n}\n.glyphicon-sound-7-1:before {\n  content: \"\\E193\";\n}\n.glyphicon-copyright-mark:before {\n  content: \"\\E194\";\n}\n.glyphicon-registration-mark:before {\n  content: \"\\E195\";\n}\n.glyphicon-cloud-download:before {\n  content: \"\\E197\";\n}\n.glyphicon-cloud-upload:before {\n  content: \"\\E198\";\n}\n.glyphicon-tree-conifer:before {\n  content: \"\\E199\";\n}\n.glyphicon-tree-deciduous:before {\n  content: \"\\E200\";\n}\n.glyphicon-cd:before {\n  content: \"\\E201\";\n}\n.glyphicon-save-file:before {\n  content: \"\\E202\";\n}\n.glyphicon-open-file:before {\n  content: \"\\E203\";\n}\n.glyphicon-level-up:before {\n  content: \"\\E204\";\n}\n.glyphicon-copy:before {\n  content: \"\\E205\";\n}\n.glyphicon-paste:before {\n  content: \"\\E206\";\n}\n.glyphicon-alert:before {\n  content: \"\\E209\";\n}\n.glyphicon-equalizer:before {\n  content: \"\\E210\";\n}\n.glyphicon-king:before {\n  content: \"\\E211\";\n}\n.glyphicon-queen:before {\n  content: \"\\E212\";\n}\n.glyphicon-pawn:before {\n  content: \"\\E213\";\n}\n.glyphicon-bishop:before {\n  content: \"\\E214\";\n}\n.glyphicon-knight:before {\n  content: \"\\E215\";\n}\n.glyphicon-baby-formula:before {\n  content: \"\\E216\";\n}\n.glyphicon-tent:before {\n  content: \"\\26FA\";\n}\n.glyphicon-blackboard:before {\n  content: \"\\E218\";\n}\n.glyphicon-bed:before {\n  content: \"\\E219\";\n}\n.glyphicon-apple:before {\n  content: \"\\F8FF\";\n}\n.glyphicon-erase:before {\n  content: \"\\E221\";\n}\n.glyphicon-hourglass:before {\n  content: \"\\231B\";\n}\n.glyphicon-lamp:before {\n  content: \"\\E223\";\n}\n.glyphicon-duplicate:before {\n  content: \"\\E224\";\n}\n.glyphicon-piggy-bank:before {\n  content: \"\\E225\";\n}\n.glyphicon-scissors:before {\n  content: \"\\E226\";\n}\n.glyphicon-bitcoin:before {\n  content: \"\\E227\";\n}\n.glyphicon-btc:before {\n  content: \"\\E227\";\n}\n.glyphicon-xbt:before {\n  content: \"\\E227\";\n}\n.glyphicon-yen:before {\n  content: \"\\A5\";\n}\n.glyphicon-jpy:before {\n  content: \"\\A5\";\n}\n.glyphicon-ruble:before {\n  content: \"\\20BD\";\n}\n.glyphicon-rub:before {\n  content: \"\\20BD\";\n}\n.glyphicon-scale:before {\n  content: \"\\E230\";\n}\n.glyphicon-ice-lolly:before {\n  content: \"\\E231\";\n}\n.glyphicon-ice-lolly-tasted:before {\n  content: \"\\E232\";\n}\n.glyphicon-education:before {\n  content: \"\\E233\";\n}\n.glyphicon-option-horizontal:before {\n  content: \"\\E234\";\n}\n.glyphicon-option-vertical:before {\n  content: \"\\E235\";\n}\n.glyphicon-menu-hamburger:before {\n  content: \"\\E236\";\n}\n.glyphicon-modal-window:before {\n  content: \"\\E237\";\n}\n.glyphicon-oil:before {\n  content: \"\\E238\";\n}\n.glyphicon-grain:before {\n  content: \"\\E239\";\n}\n.glyphicon-sunglasses:before {\n  content: \"\\E240\";\n}\n.glyphicon-text-size:before {\n  content: \"\\E241\";\n}\n.glyphicon-text-color:before {\n  content: \"\\E242\";\n}\n.glyphicon-text-background:before {\n  content: \"\\E243\";\n}\n.glyphicon-object-align-top:before {\n  content: \"\\E244\";\n}\n.glyphicon-object-align-bottom:before {\n  content: \"\\E245\";\n}\n.glyphicon-object-align-horizontal:before {\n  content: \"\\E246\";\n}\n.glyphicon-object-align-left:before {\n  content: \"\\E247\";\n}\n.glyphicon-object-align-vertical:before {\n  content: \"\\E248\";\n}\n.glyphicon-object-align-right:before {\n  content: \"\\E249\";\n}\n.glyphicon-triangle-right:before {\n  content: \"\\E250\";\n}\n.glyphicon-triangle-left:before {\n  content: \"\\E251\";\n}\n.glyphicon-triangle-bottom:before {\n  content: \"\\E252\";\n}\n.glyphicon-triangle-top:before {\n  content: \"\\E253\";\n}\n.glyphicon-console:before {\n  content: \"\\E254\";\n}\n.glyphicon-superscript:before {\n  content: \"\\E255\";\n}\n.glyphicon-subscript:before {\n  content: \"\\E256\";\n}\n.glyphicon-menu-left:before {\n  content: \"\\E257\";\n}\n.glyphicon-menu-right:before {\n  content: \"\\E258\";\n}\n.glyphicon-menu-down:before {\n  content: \"\\E259\";\n}\n.glyphicon-menu-up:before {\n  content: \"\\E260\";\n}\n* {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n}\n*:before,\n*:after {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n}\nhtml {\n  font-size: 10px;\n\n  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);\n}\nbody {\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  font-size: 14px;\n  line-height: 1.42857143;\n  color: #333;\n  background-color: #fff;\n}\ninput,\nbutton,\nselect,\ntextarea {\n  font-family: inherit;\n  font-size: inherit;\n  line-height: inherit;\n}\na {\n  color: #337ab7;\n  text-decoration: none;\n}\na:hover,\na:focus {\n  color: #23527c;\n  text-decoration: underline;\n}\na:focus {\n  outline: 5px auto -webkit-focus-ring-color;\n  outline-offset: -2px;\n}\nfigure {\n  margin: 0;\n}\nimg {\n  vertical-align: middle;\n}\n.img-responsive,\n.thumbnail > img,\n.thumbnail a > img,\n.carousel-inner > .item > img,\n.carousel-inner > .item > a > img {\n  display: block;\n  max-width: 100%;\n  height: auto;\n}\n.img-rounded {\n  border-radius: 6px;\n}\n.img-thumbnail {\n  display: inline-block;\n  max-width: 100%;\n  height: auto;\n  padding: 4px;\n  line-height: 1.42857143;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-radius: 4px;\n  -webkit-transition: all .2s ease-in-out;\n       -o-transition: all .2s ease-in-out;\n          transition: all .2s ease-in-out;\n}\n.img-circle {\n  border-radius: 50%;\n}\nhr {\n  margin-top: 20px;\n  margin-bottom: 20px;\n  border: 0;\n  border-top: 1px solid #eee;\n}\n.sr-only {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip: rect(0, 0, 0, 0);\n  border: 0;\n}\n.sr-only-focusable:active,\n.sr-only-focusable:focus {\n  position: static;\n  width: auto;\n  height: auto;\n  margin: 0;\n  overflow: visible;\n  clip: auto;\n}\n[role=\"button\"] {\n  cursor: pointer;\n}\nh1,\nh2,\nh3,\nh4,\nh5,\nh6,\n.h1,\n.h2,\n.h3,\n.h4,\n.h5,\n.h6 {\n  font-family: inherit;\n  font-weight: 500;\n  line-height: 1.1;\n  color: inherit;\n}\nh1 small,\nh2 small,\nh3 small,\nh4 small,\nh5 small,\nh6 small,\n.h1 small,\n.h2 small,\n.h3 small,\n.h4 small,\n.h5 small,\n.h6 small,\nh1 .small,\nh2 .small,\nh3 .small,\nh4 .small,\nh5 .small,\nh6 .small,\n.h1 .small,\n.h2 .small,\n.h3 .small,\n.h4 .small,\n.h5 .small,\n.h6 .small {\n  font-weight: normal;\n  line-height: 1;\n  color: #777;\n}\nh1,\n.h1,\nh2,\n.h2,\nh3,\n.h3 {\n  margin-top: 20px;\n  margin-bottom: 10px;\n}\nh1 small,\n.h1 small,\nh2 small,\n.h2 small,\nh3 small,\n.h3 small,\nh1 .small,\n.h1 .small,\nh2 .small,\n.h2 .small,\nh3 .small,\n.h3 .small {\n  font-size: 65%;\n}\nh4,\n.h4,\nh5,\n.h5,\nh6,\n.h6 {\n  margin-top: 10px;\n  margin-bottom: 10px;\n}\nh4 small,\n.h4 small,\nh5 small,\n.h5 small,\nh6 small,\n.h6 small,\nh4 .small,\n.h4 .small,\nh5 .small,\n.h5 .small,\nh6 .small,\n.h6 .small {\n  font-size: 75%;\n}\nh1,\n.h1 {\n  font-size: 36px;\n}\nh2,\n.h2 {\n  font-size: 30px;\n}\nh3,\n.h3 {\n  font-size: 24px;\n}\nh4,\n.h4 {\n  font-size: 18px;\n}\nh5,\n.h5 {\n  font-size: 14px;\n}\nh6,\n.h6 {\n  font-size: 12px;\n}\np {\n  margin: 0 0 10px;\n}\n.lead {\n  margin-bottom: 20px;\n  font-size: 16px;\n  font-weight: 300;\n  line-height: 1.4;\n}\n@media (min-width: 768px) {\n  .lead {\n    font-size: 21px;\n  }\n}\nsmall,\n.small {\n  font-size: 85%;\n}\nmark,\n.mark {\n  padding: .2em;\n  background-color: #fcf8e3;\n}\n.text-left {\n  text-align: left;\n}\n.text-right {\n  text-align: right;\n}\n.text-center {\n  text-align: center;\n}\n.text-justify {\n  text-align: justify;\n}\n.text-nowrap {\n  white-space: nowrap;\n}\n.text-lowercase {\n  text-transform: lowercase;\n}\n.text-uppercase {\n  text-transform: uppercase;\n}\n.text-capitalize {\n  text-transform: capitalize;\n}\n.text-muted {\n  color: #777;\n}\n.text-primary {\n  color: #337ab7;\n}\na.text-primary:hover,\na.text-primary:focus {\n  color: #286090;\n}\n.text-success {\n  color: #3c763d;\n}\na.text-success:hover,\na.text-success:focus {\n  color: #2b542c;\n}\n.text-info {\n  color: #31708f;\n}\na.text-info:hover,\na.text-info:focus {\n  color: #245269;\n}\n.text-warning {\n  color: #8a6d3b;\n}\na.text-warning:hover,\na.text-warning:focus {\n  color: #66512c;\n}\n.text-danger {\n  color: #a94442;\n}\na.text-danger:hover,\na.text-danger:focus {\n  color: #843534;\n}\n.bg-primary {\n  color: #fff;\n  background-color: #337ab7;\n}\na.bg-primary:hover,\na.bg-primary:focus {\n  background-color: #286090;\n}\n.bg-success {\n  background-color: #dff0d8;\n}\na.bg-success:hover,\na.bg-success:focus {\n  background-color: #c1e2b3;\n}\n.bg-info {\n  background-color: #d9edf7;\n}\na.bg-info:hover,\na.bg-info:focus {\n  background-color: #afd9ee;\n}\n.bg-warning {\n  background-color: #fcf8e3;\n}\na.bg-warning:hover,\na.bg-warning:focus {\n  background-color: #f7ecb5;\n}\n.bg-danger {\n  background-color: #f2dede;\n}\na.bg-danger:hover,\na.bg-danger:focus {\n  background-color: #e4b9b9;\n}\n.page-header {\n  padding-bottom: 9px;\n  margin: 40px 0 20px;\n  border-bottom: 1px solid #eee;\n}\nul,\nol {\n  margin-top: 0;\n  margin-bottom: 10px;\n}\nul ul,\nol ul,\nul ol,\nol ol {\n  margin-bottom: 0;\n}\n.list-unstyled {\n  padding-left: 0;\n  list-style: none;\n}\n.list-inline {\n  padding-left: 0;\n  margin-left: -5px;\n  list-style: none;\n}\n.list-inline > li {\n  display: inline-block;\n  padding-right: 5px;\n  padding-left: 5px;\n}\ndl {\n  margin-top: 0;\n  margin-bottom: 20px;\n}\ndt,\ndd {\n  line-height: 1.42857143;\n}\ndt {\n  font-weight: bold;\n}\ndd {\n  margin-left: 0;\n}\n@media (min-width: 768px) {\n  .dl-horizontal dt {\n    float: left;\n    width: 160px;\n    overflow: hidden;\n    clear: left;\n    text-align: right;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n  }\n  .dl-horizontal dd {\n    margin-left: 180px;\n  }\n}\nabbr[title],\nabbr[data-original-title] {\n  cursor: help;\n  border-bottom: 1px dotted #777;\n}\n.initialism {\n  font-size: 90%;\n  text-transform: uppercase;\n}\nblockquote {\n  padding: 10px 20px;\n  margin: 0 0 20px;\n  font-size: 17.5px;\n  border-left: 5px solid #eee;\n}\nblockquote p:last-child,\nblockquote ul:last-child,\nblockquote ol:last-child {\n  margin-bottom: 0;\n}\nblockquote footer,\nblockquote small,\nblockquote .small {\n  display: block;\n  font-size: 80%;\n  line-height: 1.42857143;\n  color: #777;\n}\nblockquote footer:before,\nblockquote small:before,\nblockquote .small:before {\n  content: '\\2014   \\A0';\n}\n.blockquote-reverse,\nblockquote.pull-right {\n  padding-right: 15px;\n  padding-left: 0;\n  text-align: right;\n  border-right: 5px solid #eee;\n  border-left: 0;\n}\n.blockquote-reverse footer:before,\nblockquote.pull-right footer:before,\n.blockquote-reverse small:before,\nblockquote.pull-right small:before,\n.blockquote-reverse .small:before,\nblockquote.pull-right .small:before {\n  content: '';\n}\n.blockquote-reverse footer:after,\nblockquote.pull-right footer:after,\n.blockquote-reverse small:after,\nblockquote.pull-right small:after,\n.blockquote-reverse .small:after,\nblockquote.pull-right .small:after {\n  content: '\\A0   \\2014';\n}\naddress {\n  margin-bottom: 20px;\n  font-style: normal;\n  line-height: 1.42857143;\n}\ncode,\nkbd,\npre,\nsamp {\n  font-family: Menlo, Monaco, Consolas, \"Courier New\", monospace;\n}\ncode {\n  padding: 2px 4px;\n  font-size: 90%;\n  color: #c7254e;\n  background-color: #f9f2f4;\n  border-radius: 4px;\n}\nkbd {\n  padding: 2px 4px;\n  font-size: 90%;\n  color: #fff;\n  background-color: #333;\n  border-radius: 3px;\n  -webkit-box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .25);\n          box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .25);\n}\nkbd kbd {\n  padding: 0;\n  font-size: 100%;\n  font-weight: bold;\n  -webkit-box-shadow: none;\n          box-shadow: none;\n}\npre {\n  display: block;\n  padding: 9.5px;\n  margin: 0 0 10px;\n  font-size: 13px;\n  line-height: 1.42857143;\n  color: #333;\n  word-break: break-all;\n  word-wrap: break-word;\n  background-color: #f5f5f5;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n}\npre code {\n  padding: 0;\n  font-size: inherit;\n  color: inherit;\n  white-space: pre-wrap;\n  background-color: transparent;\n  border-radius: 0;\n}\n.pre-scrollable {\n  max-height: 340px;\n  overflow-y: scroll;\n}\n.container {\n  padding-right: 15px;\n  padding-left: 15px;\n  margin-right: auto;\n  margin-left: auto;\n}\n@media (min-width: 768px) {\n  .container {\n    width: 750px;\n  }\n}\n@media (min-width: 992px) {\n  .container {\n    width: 970px;\n  }\n}\n@media (min-width: 1200px) {\n  .container {\n    width: 1170px;\n  }\n}\n.container-fluid {\n  padding-right: 15px;\n  padding-left: 15px;\n  margin-right: auto;\n  margin-left: auto;\n}\n.row {\n  margin-right: -15px;\n  margin-left: -15px;\n}\n.col-xs-1, .col-sm-1, .col-md-1, .col-lg-1, .col-xs-2, .col-sm-2, .col-md-2, .col-lg-2, .col-xs-3, .col-sm-3, .col-md-3, .col-lg-3, .col-xs-4, .col-sm-4, .col-md-4, .col-lg-4, .col-xs-5, .col-sm-5, .col-md-5, .col-lg-5, .col-xs-6, .col-sm-6, .col-md-6, .col-lg-6, .col-xs-7, .col-sm-7, .col-md-7, .col-lg-7, .col-xs-8, .col-sm-8, .col-md-8, .col-lg-8, .col-xs-9, .col-sm-9, .col-md-9, .col-lg-9, .col-xs-10, .col-sm-10, .col-md-10, .col-lg-10, .col-xs-11, .col-sm-11, .col-md-11, .col-lg-11, .col-xs-12, .col-sm-12, .col-md-12, .col-lg-12 {\n  position: relative;\n  min-height: 1px;\n  padding-right: 15px;\n  padding-left: 15px;\n}\n.col-xs-1, .col-xs-2, .col-xs-3, .col-xs-4, .col-xs-5, .col-xs-6, .col-xs-7, .col-xs-8, .col-xs-9, .col-xs-10, .col-xs-11, .col-xs-12 {\n  float: left;\n}\n.col-xs-12 {\n  width: 100%;\n}\n.col-xs-11 {\n  width: 91.66666667%;\n}\n.col-xs-10 {\n  width: 83.33333333%;\n}\n.col-xs-9 {\n  width: 75%;\n}\n.col-xs-8 {\n  width: 66.66666667%;\n}\n.col-xs-7 {\n  width: 58.33333333%;\n}\n.col-xs-6 {\n  width: 50%;\n}\n.col-xs-5 {\n  width: 41.66666667%;\n}\n.col-xs-4 {\n  width: 33.33333333%;\n}\n.col-xs-3 {\n  width: 25%;\n}\n.col-xs-2 {\n  width: 16.66666667%;\n}\n.col-xs-1 {\n  width: 8.33333333%;\n}\n.col-xs-pull-12 {\n  right: 100%;\n}\n.col-xs-pull-11 {\n  right: 91.66666667%;\n}\n.col-xs-pull-10 {\n  right: 83.33333333%;\n}\n.col-xs-pull-9 {\n  right: 75%;\n}\n.col-xs-pull-8 {\n  right: 66.66666667%;\n}\n.col-xs-pull-7 {\n  right: 58.33333333%;\n}\n.col-xs-pull-6 {\n  right: 50%;\n}\n.col-xs-pull-5 {\n  right: 41.66666667%;\n}\n.col-xs-pull-4 {\n  right: 33.33333333%;\n}\n.col-xs-pull-3 {\n  right: 25%;\n}\n.col-xs-pull-2 {\n  right: 16.66666667%;\n}\n.col-xs-pull-1 {\n  right: 8.33333333%;\n}\n.col-xs-pull-0 {\n  right: auto;\n}\n.col-xs-push-12 {\n  left: 100%;\n}\n.col-xs-push-11 {\n  left: 91.66666667%;\n}\n.col-xs-push-10 {\n  left: 83.33333333%;\n}\n.col-xs-push-9 {\n  left: 75%;\n}\n.col-xs-push-8 {\n  left: 66.66666667%;\n}\n.col-xs-push-7 {\n  left: 58.33333333%;\n}\n.col-xs-push-6 {\n  left: 50%;\n}\n.col-xs-push-5 {\n  left: 41.66666667%;\n}\n.col-xs-push-4 {\n  left: 33.33333333%;\n}\n.col-xs-push-3 {\n  left: 25%;\n}\n.col-xs-push-2 {\n  left: 16.66666667%;\n}\n.col-xs-push-1 {\n  left: 8.33333333%;\n}\n.col-xs-push-0 {\n  left: auto;\n}\n.col-xs-offset-12 {\n  margin-left: 100%;\n}\n.col-xs-offset-11 {\n  margin-left: 91.66666667%;\n}\n.col-xs-offset-10 {\n  margin-left: 83.33333333%;\n}\n.col-xs-offset-9 {\n  margin-left: 75%;\n}\n.col-xs-offset-8 {\n  margin-left: 66.66666667%;\n}\n.col-xs-offset-7 {\n  margin-left: 58.33333333%;\n}\n.col-xs-offset-6 {\n  margin-left: 50%;\n}\n.col-xs-offset-5 {\n  margin-left: 41.66666667%;\n}\n.col-xs-offset-4 {\n  margin-left: 33.33333333%;\n}\n.col-xs-offset-3 {\n  margin-left: 25%;\n}\n.col-xs-offset-2 {\n  margin-left: 16.66666667%;\n}\n.col-xs-offset-1 {\n  margin-left: 8.33333333%;\n}\n.col-xs-offset-0 {\n  margin-left: 0;\n}\n@media (min-width: 768px) {\n  .col-sm-1, .col-sm-2, .col-sm-3, .col-sm-4, .col-sm-5, .col-sm-6, .col-sm-7, .col-sm-8, .col-sm-9, .col-sm-10, .col-sm-11, .col-sm-12 {\n    float: left;\n  }\n  .col-sm-12 {\n    width: 100%;\n  }\n  .col-sm-11 {\n    width: 91.66666667%;\n  }\n  .col-sm-10 {\n    width: 83.33333333%;\n  }\n  .col-sm-9 {\n    width: 75%;\n  }\n  .col-sm-8 {\n    width: 66.66666667%;\n  }\n  .col-sm-7 {\n    width: 58.33333333%;\n  }\n  .col-sm-6 {\n    width: 50%;\n  }\n  .col-sm-5 {\n    width: 41.66666667%;\n  }\n  .col-sm-4 {\n    width: 33.33333333%;\n  }\n  .col-sm-3 {\n    width: 25%;\n  }\n  .col-sm-2 {\n    width: 16.66666667%;\n  }\n  .col-sm-1 {\n    width: 8.33333333%;\n  }\n  .col-sm-pull-12 {\n    right: 100%;\n  }\n  .col-sm-pull-11 {\n    right: 91.66666667%;\n  }\n  .col-sm-pull-10 {\n    right: 83.33333333%;\n  }\n  .col-sm-pull-9 {\n    right: 75%;\n  }\n  .col-sm-pull-8 {\n    right: 66.66666667%;\n  }\n  .col-sm-pull-7 {\n    right: 58.33333333%;\n  }\n  .col-sm-pull-6 {\n    right: 50%;\n  }\n  .col-sm-pull-5 {\n    right: 41.66666667%;\n  }\n  .col-sm-pull-4 {\n    right: 33.33333333%;\n  }\n  .col-sm-pull-3 {\n    right: 25%;\n  }\n  .col-sm-pull-2 {\n    right: 16.66666667%;\n  }\n  .col-sm-pull-1 {\n    right: 8.33333333%;\n  }\n  .col-sm-pull-0 {\n    right: auto;\n  }\n  .col-sm-push-12 {\n    left: 100%;\n  }\n  .col-sm-push-11 {\n    left: 91.66666667%;\n  }\n  .col-sm-push-10 {\n    left: 83.33333333%;\n  }\n  .col-sm-push-9 {\n    left: 75%;\n  }\n  .col-sm-push-8 {\n    left: 66.66666667%;\n  }\n  .col-sm-push-7 {\n    left: 58.33333333%;\n  }\n  .col-sm-push-6 {\n    left: 50%;\n  }\n  .col-sm-push-5 {\n    left: 41.66666667%;\n  }\n  .col-sm-push-4 {\n    left: 33.33333333%;\n  }\n  .col-sm-push-3 {\n    left: 25%;\n  }\n  .col-sm-push-2 {\n    left: 16.66666667%;\n  }\n  .col-sm-push-1 {\n    left: 8.33333333%;\n  }\n  .col-sm-push-0 {\n    left: auto;\n  }\n  .col-sm-offset-12 {\n    margin-left: 100%;\n  }\n  .col-sm-offset-11 {\n    margin-left: 91.66666667%;\n  }\n  .col-sm-offset-10 {\n    margin-left: 83.33333333%;\n  }\n  .col-sm-offset-9 {\n    margin-left: 75%;\n  }\n  .col-sm-offset-8 {\n    margin-left: 66.66666667%;\n  }\n  .col-sm-offset-7 {\n    margin-left: 58.33333333%;\n  }\n  .col-sm-offset-6 {\n    margin-left: 50%;\n  }\n  .col-sm-offset-5 {\n    margin-left: 41.66666667%;\n  }\n  .col-sm-offset-4 {\n    margin-left: 33.33333333%;\n  }\n  .col-sm-offset-3 {\n    margin-left: 25%;\n  }\n  .col-sm-offset-2 {\n    margin-left: 16.66666667%;\n  }\n  .col-sm-offset-1 {\n    margin-left: 8.33333333%;\n  }\n  .col-sm-offset-0 {\n    margin-left: 0;\n  }\n}\n@media (min-width: 992px) {\n  .col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9, .col-md-10, .col-md-11, .col-md-12 {\n    float: left;\n  }\n  .col-md-12 {\n    width: 100%;\n  }\n  .col-md-11 {\n    width: 91.66666667%;\n  }\n  .col-md-10 {\n    width: 83.33333333%;\n  }\n  .col-md-9 {\n    width: 75%;\n  }\n  .col-md-8 {\n    width: 66.66666667%;\n  }\n  .col-md-7 {\n    width: 58.33333333%;\n  }\n  .col-md-6 {\n    width: 50%;\n  }\n  .col-md-5 {\n    width: 41.66666667%;\n  }\n  .col-md-4 {\n    width: 33.33333333%;\n  }\n  .col-md-3 {\n    width: 25%;\n  }\n  .col-md-2 {\n    width: 16.66666667%;\n  }\n  .col-md-1 {\n    width: 8.33333333%;\n  }\n  .col-md-pull-12 {\n    right: 100%;\n  }\n  .col-md-pull-11 {\n    right: 91.66666667%;\n  }\n  .col-md-pull-10 {\n    right: 83.33333333%;\n  }\n  .col-md-pull-9 {\n    right: 75%;\n  }\n  .col-md-pull-8 {\n    right: 66.66666667%;\n  }\n  .col-md-pull-7 {\n    right: 58.33333333%;\n  }\n  .col-md-pull-6 {\n    right: 50%;\n  }\n  .col-md-pull-5 {\n    right: 41.66666667%;\n  }\n  .col-md-pull-4 {\n    right: 33.33333333%;\n  }\n  .col-md-pull-3 {\n    right: 25%;\n  }\n  .col-md-pull-2 {\n    right: 16.66666667%;\n  }\n  .col-md-pull-1 {\n    right: 8.33333333%;\n  }\n  .col-md-pull-0 {\n    right: auto;\n  }\n  .col-md-push-12 {\n    left: 100%;\n  }\n  .col-md-push-11 {\n    left: 91.66666667%;\n  }\n  .col-md-push-10 {\n    left: 83.33333333%;\n  }\n  .col-md-push-9 {\n    left: 75%;\n  }\n  .col-md-push-8 {\n    left: 66.66666667%;\n  }\n  .col-md-push-7 {\n    left: 58.33333333%;\n  }\n  .col-md-push-6 {\n    left: 50%;\n  }\n  .col-md-push-5 {\n    left: 41.66666667%;\n  }\n  .col-md-push-4 {\n    left: 33.33333333%;\n  }\n  .col-md-push-3 {\n    left: 25%;\n  }\n  .col-md-push-2 {\n    left: 16.66666667%;\n  }\n  .col-md-push-1 {\n    left: 8.33333333%;\n  }\n  .col-md-push-0 {\n    left: auto;\n  }\n  .col-md-offset-12 {\n    margin-left: 100%;\n  }\n  .col-md-offset-11 {\n    margin-left: 91.66666667%;\n  }\n  .col-md-offset-10 {\n    margin-left: 83.33333333%;\n  }\n  .col-md-offset-9 {\n    margin-left: 75%;\n  }\n  .col-md-offset-8 {\n    margin-left: 66.66666667%;\n  }\n  .col-md-offset-7 {\n    margin-left: 58.33333333%;\n  }\n  .col-md-offset-6 {\n    margin-left: 50%;\n  }\n  .col-md-offset-5 {\n    margin-left: 41.66666667%;\n  }\n  .col-md-offset-4 {\n    margin-left: 33.33333333%;\n  }\n  .col-md-offset-3 {\n    margin-left: 25%;\n  }\n  .col-md-offset-2 {\n    margin-left: 16.66666667%;\n  }\n  .col-md-offset-1 {\n    margin-left: 8.33333333%;\n  }\n  .col-md-offset-0 {\n    margin-left: 0;\n  }\n}\n@media (min-width: 1200px) {\n  .col-lg-1, .col-lg-2, .col-lg-3, .col-lg-4, .col-lg-5, .col-lg-6, .col-lg-7, .col-lg-8, .col-lg-9, .col-lg-10, .col-lg-11, .col-lg-12 {\n    float: left;\n  }\n  .col-lg-12 {\n    width: 100%;\n  }\n  .col-lg-11 {\n    width: 91.66666667%;\n  }\n  .col-lg-10 {\n    width: 83.33333333%;\n  }\n  .col-lg-9 {\n    width: 75%;\n  }\n  .col-lg-8 {\n    width: 66.66666667%;\n  }\n  .col-lg-7 {\n    width: 58.33333333%;\n  }\n  .col-lg-6 {\n    width: 50%;\n  }\n  .col-lg-5 {\n    width: 41.66666667%;\n  }\n  .col-lg-4 {\n    width: 33.33333333%;\n  }\n  .col-lg-3 {\n    width: 25%;\n  }\n  .col-lg-2 {\n    width: 16.66666667%;\n  }\n  .col-lg-1 {\n    width: 8.33333333%;\n  }\n  .col-lg-pull-12 {\n    right: 100%;\n  }\n  .col-lg-pull-11 {\n    right: 91.66666667%;\n  }\n  .col-lg-pull-10 {\n    right: 83.33333333%;\n  }\n  .col-lg-pull-9 {\n    right: 75%;\n  }\n  .col-lg-pull-8 {\n    right: 66.66666667%;\n  }\n  .col-lg-pull-7 {\n    right: 58.33333333%;\n  }\n  .col-lg-pull-6 {\n    right: 50%;\n  }\n  .col-lg-pull-5 {\n    right: 41.66666667%;\n  }\n  .col-lg-pull-4 {\n    right: 33.33333333%;\n  }\n  .col-lg-pull-3 {\n    right: 25%;\n  }\n  .col-lg-pull-2 {\n    right: 16.66666667%;\n  }\n  .col-lg-pull-1 {\n    right: 8.33333333%;\n  }\n  .col-lg-pull-0 {\n    right: auto;\n  }\n  .col-lg-push-12 {\n    left: 100%;\n  }\n  .col-lg-push-11 {\n    left: 91.66666667%;\n  }\n  .col-lg-push-10 {\n    left: 83.33333333%;\n  }\n  .col-lg-push-9 {\n    left: 75%;\n  }\n  .col-lg-push-8 {\n    left: 66.66666667%;\n  }\n  .col-lg-push-7 {\n    left: 58.33333333%;\n  }\n  .col-lg-push-6 {\n    left: 50%;\n  }\n  .col-lg-push-5 {\n    left: 41.66666667%;\n  }\n  .col-lg-push-4 {\n    left: 33.33333333%;\n  }\n  .col-lg-push-3 {\n    left: 25%;\n  }\n  .col-lg-push-2 {\n    left: 16.66666667%;\n  }\n  .col-lg-push-1 {\n    left: 8.33333333%;\n  }\n  .col-lg-push-0 {\n    left: auto;\n  }\n  .col-lg-offset-12 {\n    margin-left: 100%;\n  }\n  .col-lg-offset-11 {\n    margin-left: 91.66666667%;\n  }\n  .col-lg-offset-10 {\n    margin-left: 83.33333333%;\n  }\n  .col-lg-offset-9 {\n    margin-left: 75%;\n  }\n  .col-lg-offset-8 {\n    margin-left: 66.66666667%;\n  }\n  .col-lg-offset-7 {\n    margin-left: 58.33333333%;\n  }\n  .col-lg-offset-6 {\n    margin-left: 50%;\n  }\n  .col-lg-offset-5 {\n    margin-left: 41.66666667%;\n  }\n  .col-lg-offset-4 {\n    margin-left: 33.33333333%;\n  }\n  .col-lg-offset-3 {\n    margin-left: 25%;\n  }\n  .col-lg-offset-2 {\n    margin-left: 16.66666667%;\n  }\n  .col-lg-offset-1 {\n    margin-left: 8.33333333%;\n  }\n  .col-lg-offset-0 {\n    margin-left: 0;\n  }\n}\ntable {\n  background-color: transparent;\n}\ncaption {\n  padding-top: 8px;\n  padding-bottom: 8px;\n  color: #777;\n  text-align: left;\n}\nth {\n  text-align: left;\n}\n.table {\n  width: 100%;\n  max-width: 100%;\n  margin-bottom: 20px;\n}\n.table > thead > tr > th,\n.table > tbody > tr > th,\n.table > tfoot > tr > th,\n.table > thead > tr > td,\n.table > tbody > tr > td,\n.table > tfoot > tr > td {\n  padding: 8px;\n  line-height: 1.42857143;\n  vertical-align: top;\n  border-top: 1px solid #ddd;\n}\n.table > thead > tr > th {\n  vertical-align: bottom;\n  border-bottom: 2px solid #ddd;\n}\n.table > caption + thead > tr:first-child > th,\n.table > colgroup + thead > tr:first-child > th,\n.table > thead:first-child > tr:first-child > th,\n.table > caption + thead > tr:first-child > td,\n.table > colgroup + thead > tr:first-child > td,\n.table > thead:first-child > tr:first-child > td {\n  border-top: 0;\n}\n.table > tbody + tbody {\n  border-top: 2px solid #ddd;\n}\n.table .table {\n  background-color: #fff;\n}\n.table-condensed > thead > tr > th,\n.table-condensed > tbody > tr > th,\n.table-condensed > tfoot > tr > th,\n.table-condensed > thead > tr > td,\n.table-condensed > tbody > tr > td,\n.table-condensed > tfoot > tr > td {\n  padding: 5px;\n}\n.table-bordered {\n  border: 1px solid #ddd;\n}\n.table-bordered > thead > tr > th,\n.table-bordered > tbody > tr > th,\n.table-bordered > tfoot > tr > th,\n.table-bordered > thead > tr > td,\n.table-bordered > tbody > tr > td,\n.table-bordered > tfoot > tr > td {\n  border: 1px solid #ddd;\n}\n.table-bordered > thead > tr > th,\n.table-bordered > thead > tr > td {\n  border-bottom-width: 2px;\n}\n.table-striped > tbody > tr:nth-of-type(odd) {\n  background-color: #f9f9f9;\n}\n.table-hover > tbody > tr:hover {\n  background-color: #f5f5f5;\n}\ntable col[class*=\"col-\"] {\n  position: static;\n  display: table-column;\n  float: none;\n}\ntable td[class*=\"col-\"],\ntable th[class*=\"col-\"] {\n  position: static;\n  display: table-cell;\n  float: none;\n}\n.table > thead > tr > td.active,\n.table > tbody > tr > td.active,\n.table > tfoot > tr > td.active,\n.table > thead > tr > th.active,\n.table > tbody > tr > th.active,\n.table > tfoot > tr > th.active,\n.table > thead > tr.active > td,\n.table > tbody > tr.active > td,\n.table > tfoot > tr.active > td,\n.table > thead > tr.active > th,\n.table > tbody > tr.active > th,\n.table > tfoot > tr.active > th {\n  background-color: #f5f5f5;\n}\n.table-hover > tbody > tr > td.active:hover,\n.table-hover > tbody > tr > th.active:hover,\n.table-hover > tbody > tr.active:hover > td,\n.table-hover > tbody > tr:hover > .active,\n.table-hover > tbody > tr.active:hover > th {\n  background-color: #e8e8e8;\n}\n.table > thead > tr > td.success,\n.table > tbody > tr > td.success,\n.table > tfoot > tr > td.success,\n.table > thead > tr > th.success,\n.table > tbody > tr > th.success,\n.table > tfoot > tr > th.success,\n.table > thead > tr.success > td,\n.table > tbody > tr.success > td,\n.table > tfoot > tr.success > td,\n.table > thead > tr.success > th,\n.table > tbody > tr.success > th,\n.table > tfoot > tr.success > th {\n  background-color: #dff0d8;\n}\n.table-hover > tbody > tr > td.success:hover,\n.table-hover > tbody > tr > th.success:hover,\n.table-hover > tbody > tr.success:hover > td,\n.table-hover > tbody > tr:hover > .success,\n.table-hover > tbody > tr.success:hover > th {\n  background-color: #d0e9c6;\n}\n.table > thead > tr > td.info,\n.table > tbody > tr > td.info,\n.table > tfoot > tr > td.info,\n.table > thead > tr > th.info,\n.table > tbody > tr > th.info,\n.table > tfoot > tr > th.info,\n.table > thead > tr.info > td,\n.table > tbody > tr.info > td,\n.table > tfoot > tr.info > td,\n.table > thead > tr.info > th,\n.table > tbody > tr.info > th,\n.table > tfoot > tr.info > th {\n  background-color: #d9edf7;\n}\n.table-hover > tbody > tr > td.info:hover,\n.table-hover > tbody > tr > th.info:hover,\n.table-hover > tbody > tr.info:hover > td,\n.table-hover > tbody > tr:hover > .info,\n.table-hover > tbody > tr.info:hover > th {\n  background-color: #c4e3f3;\n}\n.table > thead > tr > td.warning,\n.table > tbody > tr > td.warning,\n.table > tfoot > tr > td.warning,\n.table > thead > tr > th.warning,\n.table > tbody > tr > th.warning,\n.table > tfoot > tr > th.warning,\n.table > thead > tr.warning > td,\n.table > tbody > tr.warning > td,\n.table > tfoot > tr.warning > td,\n.table > thead > tr.warning > th,\n.table > tbody > tr.warning > th,\n.table > tfoot > tr.warning > th {\n  background-color: #fcf8e3;\n}\n.table-hover > tbody > tr > td.warning:hover,\n.table-hover > tbody > tr > th.warning:hover,\n.table-hover > tbody > tr.warning:hover > td,\n.table-hover > tbody > tr:hover > .warning,\n.table-hover > tbody > tr.warning:hover > th {\n  background-color: #faf2cc;\n}\n.table > thead > tr > td.danger,\n.table > tbody > tr > td.danger,\n.table > tfoot > tr > td.danger,\n.table > thead > tr > th.danger,\n.table > tbody > tr > th.danger,\n.table > tfoot > tr > th.danger,\n.table > thead > tr.danger > td,\n.table > tbody > tr.danger > td,\n.table > tfoot > tr.danger > td,\n.table > thead > tr.danger > th,\n.table > tbody > tr.danger > th,\n.table > tfoot > tr.danger > th {\n  background-color: #f2dede;\n}\n.table-hover > tbody > tr > td.danger:hover,\n.table-hover > tbody > tr > th.danger:hover,\n.table-hover > tbody > tr.danger:hover > td,\n.table-hover > tbody > tr:hover > .danger,\n.table-hover > tbody > tr.danger:hover > th {\n  background-color: #ebcccc;\n}\n.table-responsive {\n  min-height: .01%;\n  overflow-x: auto;\n}\n@media screen and (max-width: 767px) {\n  .table-responsive {\n    width: 100%;\n    margin-bottom: 15px;\n    overflow-y: hidden;\n    -ms-overflow-style: -ms-autohiding-scrollbar;\n    border: 1px solid #ddd;\n  }\n  .table-responsive > .table {\n    margin-bottom: 0;\n  }\n  .table-responsive > .table > thead > tr > th,\n  .table-responsive > .table > tbody > tr > th,\n  .table-responsive > .table > tfoot > tr > th,\n  .table-responsive > .table > thead > tr > td,\n  .table-responsive > .table > tbody > tr > td,\n  .table-responsive > .table > tfoot > tr > td {\n    white-space: nowrap;\n  }\n  .table-responsive > .table-bordered {\n    border: 0;\n  }\n  .table-responsive > .table-bordered > thead > tr > th:first-child,\n  .table-responsive > .table-bordered > tbody > tr > th:first-child,\n  .table-responsive > .table-bordered > tfoot > tr > th:first-child,\n  .table-responsive > .table-bordered > thead > tr > td:first-child,\n  .table-responsive > .table-bordered > tbody > tr > td:first-child,\n  .table-responsive > .table-bordered > tfoot > tr > td:first-child {\n    border-left: 0;\n  }\n  .table-responsive > .table-bordered > thead > tr > th:last-child,\n  .table-responsive > .table-bordered > tbody > tr > th:last-child,\n  .table-responsive > .table-bordered > tfoot > tr > th:last-child,\n  .table-responsive > .table-bordered > thead > tr > td:last-child,\n  .table-responsive > .table-bordered > tbody > tr > td:last-child,\n  .table-responsive > .table-bordered > tfoot > tr > td:last-child {\n    border-right: 0;\n  }\n  .table-responsive > .table-bordered > tbody > tr:last-child > th,\n  .table-responsive > .table-bordered > tfoot > tr:last-child > th,\n  .table-responsive > .table-bordered > tbody > tr:last-child > td,\n  .table-responsive > .table-bordered > tfoot > tr:last-child > td {\n    border-bottom: 0;\n  }\n}\nfieldset {\n  min-width: 0;\n  padding: 0;\n  margin: 0;\n  border: 0;\n}\nlegend {\n  display: block;\n  width: 100%;\n  padding: 0;\n  margin-bottom: 20px;\n  font-size: 21px;\n  line-height: inherit;\n  color: #333;\n  border: 0;\n  border-bottom: 1px solid #e5e5e5;\n}\nlabel {\n  display: inline-block;\n  max-width: 100%;\n  margin-bottom: 5px;\n  font-weight: bold;\n}\ninput[type=\"search\"] {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n}\ninput[type=\"radio\"],\ninput[type=\"checkbox\"] {\n  margin: 4px 0 0;\n  margin-top: 1px \\9;\n  line-height: normal;\n}\ninput[type=\"file\"] {\n  display: block;\n}\ninput[type=\"range\"] {\n  display: block;\n  width: 100%;\n}\nselect[multiple],\nselect[size] {\n  height: auto;\n}\ninput[type=\"file\"]:focus,\ninput[type=\"radio\"]:focus,\ninput[type=\"checkbox\"]:focus {\n  outline: 5px auto -webkit-focus-ring-color;\n  outline-offset: -2px;\n}\noutput {\n  display: block;\n  padding-top: 7px;\n  font-size: 14px;\n  line-height: 1.42857143;\n  color: #555;\n}\n.form-control {\n  display: block;\n  width: 100%;\n  height: 34px;\n  padding: 6px 12px;\n  font-size: 14px;\n  line-height: 1.42857143;\n  color: #555;\n  background-color: #fff;\n  background-image: none;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n  -webkit-transition: border-color ease-in-out .15s, -webkit-box-shadow ease-in-out .15s;\n       -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;\n          transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;\n}\n.form-control:focus {\n  border-color: #66afe9;\n  outline: 0;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, .6);\n          box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, .6);\n}\n.form-control::-moz-placeholder {\n  color: #999;\n  opacity: 1;\n}\n.form-control:-ms-input-placeholder {\n  color: #999;\n}\n.form-control::-webkit-input-placeholder {\n  color: #999;\n}\n.form-control::-ms-expand {\n  background-color: transparent;\n  border: 0;\n}\n.form-control[disabled],\n.form-control[readonly],\nfieldset[disabled] .form-control {\n  background-color: #eee;\n  opacity: 1;\n}\n.form-control[disabled],\nfieldset[disabled] .form-control {\n  cursor: not-allowed;\n}\ntextarea.form-control {\n  height: auto;\n}\ninput[type=\"search\"] {\n  -webkit-appearance: none;\n}\n@media screen and (-webkit-min-device-pixel-ratio: 0) {\n  input[type=\"date\"].form-control,\n  input[type=\"time\"].form-control,\n  input[type=\"datetime-local\"].form-control,\n  input[type=\"month\"].form-control {\n    line-height: 34px;\n  }\n  input[type=\"date\"].input-sm,\n  input[type=\"time\"].input-sm,\n  input[type=\"datetime-local\"].input-sm,\n  input[type=\"month\"].input-sm,\n  .input-group-sm input[type=\"date\"],\n  .input-group-sm input[type=\"time\"],\n  .input-group-sm input[type=\"datetime-local\"],\n  .input-group-sm input[type=\"month\"] {\n    line-height: 30px;\n  }\n  input[type=\"date\"].input-lg,\n  input[type=\"time\"].input-lg,\n  input[type=\"datetime-local\"].input-lg,\n  input[type=\"month\"].input-lg,\n  .input-group-lg input[type=\"date\"],\n  .input-group-lg input[type=\"time\"],\n  .input-group-lg input[type=\"datetime-local\"],\n  .input-group-lg input[type=\"month\"] {\n    line-height: 46px;\n  }\n}\n.form-group {\n  margin-bottom: 15px;\n}\n.radio,\n.checkbox {\n  position: relative;\n  display: block;\n  margin-top: 10px;\n  margin-bottom: 10px;\n}\n.radio label,\n.checkbox label {\n  min-height: 20px;\n  padding-left: 20px;\n  margin-bottom: 0;\n  font-weight: normal;\n  cursor: pointer;\n}\n.radio input[type=\"radio\"],\n.radio-inline input[type=\"radio\"],\n.checkbox input[type=\"checkbox\"],\n.checkbox-inline input[type=\"checkbox\"] {\n  position: absolute;\n  margin-top: 4px \\9;\n  margin-left: -20px;\n}\n.radio + .radio,\n.checkbox + .checkbox {\n  margin-top: -5px;\n}\n.radio-inline,\n.checkbox-inline {\n  position: relative;\n  display: inline-block;\n  padding-left: 20px;\n  margin-bottom: 0;\n  font-weight: normal;\n  vertical-align: middle;\n  cursor: pointer;\n}\n.radio-inline + .radio-inline,\n.checkbox-inline + .checkbox-inline {\n  margin-top: 0;\n  margin-left: 10px;\n}\ninput[type=\"radio\"][disabled],\ninput[type=\"checkbox\"][disabled],\ninput[type=\"radio\"].disabled,\ninput[type=\"checkbox\"].disabled,\nfieldset[disabled] input[type=\"radio\"],\nfieldset[disabled] input[type=\"checkbox\"] {\n  cursor: not-allowed;\n}\n.radio-inline.disabled,\n.checkbox-inline.disabled,\nfieldset[disabled] .radio-inline,\nfieldset[disabled] .checkbox-inline {\n  cursor: not-allowed;\n}\n.radio.disabled label,\n.checkbox.disabled label,\nfieldset[disabled] .radio label,\nfieldset[disabled] .checkbox label {\n  cursor: not-allowed;\n}\n.form-control-static {\n  min-height: 34px;\n  padding-top: 7px;\n  padding-bottom: 7px;\n  margin-bottom: 0;\n}\n.form-control-static.input-lg,\n.form-control-static.input-sm {\n  padding-right: 0;\n  padding-left: 0;\n}\n.input-sm {\n  height: 30px;\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\nselect.input-sm {\n  height: 30px;\n  line-height: 30px;\n}\ntextarea.input-sm,\nselect[multiple].input-sm {\n  height: auto;\n}\n.form-group-sm .form-control {\n  height: 30px;\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\n.form-group-sm select.form-control {\n  height: 30px;\n  line-height: 30px;\n}\n.form-group-sm textarea.form-control,\n.form-group-sm select[multiple].form-control {\n  height: auto;\n}\n.form-group-sm .form-control-static {\n  height: 30px;\n  min-height: 32px;\n  padding: 6px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n}\n.input-lg {\n  height: 46px;\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\nselect.input-lg {\n  height: 46px;\n  line-height: 46px;\n}\ntextarea.input-lg,\nselect[multiple].input-lg {\n  height: auto;\n}\n.form-group-lg .form-control {\n  height: 46px;\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\n.form-group-lg select.form-control {\n  height: 46px;\n  line-height: 46px;\n}\n.form-group-lg textarea.form-control,\n.form-group-lg select[multiple].form-control {\n  height: auto;\n}\n.form-group-lg .form-control-static {\n  height: 46px;\n  min-height: 38px;\n  padding: 11px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n}\n.has-feedback {\n  position: relative;\n}\n.has-feedback .form-control {\n  padding-right: 42.5px;\n}\n.form-control-feedback {\n  position: absolute;\n  top: 0;\n  right: 0;\n  z-index: 2;\n  display: block;\n  width: 34px;\n  height: 34px;\n  line-height: 34px;\n  text-align: center;\n  pointer-events: none;\n}\n.input-lg + .form-control-feedback,\n.input-group-lg + .form-control-feedback,\n.form-group-lg .form-control + .form-control-feedback {\n  width: 46px;\n  height: 46px;\n  line-height: 46px;\n}\n.input-sm + .form-control-feedback,\n.input-group-sm + .form-control-feedback,\n.form-group-sm .form-control + .form-control-feedback {\n  width: 30px;\n  height: 30px;\n  line-height: 30px;\n}\n.has-success .help-block,\n.has-success .control-label,\n.has-success .radio,\n.has-success .checkbox,\n.has-success .radio-inline,\n.has-success .checkbox-inline,\n.has-success.radio label,\n.has-success.checkbox label,\n.has-success.radio-inline label,\n.has-success.checkbox-inline label {\n  color: #3c763d;\n}\n.has-success .form-control {\n  border-color: #3c763d;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n}\n.has-success .form-control:focus {\n  border-color: #2b542c;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #67b168;\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #67b168;\n}\n.has-success .input-group-addon {\n  color: #3c763d;\n  background-color: #dff0d8;\n  border-color: #3c763d;\n}\n.has-success .form-control-feedback {\n  color: #3c763d;\n}\n.has-warning .help-block,\n.has-warning .control-label,\n.has-warning .radio,\n.has-warning .checkbox,\n.has-warning .radio-inline,\n.has-warning .checkbox-inline,\n.has-warning.radio label,\n.has-warning.checkbox label,\n.has-warning.radio-inline label,\n.has-warning.checkbox-inline label {\n  color: #8a6d3b;\n}\n.has-warning .form-control {\n  border-color: #8a6d3b;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n}\n.has-warning .form-control:focus {\n  border-color: #66512c;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #c0a16b;\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #c0a16b;\n}\n.has-warning .input-group-addon {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n  border-color: #8a6d3b;\n}\n.has-warning .form-control-feedback {\n  color: #8a6d3b;\n}\n.has-error .help-block,\n.has-error .control-label,\n.has-error .radio,\n.has-error .checkbox,\n.has-error .radio-inline,\n.has-error .checkbox-inline,\n.has-error.radio label,\n.has-error.checkbox label,\n.has-error.radio-inline label,\n.has-error.checkbox-inline label {\n  color: #a94442;\n}\n.has-error .form-control {\n  border-color: #a94442;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n}\n.has-error .form-control:focus {\n  border-color: #843534;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #ce8483;\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #ce8483;\n}\n.has-error .input-group-addon {\n  color: #a94442;\n  background-color: #f2dede;\n  border-color: #a94442;\n}\n.has-error .form-control-feedback {\n  color: #a94442;\n}\n.has-feedback label ~ .form-control-feedback {\n  top: 25px;\n}\n.has-feedback label.sr-only ~ .form-control-feedback {\n  top: 0;\n}\n.help-block {\n  display: block;\n  margin-top: 5px;\n  margin-bottom: 10px;\n  color: #737373;\n}\n@media (min-width: 768px) {\n  .form-inline .form-group {\n    display: inline-block;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .form-inline .form-control {\n    display: inline-block;\n    width: auto;\n    vertical-align: middle;\n  }\n  .form-inline .form-control-static {\n    display: inline-block;\n  }\n  .form-inline .input-group {\n    display: inline-table;\n    vertical-align: middle;\n  }\n  .form-inline .input-group .input-group-addon,\n  .form-inline .input-group .input-group-btn,\n  .form-inline .input-group .form-control {\n    width: auto;\n  }\n  .form-inline .input-group > .form-control {\n    width: 100%;\n  }\n  .form-inline .control-label {\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .form-inline .radio,\n  .form-inline .checkbox {\n    display: inline-block;\n    margin-top: 0;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .form-inline .radio label,\n  .form-inline .checkbox label {\n    padding-left: 0;\n  }\n  .form-inline .radio input[type=\"radio\"],\n  .form-inline .checkbox input[type=\"checkbox\"] {\n    position: relative;\n    margin-left: 0;\n  }\n  .form-inline .has-feedback .form-control-feedback {\n    top: 0;\n  }\n}\n.form-horizontal .radio,\n.form-horizontal .checkbox,\n.form-horizontal .radio-inline,\n.form-horizontal .checkbox-inline {\n  padding-top: 7px;\n  margin-top: 0;\n  margin-bottom: 0;\n}\n.form-horizontal .radio,\n.form-horizontal .checkbox {\n  min-height: 27px;\n}\n.form-horizontal .form-group {\n  margin-right: -15px;\n  margin-left: -15px;\n}\n@media (min-width: 768px) {\n  .form-horizontal .control-label {\n    padding-top: 7px;\n    margin-bottom: 0;\n    text-align: right;\n  }\n}\n.form-horizontal .has-feedback .form-control-feedback {\n  right: 15px;\n}\n@media (min-width: 768px) {\n  .form-horizontal .form-group-lg .control-label {\n    padding-top: 11px;\n    font-size: 18px;\n  }\n}\n@media (min-width: 768px) {\n  .form-horizontal .form-group-sm .control-label {\n    padding-top: 6px;\n    font-size: 12px;\n  }\n}\n.btn {\n  display: inline-block;\n  padding: 6px 12px;\n  margin-bottom: 0;\n  font-size: 14px;\n  font-weight: normal;\n  line-height: 1.42857143;\n  text-align: center;\n  white-space: nowrap;\n  vertical-align: middle;\n  -ms-touch-action: manipulation;\n      touch-action: manipulation;\n  cursor: pointer;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n      -ms-user-select: none;\n          user-select: none;\n  background-image: none;\n  border: 1px solid transparent;\n  border-radius: 4px;\n}\n.btn:focus,\n.btn:active:focus,\n.btn.active:focus,\n.btn.focus,\n.btn:active.focus,\n.btn.active.focus {\n  outline: 5px auto -webkit-focus-ring-color;\n  outline-offset: -2px;\n}\n.btn:hover,\n.btn:focus,\n.btn.focus {\n  color: #333;\n  text-decoration: none;\n}\n.btn:active,\n.btn.active {\n  background-image: none;\n  outline: 0;\n  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n          box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n}\n.btn.disabled,\n.btn[disabled],\nfieldset[disabled] .btn {\n  cursor: not-allowed;\n  filter: alpha(opacity=65);\n  -webkit-box-shadow: none;\n          box-shadow: none;\n  opacity: .65;\n}\na.btn.disabled,\nfieldset[disabled] a.btn {\n  pointer-events: none;\n}\n.btn-default {\n  color: #333;\n  background-color: #fff;\n  border-color: #ccc;\n}\n.btn-default:focus,\n.btn-default.focus {\n  color: #333;\n  background-color: #e6e6e6;\n  border-color: #8c8c8c;\n}\n.btn-default:hover {\n  color: #333;\n  background-color: #e6e6e6;\n  border-color: #adadad;\n}\n.btn-default:active,\n.btn-default.active,\n.open > .dropdown-toggle.btn-default {\n  color: #333;\n  background-color: #e6e6e6;\n  border-color: #adadad;\n}\n.btn-default:active:hover,\n.btn-default.active:hover,\n.open > .dropdown-toggle.btn-default:hover,\n.btn-default:active:focus,\n.btn-default.active:focus,\n.open > .dropdown-toggle.btn-default:focus,\n.btn-default:active.focus,\n.btn-default.active.focus,\n.open > .dropdown-toggle.btn-default.focus {\n  color: #333;\n  background-color: #d4d4d4;\n  border-color: #8c8c8c;\n}\n.btn-default:active,\n.btn-default.active,\n.open > .dropdown-toggle.btn-default {\n  background-image: none;\n}\n.btn-default.disabled:hover,\n.btn-default[disabled]:hover,\nfieldset[disabled] .btn-default:hover,\n.btn-default.disabled:focus,\n.btn-default[disabled]:focus,\nfieldset[disabled] .btn-default:focus,\n.btn-default.disabled.focus,\n.btn-default[disabled].focus,\nfieldset[disabled] .btn-default.focus {\n  background-color: #fff;\n  border-color: #ccc;\n}\n.btn-default .badge {\n  color: #fff;\n  background-color: #333;\n}\n.btn-primary {\n  color: #fff;\n  background-color: #337ab7;\n  border-color: #2e6da4;\n}\n.btn-primary:focus,\n.btn-primary.focus {\n  color: #fff;\n  background-color: #286090;\n  border-color: #122b40;\n}\n.btn-primary:hover {\n  color: #fff;\n  background-color: #286090;\n  border-color: #204d74;\n}\n.btn-primary:active,\n.btn-primary.active,\n.open > .dropdown-toggle.btn-primary {\n  color: #fff;\n  background-color: #286090;\n  border-color: #204d74;\n}\n.btn-primary:active:hover,\n.btn-primary.active:hover,\n.open > .dropdown-toggle.btn-primary:hover,\n.btn-primary:active:focus,\n.btn-primary.active:focus,\n.open > .dropdown-toggle.btn-primary:focus,\n.btn-primary:active.focus,\n.btn-primary.active.focus,\n.open > .dropdown-toggle.btn-primary.focus {\n  color: #fff;\n  background-color: #204d74;\n  border-color: #122b40;\n}\n.btn-primary:active,\n.btn-primary.active,\n.open > .dropdown-toggle.btn-primary {\n  background-image: none;\n}\n.btn-primary.disabled:hover,\n.btn-primary[disabled]:hover,\nfieldset[disabled] .btn-primary:hover,\n.btn-primary.disabled:focus,\n.btn-primary[disabled]:focus,\nfieldset[disabled] .btn-primary:focus,\n.btn-primary.disabled.focus,\n.btn-primary[disabled].focus,\nfieldset[disabled] .btn-primary.focus {\n  background-color: #337ab7;\n  border-color: #2e6da4;\n}\n.btn-primary .badge {\n  color: #337ab7;\n  background-color: #fff;\n}\n.btn-success {\n  color: #fff;\n  background-color: #5cb85c;\n  border-color: #4cae4c;\n}\n.btn-success:focus,\n.btn-success.focus {\n  color: #fff;\n  background-color: #449d44;\n  border-color: #255625;\n}\n.btn-success:hover {\n  color: #fff;\n  background-color: #449d44;\n  border-color: #398439;\n}\n.btn-success:active,\n.btn-success.active,\n.open > .dropdown-toggle.btn-success {\n  color: #fff;\n  background-color: #449d44;\n  border-color: #398439;\n}\n.btn-success:active:hover,\n.btn-success.active:hover,\n.open > .dropdown-toggle.btn-success:hover,\n.btn-success:active:focus,\n.btn-success.active:focus,\n.open > .dropdown-toggle.btn-success:focus,\n.btn-success:active.focus,\n.btn-success.active.focus,\n.open > .dropdown-toggle.btn-success.focus {\n  color: #fff;\n  background-color: #398439;\n  border-color: #255625;\n}\n.btn-success:active,\n.btn-success.active,\n.open > .dropdown-toggle.btn-success {\n  background-image: none;\n}\n.btn-success.disabled:hover,\n.btn-success[disabled]:hover,\nfieldset[disabled] .btn-success:hover,\n.btn-success.disabled:focus,\n.btn-success[disabled]:focus,\nfieldset[disabled] .btn-success:focus,\n.btn-success.disabled.focus,\n.btn-success[disabled].focus,\nfieldset[disabled] .btn-success.focus {\n  background-color: #5cb85c;\n  border-color: #4cae4c;\n}\n.btn-success .badge {\n  color: #5cb85c;\n  background-color: #fff;\n}\n.btn-info {\n  color: #fff;\n  background-color: #5bc0de;\n  border-color: #46b8da;\n}\n.btn-info:focus,\n.btn-info.focus {\n  color: #fff;\n  background-color: #31b0d5;\n  border-color: #1b6d85;\n}\n.btn-info:hover {\n  color: #fff;\n  background-color: #31b0d5;\n  border-color: #269abc;\n}\n.btn-info:active,\n.btn-info.active,\n.open > .dropdown-toggle.btn-info {\n  color: #fff;\n  background-color: #31b0d5;\n  border-color: #269abc;\n}\n.btn-info:active:hover,\n.btn-info.active:hover,\n.open > .dropdown-toggle.btn-info:hover,\n.btn-info:active:focus,\n.btn-info.active:focus,\n.open > .dropdown-toggle.btn-info:focus,\n.btn-info:active.focus,\n.btn-info.active.focus,\n.open > .dropdown-toggle.btn-info.focus {\n  color: #fff;\n  background-color: #269abc;\n  border-color: #1b6d85;\n}\n.btn-info:active,\n.btn-info.active,\n.open > .dropdown-toggle.btn-info {\n  background-image: none;\n}\n.btn-info.disabled:hover,\n.btn-info[disabled]:hover,\nfieldset[disabled] .btn-info:hover,\n.btn-info.disabled:focus,\n.btn-info[disabled]:focus,\nfieldset[disabled] .btn-info:focus,\n.btn-info.disabled.focus,\n.btn-info[disabled].focus,\nfieldset[disabled] .btn-info.focus {\n  background-color: #5bc0de;\n  border-color: #46b8da;\n}\n.btn-info .badge {\n  color: #5bc0de;\n  background-color: #fff;\n}\n.btn-warning {\n  color: #fff;\n  background-color: #f0ad4e;\n  border-color: #eea236;\n}\n.btn-warning:focus,\n.btn-warning.focus {\n  color: #fff;\n  background-color: #ec971f;\n  border-color: #985f0d;\n}\n.btn-warning:hover {\n  color: #fff;\n  background-color: #ec971f;\n  border-color: #d58512;\n}\n.btn-warning:active,\n.btn-warning.active,\n.open > .dropdown-toggle.btn-warning {\n  color: #fff;\n  background-color: #ec971f;\n  border-color: #d58512;\n}\n.btn-warning:active:hover,\n.btn-warning.active:hover,\n.open > .dropdown-toggle.btn-warning:hover,\n.btn-warning:active:focus,\n.btn-warning.active:focus,\n.open > .dropdown-toggle.btn-warning:focus,\n.btn-warning:active.focus,\n.btn-warning.active.focus,\n.open > .dropdown-toggle.btn-warning.focus {\n  color: #fff;\n  background-color: #d58512;\n  border-color: #985f0d;\n}\n.btn-warning:active,\n.btn-warning.active,\n.open > .dropdown-toggle.btn-warning {\n  background-image: none;\n}\n.btn-warning.disabled:hover,\n.btn-warning[disabled]:hover,\nfieldset[disabled] .btn-warning:hover,\n.btn-warning.disabled:focus,\n.btn-warning[disabled]:focus,\nfieldset[disabled] .btn-warning:focus,\n.btn-warning.disabled.focus,\n.btn-warning[disabled].focus,\nfieldset[disabled] .btn-warning.focus {\n  background-color: #f0ad4e;\n  border-color: #eea236;\n}\n.btn-warning .badge {\n  color: #f0ad4e;\n  background-color: #fff;\n}\n.btn-danger {\n  color: #fff;\n  background-color: #d9534f;\n  border-color: #d43f3a;\n}\n.btn-danger:focus,\n.btn-danger.focus {\n  color: #fff;\n  background-color: #c9302c;\n  border-color: #761c19;\n}\n.btn-danger:hover {\n  color: #fff;\n  background-color: #c9302c;\n  border-color: #ac2925;\n}\n.btn-danger:active,\n.btn-danger.active,\n.open > .dropdown-toggle.btn-danger {\n  color: #fff;\n  background-color: #c9302c;\n  border-color: #ac2925;\n}\n.btn-danger:active:hover,\n.btn-danger.active:hover,\n.open > .dropdown-toggle.btn-danger:hover,\n.btn-danger:active:focus,\n.btn-danger.active:focus,\n.open > .dropdown-toggle.btn-danger:focus,\n.btn-danger:active.focus,\n.btn-danger.active.focus,\n.open > .dropdown-toggle.btn-danger.focus {\n  color: #fff;\n  background-color: #ac2925;\n  border-color: #761c19;\n}\n.btn-danger:active,\n.btn-danger.active,\n.open > .dropdown-toggle.btn-danger {\n  background-image: none;\n}\n.btn-danger.disabled:hover,\n.btn-danger[disabled]:hover,\nfieldset[disabled] .btn-danger:hover,\n.btn-danger.disabled:focus,\n.btn-danger[disabled]:focus,\nfieldset[disabled] .btn-danger:focus,\n.btn-danger.disabled.focus,\n.btn-danger[disabled].focus,\nfieldset[disabled] .btn-danger.focus {\n  background-color: #d9534f;\n  border-color: #d43f3a;\n}\n.btn-danger .badge {\n  color: #d9534f;\n  background-color: #fff;\n}\n.btn-link {\n  font-weight: normal;\n  color: #337ab7;\n  border-radius: 0;\n}\n.btn-link,\n.btn-link:active,\n.btn-link.active,\n.btn-link[disabled],\nfieldset[disabled] .btn-link {\n  background-color: transparent;\n  -webkit-box-shadow: none;\n          box-shadow: none;\n}\n.btn-link,\n.btn-link:hover,\n.btn-link:focus,\n.btn-link:active {\n  border-color: transparent;\n}\n.btn-link:hover,\n.btn-link:focus {\n  color: #23527c;\n  text-decoration: underline;\n  background-color: transparent;\n}\n.btn-link[disabled]:hover,\nfieldset[disabled] .btn-link:hover,\n.btn-link[disabled]:focus,\nfieldset[disabled] .btn-link:focus {\n  color: #777;\n  text-decoration: none;\n}\n.btn-lg,\n.btn-group-lg > .btn {\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\n.btn-sm,\n.btn-group-sm > .btn {\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\n.btn-xs,\n.btn-group-xs > .btn {\n  padding: 1px 5px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\n.btn-block {\n  display: block;\n  width: 100%;\n}\n.btn-block + .btn-block {\n  margin-top: 5px;\n}\ninput[type=\"submit\"].btn-block,\ninput[type=\"reset\"].btn-block,\ninput[type=\"button\"].btn-block {\n  width: 100%;\n}\n.fade {\n  opacity: 0;\n  -webkit-transition: opacity .15s linear;\n       -o-transition: opacity .15s linear;\n          transition: opacity .15s linear;\n}\n.fade.in {\n  opacity: 1;\n}\n.collapse {\n  display: none;\n}\n.collapse.in {\n  display: block;\n}\ntr.collapse.in {\n  display: table-row;\n}\ntbody.collapse.in {\n  display: table-row-group;\n}\n.collapsing {\n  position: relative;\n  height: 0;\n  overflow: hidden;\n  -webkit-transition-timing-function: ease;\n       -o-transition-timing-function: ease;\n          transition-timing-function: ease;\n  -webkit-transition-duration: .35s;\n       -o-transition-duration: .35s;\n          transition-duration: .35s;\n  -webkit-transition-property: height, visibility;\n       -o-transition-property: height, visibility;\n          transition-property: height, visibility;\n}\n.caret {\n  display: inline-block;\n  width: 0;\n  height: 0;\n  margin-left: 2px;\n  vertical-align: middle;\n  border-top: 4px dashed;\n  border-top: 4px solid \\9;\n  border-right: 4px solid transparent;\n  border-left: 4px solid transparent;\n}\n.dropup,\n.dropdown {\n  position: relative;\n}\n.dropdown-toggle:focus {\n  outline: 0;\n}\n.dropdown-menu {\n  position: absolute;\n  top: 100%;\n  left: 0;\n  z-index: 1000;\n  display: none;\n  float: left;\n  min-width: 160px;\n  padding: 5px 0;\n  margin: 2px 0 0;\n  font-size: 14px;\n  text-align: left;\n  list-style: none;\n  background-color: #fff;\n  -webkit-background-clip: padding-box;\n          background-clip: padding-box;\n  border: 1px solid #ccc;\n  border: 1px solid rgba(0, 0, 0, .15);\n  border-radius: 4px;\n  -webkit-box-shadow: 0 6px 12px rgba(0, 0, 0, .175);\n          box-shadow: 0 6px 12px rgba(0, 0, 0, .175);\n}\n.dropdown-menu.pull-right {\n  right: 0;\n  left: auto;\n}\n.dropdown-menu .divider {\n  height: 1px;\n  margin: 9px 0;\n  overflow: hidden;\n  background-color: #e5e5e5;\n}\n.dropdown-menu > li > a {\n  display: block;\n  padding: 3px 20px;\n  clear: both;\n  font-weight: normal;\n  line-height: 1.42857143;\n  color: #333;\n  white-space: nowrap;\n}\n.dropdown-menu > li > a:hover,\n.dropdown-menu > li > a:focus {\n  color: #262626;\n  text-decoration: none;\n  background-color: #f5f5f5;\n}\n.dropdown-menu > .active > a,\n.dropdown-menu > .active > a:hover,\n.dropdown-menu > .active > a:focus {\n  color: #fff;\n  text-decoration: none;\n  background-color: #337ab7;\n  outline: 0;\n}\n.dropdown-menu > .disabled > a,\n.dropdown-menu > .disabled > a:hover,\n.dropdown-menu > .disabled > a:focus {\n  color: #777;\n}\n.dropdown-menu > .disabled > a:hover,\n.dropdown-menu > .disabled > a:focus {\n  text-decoration: none;\n  cursor: not-allowed;\n  background-color: transparent;\n  background-image: none;\n  filter: progid:DXImageTransform.Microsoft.gradient(enabled = false);\n}\n.open > .dropdown-menu {\n  display: block;\n}\n.open > a {\n  outline: 0;\n}\n.dropdown-menu-right {\n  right: 0;\n  left: auto;\n}\n.dropdown-menu-left {\n  right: auto;\n  left: 0;\n}\n.dropdown-header {\n  display: block;\n  padding: 3px 20px;\n  font-size: 12px;\n  line-height: 1.42857143;\n  color: #777;\n  white-space: nowrap;\n}\n.dropdown-backdrop {\n  position: fixed;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  z-index: 990;\n}\n.pull-right > .dropdown-menu {\n  right: 0;\n  left: auto;\n}\n.dropup .caret,\n.navbar-fixed-bottom .dropdown .caret {\n  content: \"\";\n  border-top: 0;\n  border-bottom: 4px dashed;\n  border-bottom: 4px solid \\9;\n}\n.dropup .dropdown-menu,\n.navbar-fixed-bottom .dropdown .dropdown-menu {\n  top: auto;\n  bottom: 100%;\n  margin-bottom: 2px;\n}\n@media (min-width: 768px) {\n  .navbar-right .dropdown-menu {\n    right: 0;\n    left: auto;\n  }\n  .navbar-right .dropdown-menu-left {\n    right: auto;\n    left: 0;\n  }\n}\n.btn-group,\n.btn-group-vertical {\n  position: relative;\n  display: inline-block;\n  vertical-align: middle;\n}\n.btn-group > .btn,\n.btn-group-vertical > .btn {\n  position: relative;\n  float: left;\n}\n.btn-group > .btn:hover,\n.btn-group-vertical > .btn:hover,\n.btn-group > .btn:focus,\n.btn-group-vertical > .btn:focus,\n.btn-group > .btn:active,\n.btn-group-vertical > .btn:active,\n.btn-group > .btn.active,\n.btn-group-vertical > .btn.active {\n  z-index: 2;\n}\n.btn-group .btn + .btn,\n.btn-group .btn + .btn-group,\n.btn-group .btn-group + .btn,\n.btn-group .btn-group + .btn-group {\n  margin-left: -1px;\n}\n.btn-toolbar {\n  margin-left: -5px;\n}\n.btn-toolbar .btn,\n.btn-toolbar .btn-group,\n.btn-toolbar .input-group {\n  float: left;\n}\n.btn-toolbar > .btn,\n.btn-toolbar > .btn-group,\n.btn-toolbar > .input-group {\n  margin-left: 5px;\n}\n.btn-group > .btn:not(:first-child):not(:last-child):not(.dropdown-toggle) {\n  border-radius: 0;\n}\n.btn-group > .btn:first-child {\n  margin-left: 0;\n}\n.btn-group > .btn:first-child:not(:last-child):not(.dropdown-toggle) {\n  border-top-right-radius: 0;\n  border-bottom-right-radius: 0;\n}\n.btn-group > .btn:last-child:not(:first-child),\n.btn-group > .dropdown-toggle:not(:first-child) {\n  border-top-left-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group > .btn-group {\n  float: left;\n}\n.btn-group > .btn-group:not(:first-child):not(:last-child) > .btn {\n  border-radius: 0;\n}\n.btn-group > .btn-group:first-child:not(:last-child) > .btn:last-child,\n.btn-group > .btn-group:first-child:not(:last-child) > .dropdown-toggle {\n  border-top-right-radius: 0;\n  border-bottom-right-radius: 0;\n}\n.btn-group > .btn-group:last-child:not(:first-child) > .btn:first-child {\n  border-top-left-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group .dropdown-toggle:active,\n.btn-group.open .dropdown-toggle {\n  outline: 0;\n}\n.btn-group > .btn + .dropdown-toggle {\n  padding-right: 8px;\n  padding-left: 8px;\n}\n.btn-group > .btn-lg + .dropdown-toggle {\n  padding-right: 12px;\n  padding-left: 12px;\n}\n.btn-group.open .dropdown-toggle {\n  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n          box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n}\n.btn-group.open .dropdown-toggle.btn-link {\n  -webkit-box-shadow: none;\n          box-shadow: none;\n}\n.btn .caret {\n  margin-left: 0;\n}\n.btn-lg .caret {\n  border-width: 5px 5px 0;\n  border-bottom-width: 0;\n}\n.dropup .btn-lg .caret {\n  border-width: 0 5px 5px;\n}\n.btn-group-vertical > .btn,\n.btn-group-vertical > .btn-group,\n.btn-group-vertical > .btn-group > .btn {\n  display: block;\n  float: none;\n  width: 100%;\n  max-width: 100%;\n}\n.btn-group-vertical > .btn-group > .btn {\n  float: none;\n}\n.btn-group-vertical > .btn + .btn,\n.btn-group-vertical > .btn + .btn-group,\n.btn-group-vertical > .btn-group + .btn,\n.btn-group-vertical > .btn-group + .btn-group {\n  margin-top: -1px;\n  margin-left: 0;\n}\n.btn-group-vertical > .btn:not(:first-child):not(:last-child) {\n  border-radius: 0;\n}\n.btn-group-vertical > .btn:first-child:not(:last-child) {\n  border-top-left-radius: 4px;\n  border-top-right-radius: 4px;\n  border-bottom-right-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group-vertical > .btn:last-child:not(:first-child) {\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n  border-bottom-right-radius: 4px;\n  border-bottom-left-radius: 4px;\n}\n.btn-group-vertical > .btn-group:not(:first-child):not(:last-child) > .btn {\n  border-radius: 0;\n}\n.btn-group-vertical > .btn-group:first-child:not(:last-child) > .btn:last-child,\n.btn-group-vertical > .btn-group:first-child:not(:last-child) > .dropdown-toggle {\n  border-bottom-right-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group-vertical > .btn-group:last-child:not(:first-child) > .btn:first-child {\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n}\n.btn-group-justified {\n  display: table;\n  width: 100%;\n  table-layout: fixed;\n  border-collapse: separate;\n}\n.btn-group-justified > .btn,\n.btn-group-justified > .btn-group {\n  display: table-cell;\n  float: none;\n  width: 1%;\n}\n.btn-group-justified > .btn-group .btn {\n  width: 100%;\n}\n.btn-group-justified > .btn-group .dropdown-menu {\n  left: auto;\n}\n[data-toggle=\"buttons\"] > .btn input[type=\"radio\"],\n[data-toggle=\"buttons\"] > .btn-group > .btn input[type=\"radio\"],\n[data-toggle=\"buttons\"] > .btn input[type=\"checkbox\"],\n[data-toggle=\"buttons\"] > .btn-group > .btn input[type=\"checkbox\"] {\n  position: absolute;\n  clip: rect(0, 0, 0, 0);\n  pointer-events: none;\n}\n.input-group {\n  position: relative;\n  display: table;\n  border-collapse: separate;\n}\n.input-group[class*=\"col-\"] {\n  float: none;\n  padding-right: 0;\n  padding-left: 0;\n}\n.input-group .form-control {\n  position: relative;\n  z-index: 2;\n  float: left;\n  width: 100%;\n  margin-bottom: 0;\n}\n.input-group .form-control:focus {\n  z-index: 3;\n}\n.input-group-lg > .form-control,\n.input-group-lg > .input-group-addon,\n.input-group-lg > .input-group-btn > .btn {\n  height: 46px;\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\nselect.input-group-lg > .form-control,\nselect.input-group-lg > .input-group-addon,\nselect.input-group-lg > .input-group-btn > .btn {\n  height: 46px;\n  line-height: 46px;\n}\ntextarea.input-group-lg > .form-control,\ntextarea.input-group-lg > .input-group-addon,\ntextarea.input-group-lg > .input-group-btn > .btn,\nselect[multiple].input-group-lg > .form-control,\nselect[multiple].input-group-lg > .input-group-addon,\nselect[multiple].input-group-lg > .input-group-btn > .btn {\n  height: auto;\n}\n.input-group-sm > .form-control,\n.input-group-sm > .input-group-addon,\n.input-group-sm > .input-group-btn > .btn {\n  height: 30px;\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\nselect.input-group-sm > .form-control,\nselect.input-group-sm > .input-group-addon,\nselect.input-group-sm > .input-group-btn > .btn {\n  height: 30px;\n  line-height: 30px;\n}\ntextarea.input-group-sm > .form-control,\ntextarea.input-group-sm > .input-group-addon,\ntextarea.input-group-sm > .input-group-btn > .btn,\nselect[multiple].input-group-sm > .form-control,\nselect[multiple].input-group-sm > .input-group-addon,\nselect[multiple].input-group-sm > .input-group-btn > .btn {\n  height: auto;\n}\n.input-group-addon,\n.input-group-btn,\n.input-group .form-control {\n  display: table-cell;\n}\n.input-group-addon:not(:first-child):not(:last-child),\n.input-group-btn:not(:first-child):not(:last-child),\n.input-group .form-control:not(:first-child):not(:last-child) {\n  border-radius: 0;\n}\n.input-group-addon,\n.input-group-btn {\n  width: 1%;\n  white-space: nowrap;\n  vertical-align: middle;\n}\n.input-group-addon {\n  padding: 6px 12px;\n  font-size: 14px;\n  font-weight: normal;\n  line-height: 1;\n  color: #555;\n  text-align: center;\n  background-color: #eee;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n}\n.input-group-addon.input-sm {\n  padding: 5px 10px;\n  font-size: 12px;\n  border-radius: 3px;\n}\n.input-group-addon.input-lg {\n  padding: 10px 16px;\n  font-size: 18px;\n  border-radius: 6px;\n}\n.input-group-addon input[type=\"radio\"],\n.input-group-addon input[type=\"checkbox\"] {\n  margin-top: 0;\n}\n.input-group .form-control:first-child,\n.input-group-addon:first-child,\n.input-group-btn:first-child > .btn,\n.input-group-btn:first-child > .btn-group > .btn,\n.input-group-btn:first-child > .dropdown-toggle,\n.input-group-btn:last-child > .btn:not(:last-child):not(.dropdown-toggle),\n.input-group-btn:last-child > .btn-group:not(:last-child) > .btn {\n  border-top-right-radius: 0;\n  border-bottom-right-radius: 0;\n}\n.input-group-addon:first-child {\n  border-right: 0;\n}\n.input-group .form-control:last-child,\n.input-group-addon:last-child,\n.input-group-btn:last-child > .btn,\n.input-group-btn:last-child > .btn-group > .btn,\n.input-group-btn:last-child > .dropdown-toggle,\n.input-group-btn:first-child > .btn:not(:first-child),\n.input-group-btn:first-child > .btn-group:not(:first-child) > .btn {\n  border-top-left-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.input-group-addon:last-child {\n  border-left: 0;\n}\n.input-group-btn {\n  position: relative;\n  font-size: 0;\n  white-space: nowrap;\n}\n.input-group-btn > .btn {\n  position: relative;\n}\n.input-group-btn > .btn + .btn {\n  margin-left: -1px;\n}\n.input-group-btn > .btn:hover,\n.input-group-btn > .btn:focus,\n.input-group-btn > .btn:active {\n  z-index: 2;\n}\n.input-group-btn:first-child > .btn,\n.input-group-btn:first-child > .btn-group {\n  margin-right: -1px;\n}\n.input-group-btn:last-child > .btn,\n.input-group-btn:last-child > .btn-group {\n  z-index: 2;\n  margin-left: -1px;\n}\n.nav {\n  padding-left: 0;\n  margin-bottom: 0;\n  list-style: none;\n}\n.nav > li {\n  position: relative;\n  display: block;\n}\n.nav > li > a {\n  position: relative;\n  display: block;\n  padding: 10px 15px;\n}\n.nav > li > a:hover,\n.nav > li > a:focus {\n  text-decoration: none;\n  background-color: #eee;\n}\n.nav > li.disabled > a {\n  color: #777;\n}\n.nav > li.disabled > a:hover,\n.nav > li.disabled > a:focus {\n  color: #777;\n  text-decoration: none;\n  cursor: not-allowed;\n  background-color: transparent;\n}\n.nav .open > a,\n.nav .open > a:hover,\n.nav .open > a:focus {\n  background-color: #eee;\n  border-color: #337ab7;\n}\n.nav .nav-divider {\n  height: 1px;\n  margin: 9px 0;\n  overflow: hidden;\n  background-color: #e5e5e5;\n}\n.nav > li > a > img {\n  max-width: none;\n}\n.nav-tabs {\n  border-bottom: 1px solid #ddd;\n}\n.nav-tabs > li {\n  float: left;\n  margin-bottom: -1px;\n}\n.nav-tabs > li > a {\n  margin-right: 2px;\n  line-height: 1.42857143;\n  border: 1px solid transparent;\n  border-radius: 4px 4px 0 0;\n}\n.nav-tabs > li > a:hover {\n  border-color: #eee #eee #ddd;\n}\n.nav-tabs > li.active > a,\n.nav-tabs > li.active > a:hover,\n.nav-tabs > li.active > a:focus {\n  color: #555;\n  cursor: default;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-bottom-color: transparent;\n}\n.nav-tabs.nav-justified {\n  width: 100%;\n  border-bottom: 0;\n}\n.nav-tabs.nav-justified > li {\n  float: none;\n}\n.nav-tabs.nav-justified > li > a {\n  margin-bottom: 5px;\n  text-align: center;\n}\n.nav-tabs.nav-justified > .dropdown .dropdown-menu {\n  top: auto;\n  left: auto;\n}\n@media (min-width: 768px) {\n  .nav-tabs.nav-justified > li {\n    display: table-cell;\n    width: 1%;\n  }\n  .nav-tabs.nav-justified > li > a {\n    margin-bottom: 0;\n  }\n}\n.nav-tabs.nav-justified > li > a {\n  margin-right: 0;\n  border-radius: 4px;\n}\n.nav-tabs.nav-justified > .active > a,\n.nav-tabs.nav-justified > .active > a:hover,\n.nav-tabs.nav-justified > .active > a:focus {\n  border: 1px solid #ddd;\n}\n@media (min-width: 768px) {\n  .nav-tabs.nav-justified > li > a {\n    border-bottom: 1px solid #ddd;\n    border-radius: 4px 4px 0 0;\n  }\n  .nav-tabs.nav-justified > .active > a,\n  .nav-tabs.nav-justified > .active > a:hover,\n  .nav-tabs.nav-justified > .active > a:focus {\n    border-bottom-color: #fff;\n  }\n}\n.nav-pills > li {\n  float: left;\n}\n.nav-pills > li > a {\n  border-radius: 4px;\n}\n.nav-pills > li + li {\n  margin-left: 2px;\n}\n.nav-pills > li.active > a,\n.nav-pills > li.active > a:hover,\n.nav-pills > li.active > a:focus {\n  color: #fff;\n  background-color: #337ab7;\n}\n.nav-stacked > li {\n  float: none;\n}\n.nav-stacked > li + li {\n  margin-top: 2px;\n  margin-left: 0;\n}\n.nav-justified {\n  width: 100%;\n}\n.nav-justified > li {\n  float: none;\n}\n.nav-justified > li > a {\n  margin-bottom: 5px;\n  text-align: center;\n}\n.nav-justified > .dropdown .dropdown-menu {\n  top: auto;\n  left: auto;\n}\n@media (min-width: 768px) {\n  .nav-justified > li {\n    display: table-cell;\n    width: 1%;\n  }\n  .nav-justified > li > a {\n    margin-bottom: 0;\n  }\n}\n.nav-tabs-justified {\n  border-bottom: 0;\n}\n.nav-tabs-justified > li > a {\n  margin-right: 0;\n  border-radius: 4px;\n}\n.nav-tabs-justified > .active > a,\n.nav-tabs-justified > .active > a:hover,\n.nav-tabs-justified > .active > a:focus {\n  border: 1px solid #ddd;\n}\n@media (min-width: 768px) {\n  .nav-tabs-justified > li > a {\n    border-bottom: 1px solid #ddd;\n    border-radius: 4px 4px 0 0;\n  }\n  .nav-tabs-justified > .active > a,\n  .nav-tabs-justified > .active > a:hover,\n  .nav-tabs-justified > .active > a:focus {\n    border-bottom-color: #fff;\n  }\n}\n.tab-content > .tab-pane {\n  display: none;\n}\n.tab-content > .active {\n  display: block;\n}\n.nav-tabs .dropdown-menu {\n  margin-top: -1px;\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n}\n.navbar {\n  position: relative;\n  min-height: 50px;\n  margin-bottom: 20px;\n  border: 1px solid transparent;\n}\n@media (min-width: 768px) {\n  .navbar {\n    border-radius: 4px;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-header {\n    float: left;\n  }\n}\n.navbar-collapse {\n  padding-right: 15px;\n  padding-left: 15px;\n  overflow-x: visible;\n  -webkit-overflow-scrolling: touch;\n  border-top: 1px solid transparent;\n  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1);\n          box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1);\n}\n.navbar-collapse.in {\n  overflow-y: auto;\n}\n@media (min-width: 768px) {\n  .navbar-collapse {\n    width: auto;\n    border-top: 0;\n    -webkit-box-shadow: none;\n            box-shadow: none;\n  }\n  .navbar-collapse.collapse {\n    display: block !important;\n    height: auto !important;\n    padding-bottom: 0;\n    overflow: visible !important;\n  }\n  .navbar-collapse.in {\n    overflow-y: visible;\n  }\n  .navbar-fixed-top .navbar-collapse,\n  .navbar-static-top .navbar-collapse,\n  .navbar-fixed-bottom .navbar-collapse {\n    padding-right: 0;\n    padding-left: 0;\n  }\n}\n.navbar-fixed-top .navbar-collapse,\n.navbar-fixed-bottom .navbar-collapse {\n  max-height: 340px;\n}\n@media (max-device-width: 480px) and (orientation: landscape) {\n  .navbar-fixed-top .navbar-collapse,\n  .navbar-fixed-bottom .navbar-collapse {\n    max-height: 200px;\n  }\n}\n.container > .navbar-header,\n.container-fluid > .navbar-header,\n.container > .navbar-collapse,\n.container-fluid > .navbar-collapse {\n  margin-right: -15px;\n  margin-left: -15px;\n}\n@media (min-width: 768px) {\n  .container > .navbar-header,\n  .container-fluid > .navbar-header,\n  .container > .navbar-collapse,\n  .container-fluid > .navbar-collapse {\n    margin-right: 0;\n    margin-left: 0;\n  }\n}\n.navbar-static-top {\n  z-index: 1000;\n  border-width: 0 0 1px;\n}\n@media (min-width: 768px) {\n  .navbar-static-top {\n    border-radius: 0;\n  }\n}\n.navbar-fixed-top,\n.navbar-fixed-bottom {\n  position: fixed;\n  right: 0;\n  left: 0;\n  z-index: 1030;\n}\n@media (min-width: 768px) {\n  .navbar-fixed-top,\n  .navbar-fixed-bottom {\n    border-radius: 0;\n  }\n}\n.navbar-fixed-top {\n  top: 0;\n  border-width: 0 0 1px;\n}\n.navbar-fixed-bottom {\n  bottom: 0;\n  margin-bottom: 0;\n  border-width: 1px 0 0;\n}\n.navbar-brand {\n  float: left;\n  height: 50px;\n  padding: 15px 15px;\n  font-size: 18px;\n  line-height: 20px;\n}\n.navbar-brand:hover,\n.navbar-brand:focus {\n  text-decoration: none;\n}\n.navbar-brand > img {\n  display: block;\n}\n@media (min-width: 768px) {\n  .navbar > .container .navbar-brand,\n  .navbar > .container-fluid .navbar-brand {\n    margin-left: -15px;\n  }\n}\n.navbar-toggle {\n  position: relative;\n  float: right;\n  padding: 9px 10px;\n  margin-top: 8px;\n  margin-right: 15px;\n  margin-bottom: 8px;\n  background-color: transparent;\n  background-image: none;\n  border: 1px solid transparent;\n  border-radius: 4px;\n}\n.navbar-toggle:focus {\n  outline: 0;\n}\n.navbar-toggle .icon-bar {\n  display: block;\n  width: 22px;\n  height: 2px;\n  border-radius: 1px;\n}\n.navbar-toggle .icon-bar + .icon-bar {\n  margin-top: 4px;\n}\n@media (min-width: 768px) {\n  .navbar-toggle {\n    display: none;\n  }\n}\n.navbar-nav {\n  margin: 7.5px -15px;\n}\n.navbar-nav > li > a {\n  padding-top: 10px;\n  padding-bottom: 10px;\n  line-height: 20px;\n}\n@media (max-width: 767px) {\n  .navbar-nav .open .dropdown-menu {\n    position: static;\n    float: none;\n    width: auto;\n    margin-top: 0;\n    background-color: transparent;\n    border: 0;\n    -webkit-box-shadow: none;\n            box-shadow: none;\n  }\n  .navbar-nav .open .dropdown-menu > li > a,\n  .navbar-nav .open .dropdown-menu .dropdown-header {\n    padding: 5px 15px 5px 25px;\n  }\n  .navbar-nav .open .dropdown-menu > li > a {\n    line-height: 20px;\n  }\n  .navbar-nav .open .dropdown-menu > li > a:hover,\n  .navbar-nav .open .dropdown-menu > li > a:focus {\n    background-image: none;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-nav {\n    float: left;\n    margin: 0;\n  }\n  .navbar-nav > li {\n    float: left;\n  }\n  .navbar-nav > li > a {\n    padding-top: 15px;\n    padding-bottom: 15px;\n  }\n}\n.navbar-form {\n  padding: 10px 15px;\n  margin-top: 8px;\n  margin-right: -15px;\n  margin-bottom: 8px;\n  margin-left: -15px;\n  border-top: 1px solid transparent;\n  border-bottom: 1px solid transparent;\n  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 1px 0 rgba(255, 255, 255, .1);\n          box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 1px 0 rgba(255, 255, 255, .1);\n}\n@media (min-width: 768px) {\n  .navbar-form .form-group {\n    display: inline-block;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .navbar-form .form-control {\n    display: inline-block;\n    width: auto;\n    vertical-align: middle;\n  }\n  .navbar-form .form-control-static {\n    display: inline-block;\n  }\n  .navbar-form .input-group {\n    display: inline-table;\n    vertical-align: middle;\n  }\n  .navbar-form .input-group .input-group-addon,\n  .navbar-form .input-group .input-group-btn,\n  .navbar-form .input-group .form-control {\n    width: auto;\n  }\n  .navbar-form .input-group > .form-control {\n    width: 100%;\n  }\n  .navbar-form .control-label {\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .navbar-form .radio,\n  .navbar-form .checkbox {\n    display: inline-block;\n    margin-top: 0;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .navbar-form .radio label,\n  .navbar-form .checkbox label {\n    padding-left: 0;\n  }\n  .navbar-form .radio input[type=\"radio\"],\n  .navbar-form .checkbox input[type=\"checkbox\"] {\n    position: relative;\n    margin-left: 0;\n  }\n  .navbar-form .has-feedback .form-control-feedback {\n    top: 0;\n  }\n}\n@media (max-width: 767px) {\n  .navbar-form .form-group {\n    margin-bottom: 5px;\n  }\n  .navbar-form .form-group:last-child {\n    margin-bottom: 0;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-form {\n    width: auto;\n    padding-top: 0;\n    padding-bottom: 0;\n    margin-right: 0;\n    margin-left: 0;\n    border: 0;\n    -webkit-box-shadow: none;\n            box-shadow: none;\n  }\n}\n.navbar-nav > li > .dropdown-menu {\n  margin-top: 0;\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n}\n.navbar-fixed-bottom .navbar-nav > li > .dropdown-menu {\n  margin-bottom: 0;\n  border-top-left-radius: 4px;\n  border-top-right-radius: 4px;\n  border-bottom-right-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.navbar-btn {\n  margin-top: 8px;\n  margin-bottom: 8px;\n}\n.navbar-btn.btn-sm {\n  margin-top: 10px;\n  margin-bottom: 10px;\n}\n.navbar-btn.btn-xs {\n  margin-top: 14px;\n  margin-bottom: 14px;\n}\n.navbar-text {\n  margin-top: 15px;\n  margin-bottom: 15px;\n}\n@media (min-width: 768px) {\n  .navbar-text {\n    float: left;\n    margin-right: 15px;\n    margin-left: 15px;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-left {\n    float: left !important;\n  }\n  .navbar-right {\n    float: right !important;\n    margin-right: -15px;\n  }\n  .navbar-right ~ .navbar-right {\n    margin-right: 0;\n  }\n}\n.navbar-default {\n  background-color: #f8f8f8;\n  border-color: #e7e7e7;\n}\n.navbar-default .navbar-brand {\n  color: #777;\n}\n.navbar-default .navbar-brand:hover,\n.navbar-default .navbar-brand:focus {\n  color: #5e5e5e;\n  background-color: transparent;\n}\n.navbar-default .navbar-text {\n  color: #777;\n}\n.navbar-default .navbar-nav > li > a {\n  color: #777;\n}\n.navbar-default .navbar-nav > li > a:hover,\n.navbar-default .navbar-nav > li > a:focus {\n  color: #333;\n  background-color: transparent;\n}\n.navbar-default .navbar-nav > .active > a,\n.navbar-default .navbar-nav > .active > a:hover,\n.navbar-default .navbar-nav > .active > a:focus {\n  color: #555;\n  background-color: #e7e7e7;\n}\n.navbar-default .navbar-nav > .disabled > a,\n.navbar-default .navbar-nav > .disabled > a:hover,\n.navbar-default .navbar-nav > .disabled > a:focus {\n  color: #ccc;\n  background-color: transparent;\n}\n.navbar-default .navbar-toggle {\n  border-color: #ddd;\n}\n.navbar-default .navbar-toggle:hover,\n.navbar-default .navbar-toggle:focus {\n  background-color: #ddd;\n}\n.navbar-default .navbar-toggle .icon-bar {\n  background-color: #888;\n}\n.navbar-default .navbar-collapse,\n.navbar-default .navbar-form {\n  border-color: #e7e7e7;\n}\n.navbar-default .navbar-nav > .open > a,\n.navbar-default .navbar-nav > .open > a:hover,\n.navbar-default .navbar-nav > .open > a:focus {\n  color: #555;\n  background-color: #e7e7e7;\n}\n@media (max-width: 767px) {\n  .navbar-default .navbar-nav .open .dropdown-menu > li > a {\n    color: #777;\n  }\n  .navbar-default .navbar-nav .open .dropdown-menu > li > a:hover,\n  .navbar-default .navbar-nav .open .dropdown-menu > li > a:focus {\n    color: #333;\n    background-color: transparent;\n  }\n  .navbar-default .navbar-nav .open .dropdown-menu > .active > a,\n  .navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover,\n  .navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {\n    color: #555;\n    background-color: #e7e7e7;\n  }\n  .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a,\n  .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a:hover,\n  .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a:focus {\n    color: #ccc;\n    background-color: transparent;\n  }\n}\n.navbar-default .navbar-link {\n  color: #777;\n}\n.navbar-default .navbar-link:hover {\n  color: #333;\n}\n.navbar-default .btn-link {\n  color: #777;\n}\n.navbar-default .btn-link:hover,\n.navbar-default .btn-link:focus {\n  color: #333;\n}\n.navbar-default .btn-link[disabled]:hover,\nfieldset[disabled] .navbar-default .btn-link:hover,\n.navbar-default .btn-link[disabled]:focus,\nfieldset[disabled] .navbar-default .btn-link:focus {\n  color: #ccc;\n}\n.navbar-inverse {\n  background-color: #222;\n  border-color: #080808;\n}\n.navbar-inverse .navbar-brand {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-brand:hover,\n.navbar-inverse .navbar-brand:focus {\n  color: #fff;\n  background-color: transparent;\n}\n.navbar-inverse .navbar-text {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-nav > li > a {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-nav > li > a:hover,\n.navbar-inverse .navbar-nav > li > a:focus {\n  color: #fff;\n  background-color: transparent;\n}\n.navbar-inverse .navbar-nav > .active > a,\n.navbar-inverse .navbar-nav > .active > a:hover,\n.navbar-inverse .navbar-nav > .active > a:focus {\n  color: #fff;\n  background-color: #080808;\n}\n.navbar-inverse .navbar-nav > .disabled > a,\n.navbar-inverse .navbar-nav > .disabled > a:hover,\n.navbar-inverse .navbar-nav > .disabled > a:focus {\n  color: #444;\n  background-color: transparent;\n}\n.navbar-inverse .navbar-toggle {\n  border-color: #333;\n}\n.navbar-inverse .navbar-toggle:hover,\n.navbar-inverse .navbar-toggle:focus {\n  background-color: #333;\n}\n.navbar-inverse .navbar-toggle .icon-bar {\n  background-color: #fff;\n}\n.navbar-inverse .navbar-collapse,\n.navbar-inverse .navbar-form {\n  border-color: #101010;\n}\n.navbar-inverse .navbar-nav > .open > a,\n.navbar-inverse .navbar-nav > .open > a:hover,\n.navbar-inverse .navbar-nav > .open > a:focus {\n  color: #fff;\n  background-color: #080808;\n}\n@media (max-width: 767px) {\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .dropdown-header {\n    border-color: #080808;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu .divider {\n    background-color: #080808;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a {\n    color: #9d9d9d;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a:hover,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a:focus {\n    color: #fff;\n    background-color: transparent;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a:hover,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a:focus {\n    color: #fff;\n    background-color: #080808;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a:hover,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a:focus {\n    color: #444;\n    background-color: transparent;\n  }\n}\n.navbar-inverse .navbar-link {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-link:hover {\n  color: #fff;\n}\n.navbar-inverse .btn-link {\n  color: #9d9d9d;\n}\n.navbar-inverse .btn-link:hover,\n.navbar-inverse .btn-link:focus {\n  color: #fff;\n}\n.navbar-inverse .btn-link[disabled]:hover,\nfieldset[disabled] .navbar-inverse .btn-link:hover,\n.navbar-inverse .btn-link[disabled]:focus,\nfieldset[disabled] .navbar-inverse .btn-link:focus {\n  color: #444;\n}\n.breadcrumb {\n  padding: 8px 15px;\n  margin-bottom: 20px;\n  list-style: none;\n  background-color: #f5f5f5;\n  border-radius: 4px;\n}\n.breadcrumb > li {\n  display: inline-block;\n}\n.breadcrumb > li + li:before {\n  padding: 0 5px;\n  color: #ccc;\n  content: \"/\\A0\";\n}\n.breadcrumb > .active {\n  color: #777;\n}\n.pagination {\n  display: inline-block;\n  padding-left: 0;\n  margin: 20px 0;\n  border-radius: 4px;\n}\n.pagination > li {\n  display: inline;\n}\n.pagination > li > a,\n.pagination > li > span {\n  position: relative;\n  float: left;\n  padding: 6px 12px;\n  margin-left: -1px;\n  line-height: 1.42857143;\n  color: #337ab7;\n  text-decoration: none;\n  background-color: #fff;\n  border: 1px solid #ddd;\n}\n.pagination > li:first-child > a,\n.pagination > li:first-child > span {\n  margin-left: 0;\n  border-top-left-radius: 4px;\n  border-bottom-left-radius: 4px;\n}\n.pagination > li:last-child > a,\n.pagination > li:last-child > span {\n  border-top-right-radius: 4px;\n  border-bottom-right-radius: 4px;\n}\n.pagination > li > a:hover,\n.pagination > li > span:hover,\n.pagination > li > a:focus,\n.pagination > li > span:focus {\n  z-index: 2;\n  color: #23527c;\n  background-color: #eee;\n  border-color: #ddd;\n}\n.pagination > .active > a,\n.pagination > .active > span,\n.pagination > .active > a:hover,\n.pagination > .active > span:hover,\n.pagination > .active > a:focus,\n.pagination > .active > span:focus {\n  z-index: 3;\n  color: #fff;\n  cursor: default;\n  background-color: #337ab7;\n  border-color: #337ab7;\n}\n.pagination > .disabled > span,\n.pagination > .disabled > span:hover,\n.pagination > .disabled > span:focus,\n.pagination > .disabled > a,\n.pagination > .disabled > a:hover,\n.pagination > .disabled > a:focus {\n  color: #777;\n  cursor: not-allowed;\n  background-color: #fff;\n  border-color: #ddd;\n}\n.pagination-lg > li > a,\n.pagination-lg > li > span {\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n}\n.pagination-lg > li:first-child > a,\n.pagination-lg > li:first-child > span {\n  border-top-left-radius: 6px;\n  border-bottom-left-radius: 6px;\n}\n.pagination-lg > li:last-child > a,\n.pagination-lg > li:last-child > span {\n  border-top-right-radius: 6px;\n  border-bottom-right-radius: 6px;\n}\n.pagination-sm > li > a,\n.pagination-sm > li > span {\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n}\n.pagination-sm > li:first-child > a,\n.pagination-sm > li:first-child > span {\n  border-top-left-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.pagination-sm > li:last-child > a,\n.pagination-sm > li:last-child > span {\n  border-top-right-radius: 3px;\n  border-bottom-right-radius: 3px;\n}\n.pager {\n  padding-left: 0;\n  margin: 20px 0;\n  text-align: center;\n  list-style: none;\n}\n.pager li {\n  display: inline;\n}\n.pager li > a,\n.pager li > span {\n  display: inline-block;\n  padding: 5px 14px;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-radius: 15px;\n}\n.pager li > a:hover,\n.pager li > a:focus {\n  text-decoration: none;\n  background-color: #eee;\n}\n.pager .next > a,\n.pager .next > span {\n  float: right;\n}\n.pager .previous > a,\n.pager .previous > span {\n  float: left;\n}\n.pager .disabled > a,\n.pager .disabled > a:hover,\n.pager .disabled > a:focus,\n.pager .disabled > span {\n  color: #777;\n  cursor: not-allowed;\n  background-color: #fff;\n}\n.label {\n  display: inline;\n  padding: .2em .6em .3em;\n  font-size: 75%;\n  font-weight: bold;\n  line-height: 1;\n  color: #fff;\n  text-align: center;\n  white-space: nowrap;\n  vertical-align: baseline;\n  border-radius: .25em;\n}\na.label:hover,\na.label:focus {\n  color: #fff;\n  text-decoration: none;\n  cursor: pointer;\n}\n.label:empty {\n  display: none;\n}\n.btn .label {\n  position: relative;\n  top: -1px;\n}\n.label-default {\n  background-color: #777;\n}\n.label-default[href]:hover,\n.label-default[href]:focus {\n  background-color: #5e5e5e;\n}\n.label-primary {\n  background-color: #337ab7;\n}\n.label-primary[href]:hover,\n.label-primary[href]:focus {\n  background-color: #286090;\n}\n.label-success {\n  background-color: #5cb85c;\n}\n.label-success[href]:hover,\n.label-success[href]:focus {\n  background-color: #449d44;\n}\n.label-info {\n  background-color: #5bc0de;\n}\n.label-info[href]:hover,\n.label-info[href]:focus {\n  background-color: #31b0d5;\n}\n.label-warning {\n  background-color: #f0ad4e;\n}\n.label-warning[href]:hover,\n.label-warning[href]:focus {\n  background-color: #ec971f;\n}\n.label-danger {\n  background-color: #d9534f;\n}\n.label-danger[href]:hover,\n.label-danger[href]:focus {\n  background-color: #c9302c;\n}\n.badge {\n  display: inline-block;\n  min-width: 10px;\n  padding: 3px 7px;\n  font-size: 12px;\n  font-weight: bold;\n  line-height: 1;\n  color: #fff;\n  text-align: center;\n  white-space: nowrap;\n  vertical-align: middle;\n  background-color: #777;\n  border-radius: 10px;\n}\n.badge:empty {\n  display: none;\n}\n.btn .badge {\n  position: relative;\n  top: -1px;\n}\n.btn-xs .badge,\n.btn-group-xs > .btn .badge {\n  top: 0;\n  padding: 1px 5px;\n}\na.badge:hover,\na.badge:focus {\n  color: #fff;\n  text-decoration: none;\n  cursor: pointer;\n}\n.list-group-item.active > .badge,\n.nav-pills > .active > a > .badge {\n  color: #337ab7;\n  background-color: #fff;\n}\n.list-group-item > .badge {\n  float: right;\n}\n.list-group-item > .badge + .badge {\n  margin-right: 5px;\n}\n.nav-pills > li > a > .badge {\n  margin-left: 3px;\n}\n.jumbotron {\n  padding-top: 30px;\n  padding-bottom: 30px;\n  margin-bottom: 30px;\n  color: inherit;\n  background-color: #eee;\n}\n.jumbotron h1,\n.jumbotron .h1 {\n  color: inherit;\n}\n.jumbotron p {\n  margin-bottom: 15px;\n  font-size: 21px;\n  font-weight: 200;\n}\n.jumbotron > hr {\n  border-top-color: #d5d5d5;\n}\n.container .jumbotron,\n.container-fluid .jumbotron {\n  padding-right: 15px;\n  padding-left: 15px;\n  border-radius: 6px;\n}\n.jumbotron .container {\n  max-width: 100%;\n}\n@media screen and (min-width: 768px) {\n  .jumbotron {\n    padding-top: 48px;\n    padding-bottom: 48px;\n  }\n  .container .jumbotron,\n  .container-fluid .jumbotron {\n    padding-right: 60px;\n    padding-left: 60px;\n  }\n  .jumbotron h1,\n  .jumbotron .h1 {\n    font-size: 63px;\n  }\n}\n.thumbnail {\n  display: block;\n  padding: 4px;\n  margin-bottom: 20px;\n  line-height: 1.42857143;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-radius: 4px;\n  -webkit-transition: border .2s ease-in-out;\n       -o-transition: border .2s ease-in-out;\n          transition: border .2s ease-in-out;\n}\n.thumbnail > img,\n.thumbnail a > img {\n  margin-right: auto;\n  margin-left: auto;\n}\na.thumbnail:hover,\na.thumbnail:focus,\na.thumbnail.active {\n  border-color: #337ab7;\n}\n.thumbnail .caption {\n  padding: 9px;\n  color: #333;\n}\n.alert {\n  padding: 15px;\n  margin-bottom: 20px;\n  border: 1px solid transparent;\n  border-radius: 4px;\n}\n.alert h4 {\n  margin-top: 0;\n  color: inherit;\n}\n.alert .alert-link {\n  font-weight: bold;\n}\n.alert > p,\n.alert > ul {\n  margin-bottom: 0;\n}\n.alert > p + p {\n  margin-top: 5px;\n}\n.alert-dismissable,\n.alert-dismissible {\n  padding-right: 35px;\n}\n.alert-dismissable .close,\n.alert-dismissible .close {\n  position: relative;\n  top: -2px;\n  right: -21px;\n  color: inherit;\n}\n.alert-success {\n  color: #3c763d;\n  background-color: #dff0d8;\n  border-color: #d6e9c6;\n}\n.alert-success hr {\n  border-top-color: #c9e2b3;\n}\n.alert-success .alert-link {\n  color: #2b542c;\n}\n.alert-info {\n  color: #31708f;\n  background-color: #d9edf7;\n  border-color: #bce8f1;\n}\n.alert-info hr {\n  border-top-color: #a6e1ec;\n}\n.alert-info .alert-link {\n  color: #245269;\n}\n.alert-warning {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n  border-color: #faebcc;\n}\n.alert-warning hr {\n  border-top-color: #f7e1b5;\n}\n.alert-warning .alert-link {\n  color: #66512c;\n}\n.alert-danger {\n  color: #a94442;\n  background-color: #f2dede;\n  border-color: #ebccd1;\n}\n.alert-danger hr {\n  border-top-color: #e4b9c0;\n}\n.alert-danger .alert-link {\n  color: #843534;\n}\n@-webkit-keyframes progress-bar-stripes {\n  from {\n    background-position: 40px 0;\n  }\n  to {\n    background-position: 0 0;\n  }\n}\n@-o-keyframes progress-bar-stripes {\n  from {\n    background-position: 40px 0;\n  }\n  to {\n    background-position: 0 0;\n  }\n}\n@keyframes progress-bar-stripes {\n  from {\n    background-position: 40px 0;\n  }\n  to {\n    background-position: 0 0;\n  }\n}\n.progress {\n  height: 20px;\n  margin-bottom: 20px;\n  overflow: hidden;\n  background-color: #f5f5f5;\n  border-radius: 4px;\n  -webkit-box-shadow: inset 0 1px 2px rgba(0, 0, 0, .1);\n          box-shadow: inset 0 1px 2px rgba(0, 0, 0, .1);\n}\n.progress-bar {\n  float: left;\n  width: 0;\n  height: 100%;\n  font-size: 12px;\n  line-height: 20px;\n  color: #fff;\n  text-align: center;\n  background-color: #337ab7;\n  -webkit-box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .15);\n          box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .15);\n  -webkit-transition: width .6s ease;\n       -o-transition: width .6s ease;\n          transition: width .6s ease;\n}\n.progress-striped .progress-bar,\n.progress-bar-striped {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  -webkit-background-size: 40px 40px;\n          background-size: 40px 40px;\n}\n.progress.active .progress-bar,\n.progress-bar.active {\n  -webkit-animation: progress-bar-stripes 2s linear infinite;\n       -o-animation: progress-bar-stripes 2s linear infinite;\n          animation: progress-bar-stripes 2s linear infinite;\n}\n.progress-bar-success {\n  background-color: #5cb85c;\n}\n.progress-striped .progress-bar-success {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.progress-bar-info {\n  background-color: #5bc0de;\n}\n.progress-striped .progress-bar-info {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.progress-bar-warning {\n  background-color: #f0ad4e;\n}\n.progress-striped .progress-bar-warning {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.progress-bar-danger {\n  background-color: #d9534f;\n}\n.progress-striped .progress-bar-danger {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.media {\n  margin-top: 15px;\n}\n.media:first-child {\n  margin-top: 0;\n}\n.media,\n.media-body {\n  overflow: hidden;\n  zoom: 1;\n}\n.media-body {\n  width: 10000px;\n}\n.media-object {\n  display: block;\n}\n.media-object.img-thumbnail {\n  max-width: none;\n}\n.media-right,\n.media > .pull-right {\n  padding-left: 10px;\n}\n.media-left,\n.media > .pull-left {\n  padding-right: 10px;\n}\n.media-left,\n.media-right,\n.media-body {\n  display: table-cell;\n  vertical-align: top;\n}\n.media-middle {\n  vertical-align: middle;\n}\n.media-bottom {\n  vertical-align: bottom;\n}\n.media-heading {\n  margin-top: 0;\n  margin-bottom: 5px;\n}\n.media-list {\n  padding-left: 0;\n  list-style: none;\n}\n.list-group {\n  padding-left: 0;\n  margin-bottom: 20px;\n}\n.list-group-item {\n  position: relative;\n  display: block;\n  padding: 10px 15px;\n  margin-bottom: -1px;\n  background-color: #fff;\n  border: 1px solid #ddd;\n}\n.list-group-item:first-child {\n  border-top-left-radius: 4px;\n  border-top-right-radius: 4px;\n}\n.list-group-item:last-child {\n  margin-bottom: 0;\n  border-bottom-right-radius: 4px;\n  border-bottom-left-radius: 4px;\n}\na.list-group-item,\nbutton.list-group-item {\n  color: #555;\n}\na.list-group-item .list-group-item-heading,\nbutton.list-group-item .list-group-item-heading {\n  color: #333;\n}\na.list-group-item:hover,\nbutton.list-group-item:hover,\na.list-group-item:focus,\nbutton.list-group-item:focus {\n  color: #555;\n  text-decoration: none;\n  background-color: #f5f5f5;\n}\nbutton.list-group-item {\n  width: 100%;\n  text-align: left;\n}\n.list-group-item.disabled,\n.list-group-item.disabled:hover,\n.list-group-item.disabled:focus {\n  color: #777;\n  cursor: not-allowed;\n  background-color: #eee;\n}\n.list-group-item.disabled .list-group-item-heading,\n.list-group-item.disabled:hover .list-group-item-heading,\n.list-group-item.disabled:focus .list-group-item-heading {\n  color: inherit;\n}\n.list-group-item.disabled .list-group-item-text,\n.list-group-item.disabled:hover .list-group-item-text,\n.list-group-item.disabled:focus .list-group-item-text {\n  color: #777;\n}\n.list-group-item.active,\n.list-group-item.active:hover,\n.list-group-item.active:focus {\n  z-index: 2;\n  color: #fff;\n  background-color: #337ab7;\n  border-color: #337ab7;\n}\n.list-group-item.active .list-group-item-heading,\n.list-group-item.active:hover .list-group-item-heading,\n.list-group-item.active:focus .list-group-item-heading,\n.list-group-item.active .list-group-item-heading > small,\n.list-group-item.active:hover .list-group-item-heading > small,\n.list-group-item.active:focus .list-group-item-heading > small,\n.list-group-item.active .list-group-item-heading > .small,\n.list-group-item.active:hover .list-group-item-heading > .small,\n.list-group-item.active:focus .list-group-item-heading > .small {\n  color: inherit;\n}\n.list-group-item.active .list-group-item-text,\n.list-group-item.active:hover .list-group-item-text,\n.list-group-item.active:focus .list-group-item-text {\n  color: #c7ddef;\n}\n.list-group-item-success {\n  color: #3c763d;\n  background-color: #dff0d8;\n}\na.list-group-item-success,\nbutton.list-group-item-success {\n  color: #3c763d;\n}\na.list-group-item-success .list-group-item-heading,\nbutton.list-group-item-success .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-success:hover,\nbutton.list-group-item-success:hover,\na.list-group-item-success:focus,\nbutton.list-group-item-success:focus {\n  color: #3c763d;\n  background-color: #d0e9c6;\n}\na.list-group-item-success.active,\nbutton.list-group-item-success.active,\na.list-group-item-success.active:hover,\nbutton.list-group-item-success.active:hover,\na.list-group-item-success.active:focus,\nbutton.list-group-item-success.active:focus {\n  color: #fff;\n  background-color: #3c763d;\n  border-color: #3c763d;\n}\n.list-group-item-info {\n  color: #31708f;\n  background-color: #d9edf7;\n}\na.list-group-item-info,\nbutton.list-group-item-info {\n  color: #31708f;\n}\na.list-group-item-info .list-group-item-heading,\nbutton.list-group-item-info .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-info:hover,\nbutton.list-group-item-info:hover,\na.list-group-item-info:focus,\nbutton.list-group-item-info:focus {\n  color: #31708f;\n  background-color: #c4e3f3;\n}\na.list-group-item-info.active,\nbutton.list-group-item-info.active,\na.list-group-item-info.active:hover,\nbutton.list-group-item-info.active:hover,\na.list-group-item-info.active:focus,\nbutton.list-group-item-info.active:focus {\n  color: #fff;\n  background-color: #31708f;\n  border-color: #31708f;\n}\n.list-group-item-warning {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n}\na.list-group-item-warning,\nbutton.list-group-item-warning {\n  color: #8a6d3b;\n}\na.list-group-item-warning .list-group-item-heading,\nbutton.list-group-item-warning .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-warning:hover,\nbutton.list-group-item-warning:hover,\na.list-group-item-warning:focus,\nbutton.list-group-item-warning:focus {\n  color: #8a6d3b;\n  background-color: #faf2cc;\n}\na.list-group-item-warning.active,\nbutton.list-group-item-warning.active,\na.list-group-item-warning.active:hover,\nbutton.list-group-item-warning.active:hover,\na.list-group-item-warning.active:focus,\nbutton.list-group-item-warning.active:focus {\n  color: #fff;\n  background-color: #8a6d3b;\n  border-color: #8a6d3b;\n}\n.list-group-item-danger {\n  color: #a94442;\n  background-color: #f2dede;\n}\na.list-group-item-danger,\nbutton.list-group-item-danger {\n  color: #a94442;\n}\na.list-group-item-danger .list-group-item-heading,\nbutton.list-group-item-danger .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-danger:hover,\nbutton.list-group-item-danger:hover,\na.list-group-item-danger:focus,\nbutton.list-group-item-danger:focus {\n  color: #a94442;\n  background-color: #ebcccc;\n}\na.list-group-item-danger.active,\nbutton.list-group-item-danger.active,\na.list-group-item-danger.active:hover,\nbutton.list-group-item-danger.active:hover,\na.list-group-item-danger.active:focus,\nbutton.list-group-item-danger.active:focus {\n  color: #fff;\n  background-color: #a94442;\n  border-color: #a94442;\n}\n.list-group-item-heading {\n  margin-top: 0;\n  margin-bottom: 5px;\n}\n.list-group-item-text {\n  margin-bottom: 0;\n  line-height: 1.3;\n}\n.panel {\n  margin-bottom: 20px;\n  background-color: #fff;\n  border: 1px solid transparent;\n  border-radius: 4px;\n  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, .05);\n          box-shadow: 0 1px 1px rgba(0, 0, 0, .05);\n}\n.panel-body {\n  padding: 15px;\n}\n.panel-heading {\n  padding: 10px 15px;\n  border-bottom: 1px solid transparent;\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel-heading > .dropdown .dropdown-toggle {\n  color: inherit;\n}\n.panel-title {\n  margin-top: 0;\n  margin-bottom: 0;\n  font-size: 16px;\n  color: inherit;\n}\n.panel-title > a,\n.panel-title > small,\n.panel-title > .small,\n.panel-title > small > a,\n.panel-title > .small > a {\n  color: inherit;\n}\n.panel-footer {\n  padding: 10px 15px;\n  background-color: #f5f5f5;\n  border-top: 1px solid #ddd;\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel > .list-group,\n.panel > .panel-collapse > .list-group {\n  margin-bottom: 0;\n}\n.panel > .list-group .list-group-item,\n.panel > .panel-collapse > .list-group .list-group-item {\n  border-width: 1px 0;\n  border-radius: 0;\n}\n.panel > .list-group:first-child .list-group-item:first-child,\n.panel > .panel-collapse > .list-group:first-child .list-group-item:first-child {\n  border-top: 0;\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel > .list-group:last-child .list-group-item:last-child,\n.panel > .panel-collapse > .list-group:last-child .list-group-item:last-child {\n  border-bottom: 0;\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel > .panel-heading + .panel-collapse > .list-group .list-group-item:first-child {\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n}\n.panel-heading + .list-group .list-group-item:first-child {\n  border-top-width: 0;\n}\n.list-group + .panel-footer {\n  border-top-width: 0;\n}\n.panel > .table,\n.panel > .table-responsive > .table,\n.panel > .panel-collapse > .table {\n  margin-bottom: 0;\n}\n.panel > .table caption,\n.panel > .table-responsive > .table caption,\n.panel > .panel-collapse > .table caption {\n  padding-right: 15px;\n  padding-left: 15px;\n}\n.panel > .table:first-child,\n.panel > .table-responsive:first-child > .table:first-child {\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel > .table:first-child > thead:first-child > tr:first-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child {\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel > .table:first-child > thead:first-child > tr:first-child td:first-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child td:first-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child td:first-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child td:first-child,\n.panel > .table:first-child > thead:first-child > tr:first-child th:first-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child th:first-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child th:first-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child th:first-child {\n  border-top-left-radius: 3px;\n}\n.panel > .table:first-child > thead:first-child > tr:first-child td:last-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child td:last-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child td:last-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child td:last-child,\n.panel > .table:first-child > thead:first-child > tr:first-child th:last-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child th:last-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child th:last-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child th:last-child {\n  border-top-right-radius: 3px;\n}\n.panel > .table:last-child,\n.panel > .table-responsive:last-child > .table:last-child {\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel > .table:last-child > tbody:last-child > tr:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child {\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel > .table:last-child > tbody:last-child > tr:last-child td:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child td:first-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child td:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child td:first-child,\n.panel > .table:last-child > tbody:last-child > tr:last-child th:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child th:first-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child th:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child th:first-child {\n  border-bottom-left-radius: 3px;\n}\n.panel > .table:last-child > tbody:last-child > tr:last-child td:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child td:last-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child td:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child td:last-child,\n.panel > .table:last-child > tbody:last-child > tr:last-child th:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child th:last-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child th:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child th:last-child {\n  border-bottom-right-radius: 3px;\n}\n.panel > .panel-body + .table,\n.panel > .panel-body + .table-responsive,\n.panel > .table + .panel-body,\n.panel > .table-responsive + .panel-body {\n  border-top: 1px solid #ddd;\n}\n.panel > .table > tbody:first-child > tr:first-child th,\n.panel > .table > tbody:first-child > tr:first-child td {\n  border-top: 0;\n}\n.panel > .table-bordered,\n.panel > .table-responsive > .table-bordered {\n  border: 0;\n}\n.panel > .table-bordered > thead > tr > th:first-child,\n.panel > .table-responsive > .table-bordered > thead > tr > th:first-child,\n.panel > .table-bordered > tbody > tr > th:first-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > th:first-child,\n.panel > .table-bordered > tfoot > tr > th:first-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > th:first-child,\n.panel > .table-bordered > thead > tr > td:first-child,\n.panel > .table-responsive > .table-bordered > thead > tr > td:first-child,\n.panel > .table-bordered > tbody > tr > td:first-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > td:first-child,\n.panel > .table-bordered > tfoot > tr > td:first-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > td:first-child {\n  border-left: 0;\n}\n.panel > .table-bordered > thead > tr > th:last-child,\n.panel > .table-responsive > .table-bordered > thead > tr > th:last-child,\n.panel > .table-bordered > tbody > tr > th:last-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > th:last-child,\n.panel > .table-bordered > tfoot > tr > th:last-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > th:last-child,\n.panel > .table-bordered > thead > tr > td:last-child,\n.panel > .table-responsive > .table-bordered > thead > tr > td:last-child,\n.panel > .table-bordered > tbody > tr > td:last-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > td:last-child,\n.panel > .table-bordered > tfoot > tr > td:last-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > td:last-child {\n  border-right: 0;\n}\n.panel > .table-bordered > thead > tr:first-child > td,\n.panel > .table-responsive > .table-bordered > thead > tr:first-child > td,\n.panel > .table-bordered > tbody > tr:first-child > td,\n.panel > .table-responsive > .table-bordered > tbody > tr:first-child > td,\n.panel > .table-bordered > thead > tr:first-child > th,\n.panel > .table-responsive > .table-bordered > thead > tr:first-child > th,\n.panel > .table-bordered > tbody > tr:first-child > th,\n.panel > .table-responsive > .table-bordered > tbody > tr:first-child > th {\n  border-bottom: 0;\n}\n.panel > .table-bordered > tbody > tr:last-child > td,\n.panel > .table-responsive > .table-bordered > tbody > tr:last-child > td,\n.panel > .table-bordered > tfoot > tr:last-child > td,\n.panel > .table-responsive > .table-bordered > tfoot > tr:last-child > td,\n.panel > .table-bordered > tbody > tr:last-child > th,\n.panel > .table-responsive > .table-bordered > tbody > tr:last-child > th,\n.panel > .table-bordered > tfoot > tr:last-child > th,\n.panel > .table-responsive > .table-bordered > tfoot > tr:last-child > th {\n  border-bottom: 0;\n}\n.panel > .table-responsive {\n  margin-bottom: 0;\n  border: 0;\n}\n.panel-group {\n  margin-bottom: 20px;\n}\n.panel-group .panel {\n  margin-bottom: 0;\n  border-radius: 4px;\n}\n.panel-group .panel + .panel {\n  margin-top: 5px;\n}\n.panel-group .panel-heading {\n  border-bottom: 0;\n}\n.panel-group .panel-heading + .panel-collapse > .panel-body,\n.panel-group .panel-heading + .panel-collapse > .list-group {\n  border-top: 1px solid #ddd;\n}\n.panel-group .panel-footer {\n  border-top: 0;\n}\n.panel-group .panel-footer + .panel-collapse .panel-body {\n  border-bottom: 1px solid #ddd;\n}\n.panel-default {\n  border-color: #ddd;\n}\n.panel-default > .panel-heading {\n  color: #333;\n  background-color: #f5f5f5;\n  border-color: #ddd;\n}\n.panel-default > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #ddd;\n}\n.panel-default > .panel-heading .badge {\n  color: #f5f5f5;\n  background-color: #333;\n}\n.panel-default > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #ddd;\n}\n.panel-primary {\n  border-color: #337ab7;\n}\n.panel-primary > .panel-heading {\n  color: #fff;\n  background-color: #337ab7;\n  border-color: #337ab7;\n}\n.panel-primary > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #337ab7;\n}\n.panel-primary > .panel-heading .badge {\n  color: #337ab7;\n  background-color: #fff;\n}\n.panel-primary > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #337ab7;\n}\n.panel-success {\n  border-color: #d6e9c6;\n}\n.panel-success > .panel-heading {\n  color: #3c763d;\n  background-color: #dff0d8;\n  border-color: #d6e9c6;\n}\n.panel-success > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #d6e9c6;\n}\n.panel-success > .panel-heading .badge {\n  color: #dff0d8;\n  background-color: #3c763d;\n}\n.panel-success > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #d6e9c6;\n}\n.panel-info {\n  border-color: #bce8f1;\n}\n.panel-info > .panel-heading {\n  color: #31708f;\n  background-color: #d9edf7;\n  border-color: #bce8f1;\n}\n.panel-info > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #bce8f1;\n}\n.panel-info > .panel-heading .badge {\n  color: #d9edf7;\n  background-color: #31708f;\n}\n.panel-info > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #bce8f1;\n}\n.panel-warning {\n  border-color: #faebcc;\n}\n.panel-warning > .panel-heading {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n  border-color: #faebcc;\n}\n.panel-warning > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #faebcc;\n}\n.panel-warning > .panel-heading .badge {\n  color: #fcf8e3;\n  background-color: #8a6d3b;\n}\n.panel-warning > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #faebcc;\n}\n.panel-danger {\n  border-color: #ebccd1;\n}\n.panel-danger > .panel-heading {\n  color: #a94442;\n  background-color: #f2dede;\n  border-color: #ebccd1;\n}\n.panel-danger > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #ebccd1;\n}\n.panel-danger > .panel-heading .badge {\n  color: #f2dede;\n  background-color: #a94442;\n}\n.panel-danger > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #ebccd1;\n}\n.embed-responsive {\n  position: relative;\n  display: block;\n  height: 0;\n  padding: 0;\n  overflow: hidden;\n}\n.embed-responsive .embed-responsive-item,\n.embed-responsive iframe,\n.embed-responsive embed,\n.embed-responsive object,\n.embed-responsive video {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  border: 0;\n}\n.embed-responsive-16by9 {\n  padding-bottom: 56.25%;\n}\n.embed-responsive-4by3 {\n  padding-bottom: 75%;\n}\n.well {\n  min-height: 20px;\n  padding: 19px;\n  margin-bottom: 20px;\n  background-color: #f5f5f5;\n  border: 1px solid #e3e3e3;\n  border-radius: 4px;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);\n}\n.well blockquote {\n  border-color: #ddd;\n  border-color: rgba(0, 0, 0, .15);\n}\n.well-lg {\n  padding: 24px;\n  border-radius: 6px;\n}\n.well-sm {\n  padding: 9px;\n  border-radius: 3px;\n}\n.close {\n  float: right;\n  font-size: 21px;\n  font-weight: bold;\n  line-height: 1;\n  color: #000;\n  text-shadow: 0 1px 0 #fff;\n  filter: alpha(opacity=20);\n  opacity: .2;\n}\n.close:hover,\n.close:focus {\n  color: #000;\n  text-decoration: none;\n  cursor: pointer;\n  filter: alpha(opacity=50);\n  opacity: .5;\n}\nbutton.close {\n  -webkit-appearance: none;\n  padding: 0;\n  cursor: pointer;\n  background: transparent;\n  border: 0;\n}\n.modal-open {\n  overflow: hidden;\n}\n.modal {\n  position: fixed;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  z-index: 1050;\n  display: none;\n  overflow: hidden;\n  -webkit-overflow-scrolling: touch;\n  outline: 0;\n}\n.modal.fade .modal-dialog {\n  -webkit-transition: -webkit-transform .3s ease-out;\n       -o-transition:      -o-transform .3s ease-out;\n          transition:         transform .3s ease-out;\n  -webkit-transform: translate(0, -25%);\n      -ms-transform: translate(0, -25%);\n       -o-transform: translate(0, -25%);\n          transform: translate(0, -25%);\n}\n.modal.in .modal-dialog {\n  -webkit-transform: translate(0, 0);\n      -ms-transform: translate(0, 0);\n       -o-transform: translate(0, 0);\n          transform: translate(0, 0);\n}\n.modal-open .modal {\n  overflow-x: hidden;\n  overflow-y: auto;\n}\n.modal-dialog {\n  position: relative;\n  width: auto;\n  margin: 10px;\n}\n.modal-content {\n  position: relative;\n  background-color: #fff;\n  -webkit-background-clip: padding-box;\n          background-clip: padding-box;\n  border: 1px solid #999;\n  border: 1px solid rgba(0, 0, 0, .2);\n  border-radius: 6px;\n  outline: 0;\n  -webkit-box-shadow: 0 3px 9px rgba(0, 0, 0, .5);\n          box-shadow: 0 3px 9px rgba(0, 0, 0, .5);\n}\n.modal-backdrop {\n  position: fixed;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  z-index: 1040;\n  background-color: #000;\n}\n.modal-backdrop.fade {\n  filter: alpha(opacity=0);\n  opacity: 0;\n}\n.modal-backdrop.in {\n  filter: alpha(opacity=50);\n  opacity: .5;\n}\n.modal-header {\n  padding: 15px;\n  border-bottom: 1px solid #e5e5e5;\n}\n.modal-header .close {\n  margin-top: -2px;\n}\n.modal-title {\n  margin: 0;\n  line-height: 1.42857143;\n}\n.modal-body {\n  position: relative;\n  padding: 15px;\n}\n.modal-footer {\n  padding: 15px;\n  text-align: right;\n  border-top: 1px solid #e5e5e5;\n}\n.modal-footer .btn + .btn {\n  margin-bottom: 0;\n  margin-left: 5px;\n}\n.modal-footer .btn-group .btn + .btn {\n  margin-left: -1px;\n}\n.modal-footer .btn-block + .btn-block {\n  margin-left: 0;\n}\n.modal-scrollbar-measure {\n  position: absolute;\n  top: -9999px;\n  width: 50px;\n  height: 50px;\n  overflow: scroll;\n}\n@media (min-width: 768px) {\n  .modal-dialog {\n    width: 600px;\n    margin: 30px auto;\n  }\n  .modal-content {\n    -webkit-box-shadow: 0 5px 15px rgba(0, 0, 0, .5);\n            box-shadow: 0 5px 15px rgba(0, 0, 0, .5);\n  }\n  .modal-sm {\n    width: 300px;\n  }\n}\n@media (min-width: 992px) {\n  .modal-lg {\n    width: 900px;\n  }\n}\n.tooltip {\n  position: absolute;\n  z-index: 1070;\n  display: block;\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  font-size: 12px;\n  font-style: normal;\n  font-weight: normal;\n  line-height: 1.42857143;\n  text-align: left;\n  text-align: start;\n  text-decoration: none;\n  text-shadow: none;\n  text-transform: none;\n  letter-spacing: normal;\n  word-break: normal;\n  word-spacing: normal;\n  word-wrap: normal;\n  white-space: normal;\n  filter: alpha(opacity=0);\n  opacity: 0;\n\n  line-break: auto;\n}\n.tooltip.in {\n  filter: alpha(opacity=90);\n  opacity: .9;\n}\n.tooltip.top {\n  padding: 5px 0;\n  margin-top: -3px;\n}\n.tooltip.right {\n  padding: 0 5px;\n  margin-left: 3px;\n}\n.tooltip.bottom {\n  padding: 5px 0;\n  margin-top: 3px;\n}\n.tooltip.left {\n  padding: 0 5px;\n  margin-left: -3px;\n}\n.tooltip-inner {\n  max-width: 200px;\n  padding: 3px 8px;\n  color: #fff;\n  text-align: center;\n  background-color: #000;\n  border-radius: 4px;\n}\n.tooltip-arrow {\n  position: absolute;\n  width: 0;\n  height: 0;\n  border-color: transparent;\n  border-style: solid;\n}\n.tooltip.top .tooltip-arrow {\n  bottom: 0;\n  left: 50%;\n  margin-left: -5px;\n  border-width: 5px 5px 0;\n  border-top-color: #000;\n}\n.tooltip.top-left .tooltip-arrow {\n  right: 5px;\n  bottom: 0;\n  margin-bottom: -5px;\n  border-width: 5px 5px 0;\n  border-top-color: #000;\n}\n.tooltip.top-right .tooltip-arrow {\n  bottom: 0;\n  left: 5px;\n  margin-bottom: -5px;\n  border-width: 5px 5px 0;\n  border-top-color: #000;\n}\n.tooltip.right .tooltip-arrow {\n  top: 50%;\n  left: 0;\n  margin-top: -5px;\n  border-width: 5px 5px 5px 0;\n  border-right-color: #000;\n}\n.tooltip.left .tooltip-arrow {\n  top: 50%;\n  right: 0;\n  margin-top: -5px;\n  border-width: 5px 0 5px 5px;\n  border-left-color: #000;\n}\n.tooltip.bottom .tooltip-arrow {\n  top: 0;\n  left: 50%;\n  margin-left: -5px;\n  border-width: 0 5px 5px;\n  border-bottom-color: #000;\n}\n.tooltip.bottom-left .tooltip-arrow {\n  top: 0;\n  right: 5px;\n  margin-top: -5px;\n  border-width: 0 5px 5px;\n  border-bottom-color: #000;\n}\n.tooltip.bottom-right .tooltip-arrow {\n  top: 0;\n  left: 5px;\n  margin-top: -5px;\n  border-width: 0 5px 5px;\n  border-bottom-color: #000;\n}\n.popover {\n  position: absolute;\n  top: 0;\n  left: 0;\n  z-index: 1060;\n  display: none;\n  max-width: 276px;\n  padding: 1px;\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-weight: normal;\n  line-height: 1.42857143;\n  text-align: left;\n  text-align: start;\n  text-decoration: none;\n  text-shadow: none;\n  text-transform: none;\n  letter-spacing: normal;\n  word-break: normal;\n  word-spacing: normal;\n  word-wrap: normal;\n  white-space: normal;\n  background-color: #fff;\n  -webkit-background-clip: padding-box;\n          background-clip: padding-box;\n  border: 1px solid #ccc;\n  border: 1px solid rgba(0, 0, 0, .2);\n  border-radius: 6px;\n  -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);\n          box-shadow: 0 5px 10px rgba(0, 0, 0, .2);\n\n  line-break: auto;\n}\n.popover.top {\n  margin-top: -10px;\n}\n.popover.right {\n  margin-left: 10px;\n}\n.popover.bottom {\n  margin-top: 10px;\n}\n.popover.left {\n  margin-left: -10px;\n}\n.popover-title {\n  padding: 8px 14px;\n  margin: 0;\n  font-size: 14px;\n  background-color: #f7f7f7;\n  border-bottom: 1px solid #ebebeb;\n  border-radius: 5px 5px 0 0;\n}\n.popover-content {\n  padding: 9px 14px;\n}\n.popover > .arrow,\n.popover > .arrow:after {\n  position: absolute;\n  display: block;\n  width: 0;\n  height: 0;\n  border-color: transparent;\n  border-style: solid;\n}\n.popover > .arrow {\n  border-width: 11px;\n}\n.popover > .arrow:after {\n  content: \"\";\n  border-width: 10px;\n}\n.popover.top > .arrow {\n  bottom: -11px;\n  left: 50%;\n  margin-left: -11px;\n  border-top-color: #999;\n  border-top-color: rgba(0, 0, 0, .25);\n  border-bottom-width: 0;\n}\n.popover.top > .arrow:after {\n  bottom: 1px;\n  margin-left: -10px;\n  content: \" \";\n  border-top-color: #fff;\n  border-bottom-width: 0;\n}\n.popover.right > .arrow {\n  top: 50%;\n  left: -11px;\n  margin-top: -11px;\n  border-right-color: #999;\n  border-right-color: rgba(0, 0, 0, .25);\n  border-left-width: 0;\n}\n.popover.right > .arrow:after {\n  bottom: -10px;\n  left: 1px;\n  content: \" \";\n  border-right-color: #fff;\n  border-left-width: 0;\n}\n.popover.bottom > .arrow {\n  top: -11px;\n  left: 50%;\n  margin-left: -11px;\n  border-top-width: 0;\n  border-bottom-color: #999;\n  border-bottom-color: rgba(0, 0, 0, .25);\n}\n.popover.bottom > .arrow:after {\n  top: 1px;\n  margin-left: -10px;\n  content: \" \";\n  border-top-width: 0;\n  border-bottom-color: #fff;\n}\n.popover.left > .arrow {\n  top: 50%;\n  right: -11px;\n  margin-top: -11px;\n  border-right-width: 0;\n  border-left-color: #999;\n  border-left-color: rgba(0, 0, 0, .25);\n}\n.popover.left > .arrow:after {\n  right: 1px;\n  bottom: -10px;\n  content: \" \";\n  border-right-width: 0;\n  border-left-color: #fff;\n}\n.carousel {\n  position: relative;\n}\n.carousel-inner {\n  position: relative;\n  width: 100%;\n  overflow: hidden;\n}\n.carousel-inner > .item {\n  position: relative;\n  display: none;\n  -webkit-transition: .6s ease-in-out left;\n       -o-transition: .6s ease-in-out left;\n          transition: .6s ease-in-out left;\n}\n.carousel-inner > .item > img,\n.carousel-inner > .item > a > img {\n  line-height: 1;\n}\n@media all and (transform-3d), (-webkit-transform-3d) {\n  .carousel-inner > .item {\n    -webkit-transition: -webkit-transform .6s ease-in-out;\n         -o-transition:      -o-transform .6s ease-in-out;\n            transition:         transform .6s ease-in-out;\n\n    -webkit-backface-visibility: hidden;\n            backface-visibility: hidden;\n    -webkit-perspective: 1000px;\n            perspective: 1000px;\n  }\n  .carousel-inner > .item.next,\n  .carousel-inner > .item.active.right {\n    left: 0;\n    -webkit-transform: translate3d(100%, 0, 0);\n            transform: translate3d(100%, 0, 0);\n  }\n  .carousel-inner > .item.prev,\n  .carousel-inner > .item.active.left {\n    left: 0;\n    -webkit-transform: translate3d(-100%, 0, 0);\n            transform: translate3d(-100%, 0, 0);\n  }\n  .carousel-inner > .item.next.left,\n  .carousel-inner > .item.prev.right,\n  .carousel-inner > .item.active {\n    left: 0;\n    -webkit-transform: translate3d(0, 0, 0);\n            transform: translate3d(0, 0, 0);\n  }\n}\n.carousel-inner > .active,\n.carousel-inner > .next,\n.carousel-inner > .prev {\n  display: block;\n}\n.carousel-inner > .active {\n  left: 0;\n}\n.carousel-inner > .next,\n.carousel-inner > .prev {\n  position: absolute;\n  top: 0;\n  width: 100%;\n}\n.carousel-inner > .next {\n  left: 100%;\n}\n.carousel-inner > .prev {\n  left: -100%;\n}\n.carousel-inner > .next.left,\n.carousel-inner > .prev.right {\n  left: 0;\n}\n.carousel-inner > .active.left {\n  left: -100%;\n}\n.carousel-inner > .active.right {\n  left: 100%;\n}\n.carousel-control {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  width: 15%;\n  font-size: 20px;\n  color: #fff;\n  text-align: center;\n  text-shadow: 0 1px 2px rgba(0, 0, 0, .6);\n  background-color: rgba(0, 0, 0, 0);\n  filter: alpha(opacity=50);\n  opacity: .5;\n}\n.carousel-control.left {\n  background-image: -webkit-linear-gradient(left, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .0001) 100%);\n  background-image:      -o-linear-gradient(left, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .0001) 100%);\n  background-image: -webkit-gradient(linear, left top, right top, from(rgba(0, 0, 0, .5)), to(rgba(0, 0, 0, .0001)));\n  background-image:         linear-gradient(to right, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .0001) 100%);\n  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#80000000', endColorstr='#00000000', GradientType=1);\n  background-repeat: repeat-x;\n}\n.carousel-control.right {\n  right: 0;\n  left: auto;\n  background-image: -webkit-linear-gradient(left, rgba(0, 0, 0, .0001) 0%, rgba(0, 0, 0, .5) 100%);\n  background-image:      -o-linear-gradient(left, rgba(0, 0, 0, .0001) 0%, rgba(0, 0, 0, .5) 100%);\n  background-image: -webkit-gradient(linear, left top, right top, from(rgba(0, 0, 0, .0001)), to(rgba(0, 0, 0, .5)));\n  background-image:         linear-gradient(to right, rgba(0, 0, 0, .0001) 0%, rgba(0, 0, 0, .5) 100%);\n  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#00000000', endColorstr='#80000000', GradientType=1);\n  background-repeat: repeat-x;\n}\n.carousel-control:hover,\n.carousel-control:focus {\n  color: #fff;\n  text-decoration: none;\n  filter: alpha(opacity=90);\n  outline: 0;\n  opacity: .9;\n}\n.carousel-control .icon-prev,\n.carousel-control .icon-next,\n.carousel-control .glyphicon-chevron-left,\n.carousel-control .glyphicon-chevron-right {\n  position: absolute;\n  top: 50%;\n  z-index: 5;\n  display: inline-block;\n  margin-top: -10px;\n}\n.carousel-control .icon-prev,\n.carousel-control .glyphicon-chevron-left {\n  left: 50%;\n  margin-left: -10px;\n}\n.carousel-control .icon-next,\n.carousel-control .glyphicon-chevron-right {\n  right: 50%;\n  margin-right: -10px;\n}\n.carousel-control .icon-prev,\n.carousel-control .icon-next {\n  width: 20px;\n  height: 20px;\n  font-family: serif;\n  line-height: 1;\n}\n.carousel-control .icon-prev:before {\n  content: '\\2039';\n}\n.carousel-control .icon-next:before {\n  content: '\\203A';\n}\n.carousel-indicators {\n  position: absolute;\n  bottom: 10px;\n  left: 50%;\n  z-index: 15;\n  width: 60%;\n  padding-left: 0;\n  margin-left: -30%;\n  text-align: center;\n  list-style: none;\n}\n.carousel-indicators li {\n  display: inline-block;\n  width: 10px;\n  height: 10px;\n  margin: 1px;\n  text-indent: -999px;\n  cursor: pointer;\n  background-color: #000 \\9;\n  background-color: rgba(0, 0, 0, 0);\n  border: 1px solid #fff;\n  border-radius: 10px;\n}\n.carousel-indicators .active {\n  width: 12px;\n  height: 12px;\n  margin: 0;\n  background-color: #fff;\n}\n.carousel-caption {\n  position: absolute;\n  right: 15%;\n  bottom: 20px;\n  left: 15%;\n  z-index: 10;\n  padding-top: 20px;\n  padding-bottom: 20px;\n  color: #fff;\n  text-align: center;\n  text-shadow: 0 1px 2px rgba(0, 0, 0, .6);\n}\n.carousel-caption .btn {\n  text-shadow: none;\n}\n@media screen and (min-width: 768px) {\n  .carousel-control .glyphicon-chevron-left,\n  .carousel-control .glyphicon-chevron-right,\n  .carousel-control .icon-prev,\n  .carousel-control .icon-next {\n    width: 30px;\n    height: 30px;\n    margin-top: -10px;\n    font-size: 30px;\n  }\n  .carousel-control .glyphicon-chevron-left,\n  .carousel-control .icon-prev {\n    margin-left: -10px;\n  }\n  .carousel-control .glyphicon-chevron-right,\n  .carousel-control .icon-next {\n    margin-right: -10px;\n  }\n  .carousel-caption {\n    right: 20%;\n    left: 20%;\n    padding-bottom: 30px;\n  }\n  .carousel-indicators {\n    bottom: 20px;\n  }\n}\n.clearfix:before,\n.clearfix:after,\n.dl-horizontal dd:before,\n.dl-horizontal dd:after,\n.container:before,\n.container:after,\n.container-fluid:before,\n.container-fluid:after,\n.row:before,\n.row:after,\n.form-horizontal .form-group:before,\n.form-horizontal .form-group:after,\n.btn-toolbar:before,\n.btn-toolbar:after,\n.btn-group-vertical > .btn-group:before,\n.btn-group-vertical > .btn-group:after,\n.nav:before,\n.nav:after,\n.navbar:before,\n.navbar:after,\n.navbar-header:before,\n.navbar-header:after,\n.navbar-collapse:before,\n.navbar-collapse:after,\n.pager:before,\n.pager:after,\n.panel-body:before,\n.panel-body:after,\n.modal-header:before,\n.modal-header:after,\n.modal-footer:before,\n.modal-footer:after {\n  display: table;\n  content: \" \";\n}\n.clearfix:after,\n.dl-horizontal dd:after,\n.container:after,\n.container-fluid:after,\n.row:after,\n.form-horizontal .form-group:after,\n.btn-toolbar:after,\n.btn-group-vertical > .btn-group:after,\n.nav:after,\n.navbar:after,\n.navbar-header:after,\n.navbar-collapse:after,\n.pager:after,\n.panel-body:after,\n.modal-header:after,\n.modal-footer:after {\n  clear: both;\n}\n.center-block {\n  display: block;\n  margin-right: auto;\n  margin-left: auto;\n}\n.pull-right {\n  float: right !important;\n}\n.pull-left {\n  float: left !important;\n}\n.hide {\n  display: none !important;\n}\n.show {\n  display: block !important;\n}\n.invisible {\n  visibility: hidden;\n}\n.text-hide {\n  font: 0/0 a;\n  color: transparent;\n  text-shadow: none;\n  background-color: transparent;\n  border: 0;\n}\n.hidden {\n  display: none !important;\n}\n.affix {\n  position: fixed;\n}\n@-ms-viewport {\n  width: device-width;\n}\n.visible-xs,\n.visible-sm,\n.visible-md,\n.visible-lg {\n  display: none !important;\n}\n.visible-xs-block,\n.visible-xs-inline,\n.visible-xs-inline-block,\n.visible-sm-block,\n.visible-sm-inline,\n.visible-sm-inline-block,\n.visible-md-block,\n.visible-md-inline,\n.visible-md-inline-block,\n.visible-lg-block,\n.visible-lg-inline,\n.visible-lg-inline-block {\n  display: none !important;\n}\n@media (max-width: 767px) {\n  .visible-xs {\n    display: block !important;\n  }\n  table.visible-xs {\n    display: table !important;\n  }\n  tr.visible-xs {\n    display: table-row !important;\n  }\n  th.visible-xs,\n  td.visible-xs {\n    display: table-cell !important;\n  }\n}\n@media (max-width: 767px) {\n  .visible-xs-block {\n    display: block !important;\n  }\n}\n@media (max-width: 767px) {\n  .visible-xs-inline {\n    display: inline !important;\n  }\n}\n@media (max-width: 767px) {\n  .visible-xs-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm {\n    display: block !important;\n  }\n  table.visible-sm {\n    display: table !important;\n  }\n  tr.visible-sm {\n    display: table-row !important;\n  }\n  th.visible-sm,\n  td.visible-sm {\n    display: table-cell !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm-block {\n    display: block !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm-inline {\n    display: inline !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md {\n    display: block !important;\n  }\n  table.visible-md {\n    display: table !important;\n  }\n  tr.visible-md {\n    display: table-row !important;\n  }\n  th.visible-md,\n  td.visible-md {\n    display: table-cell !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md-block {\n    display: block !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md-inline {\n    display: inline !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg {\n    display: block !important;\n  }\n  table.visible-lg {\n    display: table !important;\n  }\n  tr.visible-lg {\n    display: table-row !important;\n  }\n  th.visible-lg,\n  td.visible-lg {\n    display: table-cell !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg-block {\n    display: block !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg-inline {\n    display: inline !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (max-width: 767px) {\n  .hidden-xs {\n    display: none !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .hidden-sm {\n    display: none !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .hidden-md {\n    display: none !important;\n  }\n}\n@media (min-width: 1200px) {\n  .hidden-lg {\n    display: none !important;\n  }\n}\n.visible-print {\n  display: none !important;\n}\n@media print {\n  .visible-print {\n    display: block !important;\n  }\n  table.visible-print {\n    display: table !important;\n  }\n  tr.visible-print {\n    display: table-row !important;\n  }\n  th.visible-print,\n  td.visible-print {\n    display: table-cell !important;\n  }\n}\n.visible-print-block {\n  display: none !important;\n}\n@media print {\n  .visible-print-block {\n    display: block !important;\n  }\n}\n.visible-print-inline {\n  display: none !important;\n}\n@media print {\n  .visible-print-inline {\n    display: inline !important;\n  }\n}\n.visible-print-inline-block {\n  display: none !important;\n}\n@media print {\n  .visible-print-inline-block {\n    display: inline-block !important;\n  }\n}\n@media print {\n  .hidden-print {\n    display: none !important;\n  }\n}\n/*# sourceMappingURL=bootstrap.css.map */\n", ""]);
+exports.push([module.i, "/*!\n * Bootstrap v3.3.7 (http://getbootstrap.com)\n * Copyright 2011-2016 Twitter, Inc.\n * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)\n */\n/*! normalize.css v3.0.3 | MIT License | github.com/necolas/normalize.css */\nhtml {\n  font-family: sans-serif;\n  -webkit-text-size-adjust: 100%;\n      -ms-text-size-adjust: 100%;\n}\nbody {\n  margin: 0;\n}\narticle,\naside,\ndetails,\nfigcaption,\nfigure,\nfooter,\nheader,\nhgroup,\nmain,\nmenu,\nnav,\nsection,\nsummary {\n  display: block;\n}\naudio,\ncanvas,\nprogress,\nvideo {\n  display: inline-block;\n  vertical-align: baseline;\n}\naudio:not([controls]) {\n  display: none;\n  height: 0;\n}\n[hidden],\ntemplate {\n  display: none;\n}\na {\n  background-color: transparent;\n}\na:active,\na:hover {\n  outline: 0;\n}\nabbr[title] {\n  border-bottom: 1px dotted;\n}\nb,\nstrong {\n  font-weight: bold;\n}\ndfn {\n  font-style: italic;\n}\nh1 {\n  margin: .67em 0;\n  font-size: 2em;\n}\nmark {\n  color: #000;\n  background: #ff0;\n}\nsmall {\n  font-size: 80%;\n}\nsub,\nsup {\n  position: relative;\n  font-size: 75%;\n  line-height: 0;\n  vertical-align: baseline;\n}\nsup {\n  top: -.5em;\n}\nsub {\n  bottom: -.25em;\n}\nimg {\n  border: 0;\n}\nsvg:not(:root) {\n  overflow: hidden;\n}\nfigure {\n  margin: 1em 40px;\n}\nhr {\n  height: 0;\n  -webkit-box-sizing: content-box;\n     -moz-box-sizing: content-box;\n          box-sizing: content-box;\n}\npre {\n  overflow: auto;\n}\ncode,\nkbd,\npre,\nsamp {\n  font-family: monospace, monospace;\n  font-size: 1em;\n}\nbutton,\ninput,\noptgroup,\nselect,\ntextarea {\n  margin: 0;\n  font: inherit;\n  color: inherit;\n}\nbutton {\n  overflow: visible;\n}\nbutton,\nselect {\n  text-transform: none;\n}\nbutton,\nhtml input[type=\"button\"],\ninput[type=\"reset\"],\ninput[type=\"submit\"] {\n  -webkit-appearance: button;\n  cursor: pointer;\n}\nbutton[disabled],\nhtml input[disabled] {\n  cursor: default;\n}\nbutton::-moz-focus-inner,\ninput::-moz-focus-inner {\n  padding: 0;\n  border: 0;\n}\ninput {\n  line-height: normal;\n}\ninput[type=\"checkbox\"],\ninput[type=\"radio\"] {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n  padding: 0;\n}\ninput[type=\"number\"]::-webkit-inner-spin-button,\ninput[type=\"number\"]::-webkit-outer-spin-button {\n  height: auto;\n}\ninput[type=\"search\"] {\n  -webkit-box-sizing: content-box;\n     -moz-box-sizing: content-box;\n          box-sizing: content-box;\n  -webkit-appearance: textfield;\n}\ninput[type=\"search\"]::-webkit-search-cancel-button,\ninput[type=\"search\"]::-webkit-search-decoration {\n  -webkit-appearance: none;\n}\nfieldset {\n  padding: .35em .625em .75em;\n  margin: 0 2px;\n  border: 1px solid #c0c0c0;\n}\nlegend {\n  padding: 0;\n  border: 0;\n}\ntextarea {\n  overflow: auto;\n}\noptgroup {\n  font-weight: bold;\n}\ntable {\n  border-spacing: 0;\n  border-collapse: collapse;\n}\ntd,\nth {\n  padding: 0;\n}\n/*! Source: https://github.com/h5bp/html5-boilerplate/blob/master/src/css/main.css */\n@media print {\n  *,\n  *:before,\n  *:after {\n    color: #000 !important;\n    text-shadow: none !important;\n    background: transparent !important;\n    -webkit-box-shadow: none !important;\n            box-shadow: none !important;\n  }\n  a,\n  a:visited {\n    text-decoration: underline;\n  }\n  a[href]:after {\n    content: \" (\" attr(href) \")\";\n  }\n  abbr[title]:after {\n    content: \" (\" attr(title) \")\";\n  }\n  a[href^=\"#\"]:after,\n  a[href^=\"javascript:\"]:after {\n    content: \"\";\n  }\n  pre,\n  blockquote {\n    border: 1px solid #999;\n\n    page-break-inside: avoid;\n  }\n  thead {\n    display: table-header-group;\n  }\n  tr,\n  img {\n    page-break-inside: avoid;\n  }\n  img {\n    max-width: 100% !important;\n  }\n  p,\n  h2,\n  h3 {\n    orphans: 3;\n    widows: 3;\n  }\n  h2,\n  h3 {\n    page-break-after: avoid;\n  }\n  .navbar {\n    display: none;\n  }\n  .btn > .caret,\n  .dropup > .btn > .caret {\n    border-top-color: #000 !important;\n  }\n  .label {\n    border: 1px solid #000;\n  }\n  .table {\n    border-collapse: collapse !important;\n  }\n  .table td,\n  .table th {\n    background-color: #fff !important;\n  }\n  .table-bordered th,\n  .table-bordered td {\n    border: 1px solid #ddd !important;\n  }\n}\n@font-face {\n  font-family: 'Glyphicons Halflings';\n\n  src: url(" + __webpack_require__(147) + ");\n  src: url(" + __webpack_require__(147) + "?#iefix) format('embedded-opentype'), url(" + __webpack_require__(739) + ") format('woff2'), url(" + __webpack_require__(738) + ") format('woff'), url(" + __webpack_require__(740) + ") format('truetype'), url(" + __webpack_require__(741) + "#glyphicons_halflingsregular) format('svg');\n}\n.glyphicon {\n  position: relative;\n  top: 1px;\n  display: inline-block;\n  font-family: 'Glyphicons Halflings';\n  font-style: normal;\n  font-weight: normal;\n  line-height: 1;\n\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n}\n.glyphicon-asterisk:before {\n  content: \"*\";\n}\n.glyphicon-plus:before {\n  content: \"+\";\n}\n.glyphicon-euro:before,\n.glyphicon-eur:before {\n  content: \"\\20AC\";\n}\n.glyphicon-minus:before {\n  content: \"\\2212\";\n}\n.glyphicon-cloud:before {\n  content: \"\\2601\";\n}\n.glyphicon-envelope:before {\n  content: \"\\2709\";\n}\n.glyphicon-pencil:before {\n  content: \"\\270F\";\n}\n.glyphicon-glass:before {\n  content: \"\\E001\";\n}\n.glyphicon-music:before {\n  content: \"\\E002\";\n}\n.glyphicon-search:before {\n  content: \"\\E003\";\n}\n.glyphicon-heart:before {\n  content: \"\\E005\";\n}\n.glyphicon-star:before {\n  content: \"\\E006\";\n}\n.glyphicon-star-empty:before {\n  content: \"\\E007\";\n}\n.glyphicon-user:before {\n  content: \"\\E008\";\n}\n.glyphicon-film:before {\n  content: \"\\E009\";\n}\n.glyphicon-th-large:before {\n  content: \"\\E010\";\n}\n.glyphicon-th:before {\n  content: \"\\E011\";\n}\n.glyphicon-th-list:before {\n  content: \"\\E012\";\n}\n.glyphicon-ok:before {\n  content: \"\\E013\";\n}\n.glyphicon-remove:before {\n  content: \"\\E014\";\n}\n.glyphicon-zoom-in:before {\n  content: \"\\E015\";\n}\n.glyphicon-zoom-out:before {\n  content: \"\\E016\";\n}\n.glyphicon-off:before {\n  content: \"\\E017\";\n}\n.glyphicon-signal:before {\n  content: \"\\E018\";\n}\n.glyphicon-cog:before {\n  content: \"\\E019\";\n}\n.glyphicon-trash:before {\n  content: \"\\E020\";\n}\n.glyphicon-home:before {\n  content: \"\\E021\";\n}\n.glyphicon-file:before {\n  content: \"\\E022\";\n}\n.glyphicon-time:before {\n  content: \"\\E023\";\n}\n.glyphicon-road:before {\n  content: \"\\E024\";\n}\n.glyphicon-download-alt:before {\n  content: \"\\E025\";\n}\n.glyphicon-download:before {\n  content: \"\\E026\";\n}\n.glyphicon-upload:before {\n  content: \"\\E027\";\n}\n.glyphicon-inbox:before {\n  content: \"\\E028\";\n}\n.glyphicon-play-circle:before {\n  content: \"\\E029\";\n}\n.glyphicon-repeat:before {\n  content: \"\\E030\";\n}\n.glyphicon-refresh:before {\n  content: \"\\E031\";\n}\n.glyphicon-list-alt:before {\n  content: \"\\E032\";\n}\n.glyphicon-lock:before {\n  content: \"\\E033\";\n}\n.glyphicon-flag:before {\n  content: \"\\E034\";\n}\n.glyphicon-headphones:before {\n  content: \"\\E035\";\n}\n.glyphicon-volume-off:before {\n  content: \"\\E036\";\n}\n.glyphicon-volume-down:before {\n  content: \"\\E037\";\n}\n.glyphicon-volume-up:before {\n  content: \"\\E038\";\n}\n.glyphicon-qrcode:before {\n  content: \"\\E039\";\n}\n.glyphicon-barcode:before {\n  content: \"\\E040\";\n}\n.glyphicon-tag:before {\n  content: \"\\E041\";\n}\n.glyphicon-tags:before {\n  content: \"\\E042\";\n}\n.glyphicon-book:before {\n  content: \"\\E043\";\n}\n.glyphicon-bookmark:before {\n  content: \"\\E044\";\n}\n.glyphicon-print:before {\n  content: \"\\E045\";\n}\n.glyphicon-camera:before {\n  content: \"\\E046\";\n}\n.glyphicon-font:before {\n  content: \"\\E047\";\n}\n.glyphicon-bold:before {\n  content: \"\\E048\";\n}\n.glyphicon-italic:before {\n  content: \"\\E049\";\n}\n.glyphicon-text-height:before {\n  content: \"\\E050\";\n}\n.glyphicon-text-width:before {\n  content: \"\\E051\";\n}\n.glyphicon-align-left:before {\n  content: \"\\E052\";\n}\n.glyphicon-align-center:before {\n  content: \"\\E053\";\n}\n.glyphicon-align-right:before {\n  content: \"\\E054\";\n}\n.glyphicon-align-justify:before {\n  content: \"\\E055\";\n}\n.glyphicon-list:before {\n  content: \"\\E056\";\n}\n.glyphicon-indent-left:before {\n  content: \"\\E057\";\n}\n.glyphicon-indent-right:before {\n  content: \"\\E058\";\n}\n.glyphicon-facetime-video:before {\n  content: \"\\E059\";\n}\n.glyphicon-picture:before {\n  content: \"\\E060\";\n}\n.glyphicon-map-marker:before {\n  content: \"\\E062\";\n}\n.glyphicon-adjust:before {\n  content: \"\\E063\";\n}\n.glyphicon-tint:before {\n  content: \"\\E064\";\n}\n.glyphicon-edit:before {\n  content: \"\\E065\";\n}\n.glyphicon-share:before {\n  content: \"\\E066\";\n}\n.glyphicon-check:before {\n  content: \"\\E067\";\n}\n.glyphicon-move:before {\n  content: \"\\E068\";\n}\n.glyphicon-step-backward:before {\n  content: \"\\E069\";\n}\n.glyphicon-fast-backward:before {\n  content: \"\\E070\";\n}\n.glyphicon-backward:before {\n  content: \"\\E071\";\n}\n.glyphicon-play:before {\n  content: \"\\E072\";\n}\n.glyphicon-pause:before {\n  content: \"\\E073\";\n}\n.glyphicon-stop:before {\n  content: \"\\E074\";\n}\n.glyphicon-forward:before {\n  content: \"\\E075\";\n}\n.glyphicon-fast-forward:before {\n  content: \"\\E076\";\n}\n.glyphicon-step-forward:before {\n  content: \"\\E077\";\n}\n.glyphicon-eject:before {\n  content: \"\\E078\";\n}\n.glyphicon-chevron-left:before {\n  content: \"\\E079\";\n}\n.glyphicon-chevron-right:before {\n  content: \"\\E080\";\n}\n.glyphicon-plus-sign:before {\n  content: \"\\E081\";\n}\n.glyphicon-minus-sign:before {\n  content: \"\\E082\";\n}\n.glyphicon-remove-sign:before {\n  content: \"\\E083\";\n}\n.glyphicon-ok-sign:before {\n  content: \"\\E084\";\n}\n.glyphicon-question-sign:before {\n  content: \"\\E085\";\n}\n.glyphicon-info-sign:before {\n  content: \"\\E086\";\n}\n.glyphicon-screenshot:before {\n  content: \"\\E087\";\n}\n.glyphicon-remove-circle:before {\n  content: \"\\E088\";\n}\n.glyphicon-ok-circle:before {\n  content: \"\\E089\";\n}\n.glyphicon-ban-circle:before {\n  content: \"\\E090\";\n}\n.glyphicon-arrow-left:before {\n  content: \"\\E091\";\n}\n.glyphicon-arrow-right:before {\n  content: \"\\E092\";\n}\n.glyphicon-arrow-up:before {\n  content: \"\\E093\";\n}\n.glyphicon-arrow-down:before {\n  content: \"\\E094\";\n}\n.glyphicon-share-alt:before {\n  content: \"\\E095\";\n}\n.glyphicon-resize-full:before {\n  content: \"\\E096\";\n}\n.glyphicon-resize-small:before {\n  content: \"\\E097\";\n}\n.glyphicon-exclamation-sign:before {\n  content: \"\\E101\";\n}\n.glyphicon-gift:before {\n  content: \"\\E102\";\n}\n.glyphicon-leaf:before {\n  content: \"\\E103\";\n}\n.glyphicon-fire:before {\n  content: \"\\E104\";\n}\n.glyphicon-eye-open:before {\n  content: \"\\E105\";\n}\n.glyphicon-eye-close:before {\n  content: \"\\E106\";\n}\n.glyphicon-warning-sign:before {\n  content: \"\\E107\";\n}\n.glyphicon-plane:before {\n  content: \"\\E108\";\n}\n.glyphicon-calendar:before {\n  content: \"\\E109\";\n}\n.glyphicon-random:before {\n  content: \"\\E110\";\n}\n.glyphicon-comment:before {\n  content: \"\\E111\";\n}\n.glyphicon-magnet:before {\n  content: \"\\E112\";\n}\n.glyphicon-chevron-up:before {\n  content: \"\\E113\";\n}\n.glyphicon-chevron-down:before {\n  content: \"\\E114\";\n}\n.glyphicon-retweet:before {\n  content: \"\\E115\";\n}\n.glyphicon-shopping-cart:before {\n  content: \"\\E116\";\n}\n.glyphicon-folder-close:before {\n  content: \"\\E117\";\n}\n.glyphicon-folder-open:before {\n  content: \"\\E118\";\n}\n.glyphicon-resize-vertical:before {\n  content: \"\\E119\";\n}\n.glyphicon-resize-horizontal:before {\n  content: \"\\E120\";\n}\n.glyphicon-hdd:before {\n  content: \"\\E121\";\n}\n.glyphicon-bullhorn:before {\n  content: \"\\E122\";\n}\n.glyphicon-bell:before {\n  content: \"\\E123\";\n}\n.glyphicon-certificate:before {\n  content: \"\\E124\";\n}\n.glyphicon-thumbs-up:before {\n  content: \"\\E125\";\n}\n.glyphicon-thumbs-down:before {\n  content: \"\\E126\";\n}\n.glyphicon-hand-right:before {\n  content: \"\\E127\";\n}\n.glyphicon-hand-left:before {\n  content: \"\\E128\";\n}\n.glyphicon-hand-up:before {\n  content: \"\\E129\";\n}\n.glyphicon-hand-down:before {\n  content: \"\\E130\";\n}\n.glyphicon-circle-arrow-right:before {\n  content: \"\\E131\";\n}\n.glyphicon-circle-arrow-left:before {\n  content: \"\\E132\";\n}\n.glyphicon-circle-arrow-up:before {\n  content: \"\\E133\";\n}\n.glyphicon-circle-arrow-down:before {\n  content: \"\\E134\";\n}\n.glyphicon-globe:before {\n  content: \"\\E135\";\n}\n.glyphicon-wrench:before {\n  content: \"\\E136\";\n}\n.glyphicon-tasks:before {\n  content: \"\\E137\";\n}\n.glyphicon-filter:before {\n  content: \"\\E138\";\n}\n.glyphicon-briefcase:before {\n  content: \"\\E139\";\n}\n.glyphicon-fullscreen:before {\n  content: \"\\E140\";\n}\n.glyphicon-dashboard:before {\n  content: \"\\E141\";\n}\n.glyphicon-paperclip:before {\n  content: \"\\E142\";\n}\n.glyphicon-heart-empty:before {\n  content: \"\\E143\";\n}\n.glyphicon-link:before {\n  content: \"\\E144\";\n}\n.glyphicon-phone:before {\n  content: \"\\E145\";\n}\n.glyphicon-pushpin:before {\n  content: \"\\E146\";\n}\n.glyphicon-usd:before {\n  content: \"\\E148\";\n}\n.glyphicon-gbp:before {\n  content: \"\\E149\";\n}\n.glyphicon-sort:before {\n  content: \"\\E150\";\n}\n.glyphicon-sort-by-alphabet:before {\n  content: \"\\E151\";\n}\n.glyphicon-sort-by-alphabet-alt:before {\n  content: \"\\E152\";\n}\n.glyphicon-sort-by-order:before {\n  content: \"\\E153\";\n}\n.glyphicon-sort-by-order-alt:before {\n  content: \"\\E154\";\n}\n.glyphicon-sort-by-attributes:before {\n  content: \"\\E155\";\n}\n.glyphicon-sort-by-attributes-alt:before {\n  content: \"\\E156\";\n}\n.glyphicon-unchecked:before {\n  content: \"\\E157\";\n}\n.glyphicon-expand:before {\n  content: \"\\E158\";\n}\n.glyphicon-collapse-down:before {\n  content: \"\\E159\";\n}\n.glyphicon-collapse-up:before {\n  content: \"\\E160\";\n}\n.glyphicon-log-in:before {\n  content: \"\\E161\";\n}\n.glyphicon-flash:before {\n  content: \"\\E162\";\n}\n.glyphicon-log-out:before {\n  content: \"\\E163\";\n}\n.glyphicon-new-window:before {\n  content: \"\\E164\";\n}\n.glyphicon-record:before {\n  content: \"\\E165\";\n}\n.glyphicon-save:before {\n  content: \"\\E166\";\n}\n.glyphicon-open:before {\n  content: \"\\E167\";\n}\n.glyphicon-saved:before {\n  content: \"\\E168\";\n}\n.glyphicon-import:before {\n  content: \"\\E169\";\n}\n.glyphicon-export:before {\n  content: \"\\E170\";\n}\n.glyphicon-send:before {\n  content: \"\\E171\";\n}\n.glyphicon-floppy-disk:before {\n  content: \"\\E172\";\n}\n.glyphicon-floppy-saved:before {\n  content: \"\\E173\";\n}\n.glyphicon-floppy-remove:before {\n  content: \"\\E174\";\n}\n.glyphicon-floppy-save:before {\n  content: \"\\E175\";\n}\n.glyphicon-floppy-open:before {\n  content: \"\\E176\";\n}\n.glyphicon-credit-card:before {\n  content: \"\\E177\";\n}\n.glyphicon-transfer:before {\n  content: \"\\E178\";\n}\n.glyphicon-cutlery:before {\n  content: \"\\E179\";\n}\n.glyphicon-header:before {\n  content: \"\\E180\";\n}\n.glyphicon-compressed:before {\n  content: \"\\E181\";\n}\n.glyphicon-earphone:before {\n  content: \"\\E182\";\n}\n.glyphicon-phone-alt:before {\n  content: \"\\E183\";\n}\n.glyphicon-tower:before {\n  content: \"\\E184\";\n}\n.glyphicon-stats:before {\n  content: \"\\E185\";\n}\n.glyphicon-sd-video:before {\n  content: \"\\E186\";\n}\n.glyphicon-hd-video:before {\n  content: \"\\E187\";\n}\n.glyphicon-subtitles:before {\n  content: \"\\E188\";\n}\n.glyphicon-sound-stereo:before {\n  content: \"\\E189\";\n}\n.glyphicon-sound-dolby:before {\n  content: \"\\E190\";\n}\n.glyphicon-sound-5-1:before {\n  content: \"\\E191\";\n}\n.glyphicon-sound-6-1:before {\n  content: \"\\E192\";\n}\n.glyphicon-sound-7-1:before {\n  content: \"\\E193\";\n}\n.glyphicon-copyright-mark:before {\n  content: \"\\E194\";\n}\n.glyphicon-registration-mark:before {\n  content: \"\\E195\";\n}\n.glyphicon-cloud-download:before {\n  content: \"\\E197\";\n}\n.glyphicon-cloud-upload:before {\n  content: \"\\E198\";\n}\n.glyphicon-tree-conifer:before {\n  content: \"\\E199\";\n}\n.glyphicon-tree-deciduous:before {\n  content: \"\\E200\";\n}\n.glyphicon-cd:before {\n  content: \"\\E201\";\n}\n.glyphicon-save-file:before {\n  content: \"\\E202\";\n}\n.glyphicon-open-file:before {\n  content: \"\\E203\";\n}\n.glyphicon-level-up:before {\n  content: \"\\E204\";\n}\n.glyphicon-copy:before {\n  content: \"\\E205\";\n}\n.glyphicon-paste:before {\n  content: \"\\E206\";\n}\n.glyphicon-alert:before {\n  content: \"\\E209\";\n}\n.glyphicon-equalizer:before {\n  content: \"\\E210\";\n}\n.glyphicon-king:before {\n  content: \"\\E211\";\n}\n.glyphicon-queen:before {\n  content: \"\\E212\";\n}\n.glyphicon-pawn:before {\n  content: \"\\E213\";\n}\n.glyphicon-bishop:before {\n  content: \"\\E214\";\n}\n.glyphicon-knight:before {\n  content: \"\\E215\";\n}\n.glyphicon-baby-formula:before {\n  content: \"\\E216\";\n}\n.glyphicon-tent:before {\n  content: \"\\26FA\";\n}\n.glyphicon-blackboard:before {\n  content: \"\\E218\";\n}\n.glyphicon-bed:before {\n  content: \"\\E219\";\n}\n.glyphicon-apple:before {\n  content: \"\\F8FF\";\n}\n.glyphicon-erase:before {\n  content: \"\\E221\";\n}\n.glyphicon-hourglass:before {\n  content: \"\\231B\";\n}\n.glyphicon-lamp:before {\n  content: \"\\E223\";\n}\n.glyphicon-duplicate:before {\n  content: \"\\E224\";\n}\n.glyphicon-piggy-bank:before {\n  content: \"\\E225\";\n}\n.glyphicon-scissors:before {\n  content: \"\\E226\";\n}\n.glyphicon-bitcoin:before {\n  content: \"\\E227\";\n}\n.glyphicon-btc:before {\n  content: \"\\E227\";\n}\n.glyphicon-xbt:before {\n  content: \"\\E227\";\n}\n.glyphicon-yen:before {\n  content: \"\\A5\";\n}\n.glyphicon-jpy:before {\n  content: \"\\A5\";\n}\n.glyphicon-ruble:before {\n  content: \"\\20BD\";\n}\n.glyphicon-rub:before {\n  content: \"\\20BD\";\n}\n.glyphicon-scale:before {\n  content: \"\\E230\";\n}\n.glyphicon-ice-lolly:before {\n  content: \"\\E231\";\n}\n.glyphicon-ice-lolly-tasted:before {\n  content: \"\\E232\";\n}\n.glyphicon-education:before {\n  content: \"\\E233\";\n}\n.glyphicon-option-horizontal:before {\n  content: \"\\E234\";\n}\n.glyphicon-option-vertical:before {\n  content: \"\\E235\";\n}\n.glyphicon-menu-hamburger:before {\n  content: \"\\E236\";\n}\n.glyphicon-modal-window:before {\n  content: \"\\E237\";\n}\n.glyphicon-oil:before {\n  content: \"\\E238\";\n}\n.glyphicon-grain:before {\n  content: \"\\E239\";\n}\n.glyphicon-sunglasses:before {\n  content: \"\\E240\";\n}\n.glyphicon-text-size:before {\n  content: \"\\E241\";\n}\n.glyphicon-text-color:before {\n  content: \"\\E242\";\n}\n.glyphicon-text-background:before {\n  content: \"\\E243\";\n}\n.glyphicon-object-align-top:before {\n  content: \"\\E244\";\n}\n.glyphicon-object-align-bottom:before {\n  content: \"\\E245\";\n}\n.glyphicon-object-align-horizontal:before {\n  content: \"\\E246\";\n}\n.glyphicon-object-align-left:before {\n  content: \"\\E247\";\n}\n.glyphicon-object-align-vertical:before {\n  content: \"\\E248\";\n}\n.glyphicon-object-align-right:before {\n  content: \"\\E249\";\n}\n.glyphicon-triangle-right:before {\n  content: \"\\E250\";\n}\n.glyphicon-triangle-left:before {\n  content: \"\\E251\";\n}\n.glyphicon-triangle-bottom:before {\n  content: \"\\E252\";\n}\n.glyphicon-triangle-top:before {\n  content: \"\\E253\";\n}\n.glyphicon-console:before {\n  content: \"\\E254\";\n}\n.glyphicon-superscript:before {\n  content: \"\\E255\";\n}\n.glyphicon-subscript:before {\n  content: \"\\E256\";\n}\n.glyphicon-menu-left:before {\n  content: \"\\E257\";\n}\n.glyphicon-menu-right:before {\n  content: \"\\E258\";\n}\n.glyphicon-menu-down:before {\n  content: \"\\E259\";\n}\n.glyphicon-menu-up:before {\n  content: \"\\E260\";\n}\n* {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n}\n*:before,\n*:after {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n}\nhtml {\n  font-size: 10px;\n\n  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);\n}\nbody {\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  font-size: 14px;\n  line-height: 1.42857143;\n  color: #333;\n  background-color: #fff;\n}\ninput,\nbutton,\nselect,\ntextarea {\n  font-family: inherit;\n  font-size: inherit;\n  line-height: inherit;\n}\na {\n  color: #337ab7;\n  text-decoration: none;\n}\na:hover,\na:focus {\n  color: #23527c;\n  text-decoration: underline;\n}\na:focus {\n  outline: 5px auto -webkit-focus-ring-color;\n  outline-offset: -2px;\n}\nfigure {\n  margin: 0;\n}\nimg {\n  vertical-align: middle;\n}\n.img-responsive,\n.thumbnail > img,\n.thumbnail a > img,\n.carousel-inner > .item > img,\n.carousel-inner > .item > a > img {\n  display: block;\n  max-width: 100%;\n  height: auto;\n}\n.img-rounded {\n  border-radius: 6px;\n}\n.img-thumbnail {\n  display: inline-block;\n  max-width: 100%;\n  height: auto;\n  padding: 4px;\n  line-height: 1.42857143;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-radius: 4px;\n  -webkit-transition: all .2s ease-in-out;\n       -o-transition: all .2s ease-in-out;\n          transition: all .2s ease-in-out;\n}\n.img-circle {\n  border-radius: 50%;\n}\nhr {\n  margin-top: 20px;\n  margin-bottom: 20px;\n  border: 0;\n  border-top: 1px solid #eee;\n}\n.sr-only {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  padding: 0;\n  margin: -1px;\n  overflow: hidden;\n  clip: rect(0, 0, 0, 0);\n  border: 0;\n}\n.sr-only-focusable:active,\n.sr-only-focusable:focus {\n  position: static;\n  width: auto;\n  height: auto;\n  margin: 0;\n  overflow: visible;\n  clip: auto;\n}\n[role=\"button\"] {\n  cursor: pointer;\n}\nh1,\nh2,\nh3,\nh4,\nh5,\nh6,\n.h1,\n.h2,\n.h3,\n.h4,\n.h5,\n.h6 {\n  font-family: inherit;\n  font-weight: 500;\n  line-height: 1.1;\n  color: inherit;\n}\nh1 small,\nh2 small,\nh3 small,\nh4 small,\nh5 small,\nh6 small,\n.h1 small,\n.h2 small,\n.h3 small,\n.h4 small,\n.h5 small,\n.h6 small,\nh1 .small,\nh2 .small,\nh3 .small,\nh4 .small,\nh5 .small,\nh6 .small,\n.h1 .small,\n.h2 .small,\n.h3 .small,\n.h4 .small,\n.h5 .small,\n.h6 .small {\n  font-weight: normal;\n  line-height: 1;\n  color: #777;\n}\nh1,\n.h1,\nh2,\n.h2,\nh3,\n.h3 {\n  margin-top: 20px;\n  margin-bottom: 10px;\n}\nh1 small,\n.h1 small,\nh2 small,\n.h2 small,\nh3 small,\n.h3 small,\nh1 .small,\n.h1 .small,\nh2 .small,\n.h2 .small,\nh3 .small,\n.h3 .small {\n  font-size: 65%;\n}\nh4,\n.h4,\nh5,\n.h5,\nh6,\n.h6 {\n  margin-top: 10px;\n  margin-bottom: 10px;\n}\nh4 small,\n.h4 small,\nh5 small,\n.h5 small,\nh6 small,\n.h6 small,\nh4 .small,\n.h4 .small,\nh5 .small,\n.h5 .small,\nh6 .small,\n.h6 .small {\n  font-size: 75%;\n}\nh1,\n.h1 {\n  font-size: 36px;\n}\nh2,\n.h2 {\n  font-size: 30px;\n}\nh3,\n.h3 {\n  font-size: 24px;\n}\nh4,\n.h4 {\n  font-size: 18px;\n}\nh5,\n.h5 {\n  font-size: 14px;\n}\nh6,\n.h6 {\n  font-size: 12px;\n}\np {\n  margin: 0 0 10px;\n}\n.lead {\n  margin-bottom: 20px;\n  font-size: 16px;\n  font-weight: 300;\n  line-height: 1.4;\n}\n@media (min-width: 768px) {\n  .lead {\n    font-size: 21px;\n  }\n}\nsmall,\n.small {\n  font-size: 85%;\n}\nmark,\n.mark {\n  padding: .2em;\n  background-color: #fcf8e3;\n}\n.text-left {\n  text-align: left;\n}\n.text-right {\n  text-align: right;\n}\n.text-center {\n  text-align: center;\n}\n.text-justify {\n  text-align: justify;\n}\n.text-nowrap {\n  white-space: nowrap;\n}\n.text-lowercase {\n  text-transform: lowercase;\n}\n.text-uppercase {\n  text-transform: uppercase;\n}\n.text-capitalize {\n  text-transform: capitalize;\n}\n.text-muted {\n  color: #777;\n}\n.text-primary {\n  color: #337ab7;\n}\na.text-primary:hover,\na.text-primary:focus {\n  color: #286090;\n}\n.text-success {\n  color: #3c763d;\n}\na.text-success:hover,\na.text-success:focus {\n  color: #2b542c;\n}\n.text-info {\n  color: #31708f;\n}\na.text-info:hover,\na.text-info:focus {\n  color: #245269;\n}\n.text-warning {\n  color: #8a6d3b;\n}\na.text-warning:hover,\na.text-warning:focus {\n  color: #66512c;\n}\n.text-danger {\n  color: #a94442;\n}\na.text-danger:hover,\na.text-danger:focus {\n  color: #843534;\n}\n.bg-primary {\n  color: #fff;\n  background-color: #337ab7;\n}\na.bg-primary:hover,\na.bg-primary:focus {\n  background-color: #286090;\n}\n.bg-success {\n  background-color: #dff0d8;\n}\na.bg-success:hover,\na.bg-success:focus {\n  background-color: #c1e2b3;\n}\n.bg-info {\n  background-color: #d9edf7;\n}\na.bg-info:hover,\na.bg-info:focus {\n  background-color: #afd9ee;\n}\n.bg-warning {\n  background-color: #fcf8e3;\n}\na.bg-warning:hover,\na.bg-warning:focus {\n  background-color: #f7ecb5;\n}\n.bg-danger {\n  background-color: #f2dede;\n}\na.bg-danger:hover,\na.bg-danger:focus {\n  background-color: #e4b9b9;\n}\n.page-header {\n  padding-bottom: 9px;\n  margin: 40px 0 20px;\n  border-bottom: 1px solid #eee;\n}\nul,\nol {\n  margin-top: 0;\n  margin-bottom: 10px;\n}\nul ul,\nol ul,\nul ol,\nol ol {\n  margin-bottom: 0;\n}\n.list-unstyled {\n  padding-left: 0;\n  list-style: none;\n}\n.list-inline {\n  padding-left: 0;\n  margin-left: -5px;\n  list-style: none;\n}\n.list-inline > li {\n  display: inline-block;\n  padding-right: 5px;\n  padding-left: 5px;\n}\ndl {\n  margin-top: 0;\n  margin-bottom: 20px;\n}\ndt,\ndd {\n  line-height: 1.42857143;\n}\ndt {\n  font-weight: bold;\n}\ndd {\n  margin-left: 0;\n}\n@media (min-width: 768px) {\n  .dl-horizontal dt {\n    float: left;\n    width: 160px;\n    overflow: hidden;\n    clear: left;\n    text-align: right;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n  }\n  .dl-horizontal dd {\n    margin-left: 180px;\n  }\n}\nabbr[title],\nabbr[data-original-title] {\n  cursor: help;\n  border-bottom: 1px dotted #777;\n}\n.initialism {\n  font-size: 90%;\n  text-transform: uppercase;\n}\nblockquote {\n  padding: 10px 20px;\n  margin: 0 0 20px;\n  font-size: 17.5px;\n  border-left: 5px solid #eee;\n}\nblockquote p:last-child,\nblockquote ul:last-child,\nblockquote ol:last-child {\n  margin-bottom: 0;\n}\nblockquote footer,\nblockquote small,\nblockquote .small {\n  display: block;\n  font-size: 80%;\n  line-height: 1.42857143;\n  color: #777;\n}\nblockquote footer:before,\nblockquote small:before,\nblockquote .small:before {\n  content: '\\2014   \\A0';\n}\n.blockquote-reverse,\nblockquote.pull-right {\n  padding-right: 15px;\n  padding-left: 0;\n  text-align: right;\n  border-right: 5px solid #eee;\n  border-left: 0;\n}\n.blockquote-reverse footer:before,\nblockquote.pull-right footer:before,\n.blockquote-reverse small:before,\nblockquote.pull-right small:before,\n.blockquote-reverse .small:before,\nblockquote.pull-right .small:before {\n  content: '';\n}\n.blockquote-reverse footer:after,\nblockquote.pull-right footer:after,\n.blockquote-reverse small:after,\nblockquote.pull-right small:after,\n.blockquote-reverse .small:after,\nblockquote.pull-right .small:after {\n  content: '\\A0   \\2014';\n}\naddress {\n  margin-bottom: 20px;\n  font-style: normal;\n  line-height: 1.42857143;\n}\ncode,\nkbd,\npre,\nsamp {\n  font-family: Menlo, Monaco, Consolas, \"Courier New\", monospace;\n}\ncode {\n  padding: 2px 4px;\n  font-size: 90%;\n  color: #c7254e;\n  background-color: #f9f2f4;\n  border-radius: 4px;\n}\nkbd {\n  padding: 2px 4px;\n  font-size: 90%;\n  color: #fff;\n  background-color: #333;\n  border-radius: 3px;\n  -webkit-box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .25);\n          box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .25);\n}\nkbd kbd {\n  padding: 0;\n  font-size: 100%;\n  font-weight: bold;\n  -webkit-box-shadow: none;\n          box-shadow: none;\n}\npre {\n  display: block;\n  padding: 9.5px;\n  margin: 0 0 10px;\n  font-size: 13px;\n  line-height: 1.42857143;\n  color: #333;\n  word-break: break-all;\n  word-wrap: break-word;\n  background-color: #f5f5f5;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n}\npre code {\n  padding: 0;\n  font-size: inherit;\n  color: inherit;\n  white-space: pre-wrap;\n  background-color: transparent;\n  border-radius: 0;\n}\n.pre-scrollable {\n  max-height: 340px;\n  overflow-y: scroll;\n}\n.container {\n  padding-right: 15px;\n  padding-left: 15px;\n  margin-right: auto;\n  margin-left: auto;\n}\n@media (min-width: 768px) {\n  .container {\n    width: 750px;\n  }\n}\n@media (min-width: 992px) {\n  .container {\n    width: 970px;\n  }\n}\n@media (min-width: 1200px) {\n  .container {\n    width: 1170px;\n  }\n}\n.container-fluid {\n  padding-right: 15px;\n  padding-left: 15px;\n  margin-right: auto;\n  margin-left: auto;\n}\n.row {\n  margin-right: -15px;\n  margin-left: -15px;\n}\n.col-xs-1, .col-sm-1, .col-md-1, .col-lg-1, .col-xs-2, .col-sm-2, .col-md-2, .col-lg-2, .col-xs-3, .col-sm-3, .col-md-3, .col-lg-3, .col-xs-4, .col-sm-4, .col-md-4, .col-lg-4, .col-xs-5, .col-sm-5, .col-md-5, .col-lg-5, .col-xs-6, .col-sm-6, .col-md-6, .col-lg-6, .col-xs-7, .col-sm-7, .col-md-7, .col-lg-7, .col-xs-8, .col-sm-8, .col-md-8, .col-lg-8, .col-xs-9, .col-sm-9, .col-md-9, .col-lg-9, .col-xs-10, .col-sm-10, .col-md-10, .col-lg-10, .col-xs-11, .col-sm-11, .col-md-11, .col-lg-11, .col-xs-12, .col-sm-12, .col-md-12, .col-lg-12 {\n  position: relative;\n  min-height: 1px;\n  padding-right: 15px;\n  padding-left: 15px;\n}\n.col-xs-1, .col-xs-2, .col-xs-3, .col-xs-4, .col-xs-5, .col-xs-6, .col-xs-7, .col-xs-8, .col-xs-9, .col-xs-10, .col-xs-11, .col-xs-12 {\n  float: left;\n}\n.col-xs-12 {\n  width: 100%;\n}\n.col-xs-11 {\n  width: 91.66666667%;\n}\n.col-xs-10 {\n  width: 83.33333333%;\n}\n.col-xs-9 {\n  width: 75%;\n}\n.col-xs-8 {\n  width: 66.66666667%;\n}\n.col-xs-7 {\n  width: 58.33333333%;\n}\n.col-xs-6 {\n  width: 50%;\n}\n.col-xs-5 {\n  width: 41.66666667%;\n}\n.col-xs-4 {\n  width: 33.33333333%;\n}\n.col-xs-3 {\n  width: 25%;\n}\n.col-xs-2 {\n  width: 16.66666667%;\n}\n.col-xs-1 {\n  width: 8.33333333%;\n}\n.col-xs-pull-12 {\n  right: 100%;\n}\n.col-xs-pull-11 {\n  right: 91.66666667%;\n}\n.col-xs-pull-10 {\n  right: 83.33333333%;\n}\n.col-xs-pull-9 {\n  right: 75%;\n}\n.col-xs-pull-8 {\n  right: 66.66666667%;\n}\n.col-xs-pull-7 {\n  right: 58.33333333%;\n}\n.col-xs-pull-6 {\n  right: 50%;\n}\n.col-xs-pull-5 {\n  right: 41.66666667%;\n}\n.col-xs-pull-4 {\n  right: 33.33333333%;\n}\n.col-xs-pull-3 {\n  right: 25%;\n}\n.col-xs-pull-2 {\n  right: 16.66666667%;\n}\n.col-xs-pull-1 {\n  right: 8.33333333%;\n}\n.col-xs-pull-0 {\n  right: auto;\n}\n.col-xs-push-12 {\n  left: 100%;\n}\n.col-xs-push-11 {\n  left: 91.66666667%;\n}\n.col-xs-push-10 {\n  left: 83.33333333%;\n}\n.col-xs-push-9 {\n  left: 75%;\n}\n.col-xs-push-8 {\n  left: 66.66666667%;\n}\n.col-xs-push-7 {\n  left: 58.33333333%;\n}\n.col-xs-push-6 {\n  left: 50%;\n}\n.col-xs-push-5 {\n  left: 41.66666667%;\n}\n.col-xs-push-4 {\n  left: 33.33333333%;\n}\n.col-xs-push-3 {\n  left: 25%;\n}\n.col-xs-push-2 {\n  left: 16.66666667%;\n}\n.col-xs-push-1 {\n  left: 8.33333333%;\n}\n.col-xs-push-0 {\n  left: auto;\n}\n.col-xs-offset-12 {\n  margin-left: 100%;\n}\n.col-xs-offset-11 {\n  margin-left: 91.66666667%;\n}\n.col-xs-offset-10 {\n  margin-left: 83.33333333%;\n}\n.col-xs-offset-9 {\n  margin-left: 75%;\n}\n.col-xs-offset-8 {\n  margin-left: 66.66666667%;\n}\n.col-xs-offset-7 {\n  margin-left: 58.33333333%;\n}\n.col-xs-offset-6 {\n  margin-left: 50%;\n}\n.col-xs-offset-5 {\n  margin-left: 41.66666667%;\n}\n.col-xs-offset-4 {\n  margin-left: 33.33333333%;\n}\n.col-xs-offset-3 {\n  margin-left: 25%;\n}\n.col-xs-offset-2 {\n  margin-left: 16.66666667%;\n}\n.col-xs-offset-1 {\n  margin-left: 8.33333333%;\n}\n.col-xs-offset-0 {\n  margin-left: 0;\n}\n@media (min-width: 768px) {\n  .col-sm-1, .col-sm-2, .col-sm-3, .col-sm-4, .col-sm-5, .col-sm-6, .col-sm-7, .col-sm-8, .col-sm-9, .col-sm-10, .col-sm-11, .col-sm-12 {\n    float: left;\n  }\n  .col-sm-12 {\n    width: 100%;\n  }\n  .col-sm-11 {\n    width: 91.66666667%;\n  }\n  .col-sm-10 {\n    width: 83.33333333%;\n  }\n  .col-sm-9 {\n    width: 75%;\n  }\n  .col-sm-8 {\n    width: 66.66666667%;\n  }\n  .col-sm-7 {\n    width: 58.33333333%;\n  }\n  .col-sm-6 {\n    width: 50%;\n  }\n  .col-sm-5 {\n    width: 41.66666667%;\n  }\n  .col-sm-4 {\n    width: 33.33333333%;\n  }\n  .col-sm-3 {\n    width: 25%;\n  }\n  .col-sm-2 {\n    width: 16.66666667%;\n  }\n  .col-sm-1 {\n    width: 8.33333333%;\n  }\n  .col-sm-pull-12 {\n    right: 100%;\n  }\n  .col-sm-pull-11 {\n    right: 91.66666667%;\n  }\n  .col-sm-pull-10 {\n    right: 83.33333333%;\n  }\n  .col-sm-pull-9 {\n    right: 75%;\n  }\n  .col-sm-pull-8 {\n    right: 66.66666667%;\n  }\n  .col-sm-pull-7 {\n    right: 58.33333333%;\n  }\n  .col-sm-pull-6 {\n    right: 50%;\n  }\n  .col-sm-pull-5 {\n    right: 41.66666667%;\n  }\n  .col-sm-pull-4 {\n    right: 33.33333333%;\n  }\n  .col-sm-pull-3 {\n    right: 25%;\n  }\n  .col-sm-pull-2 {\n    right: 16.66666667%;\n  }\n  .col-sm-pull-1 {\n    right: 8.33333333%;\n  }\n  .col-sm-pull-0 {\n    right: auto;\n  }\n  .col-sm-push-12 {\n    left: 100%;\n  }\n  .col-sm-push-11 {\n    left: 91.66666667%;\n  }\n  .col-sm-push-10 {\n    left: 83.33333333%;\n  }\n  .col-sm-push-9 {\n    left: 75%;\n  }\n  .col-sm-push-8 {\n    left: 66.66666667%;\n  }\n  .col-sm-push-7 {\n    left: 58.33333333%;\n  }\n  .col-sm-push-6 {\n    left: 50%;\n  }\n  .col-sm-push-5 {\n    left: 41.66666667%;\n  }\n  .col-sm-push-4 {\n    left: 33.33333333%;\n  }\n  .col-sm-push-3 {\n    left: 25%;\n  }\n  .col-sm-push-2 {\n    left: 16.66666667%;\n  }\n  .col-sm-push-1 {\n    left: 8.33333333%;\n  }\n  .col-sm-push-0 {\n    left: auto;\n  }\n  .col-sm-offset-12 {\n    margin-left: 100%;\n  }\n  .col-sm-offset-11 {\n    margin-left: 91.66666667%;\n  }\n  .col-sm-offset-10 {\n    margin-left: 83.33333333%;\n  }\n  .col-sm-offset-9 {\n    margin-left: 75%;\n  }\n  .col-sm-offset-8 {\n    margin-left: 66.66666667%;\n  }\n  .col-sm-offset-7 {\n    margin-left: 58.33333333%;\n  }\n  .col-sm-offset-6 {\n    margin-left: 50%;\n  }\n  .col-sm-offset-5 {\n    margin-left: 41.66666667%;\n  }\n  .col-sm-offset-4 {\n    margin-left: 33.33333333%;\n  }\n  .col-sm-offset-3 {\n    margin-left: 25%;\n  }\n  .col-sm-offset-2 {\n    margin-left: 16.66666667%;\n  }\n  .col-sm-offset-1 {\n    margin-left: 8.33333333%;\n  }\n  .col-sm-offset-0 {\n    margin-left: 0;\n  }\n}\n@media (min-width: 992px) {\n  .col-md-1, .col-md-2, .col-md-3, .col-md-4, .col-md-5, .col-md-6, .col-md-7, .col-md-8, .col-md-9, .col-md-10, .col-md-11, .col-md-12 {\n    float: left;\n  }\n  .col-md-12 {\n    width: 100%;\n  }\n  .col-md-11 {\n    width: 91.66666667%;\n  }\n  .col-md-10 {\n    width: 83.33333333%;\n  }\n  .col-md-9 {\n    width: 75%;\n  }\n  .col-md-8 {\n    width: 66.66666667%;\n  }\n  .col-md-7 {\n    width: 58.33333333%;\n  }\n  .col-md-6 {\n    width: 50%;\n  }\n  .col-md-5 {\n    width: 41.66666667%;\n  }\n  .col-md-4 {\n    width: 33.33333333%;\n  }\n  .col-md-3 {\n    width: 25%;\n  }\n  .col-md-2 {\n    width: 16.66666667%;\n  }\n  .col-md-1 {\n    width: 8.33333333%;\n  }\n  .col-md-pull-12 {\n    right: 100%;\n  }\n  .col-md-pull-11 {\n    right: 91.66666667%;\n  }\n  .col-md-pull-10 {\n    right: 83.33333333%;\n  }\n  .col-md-pull-9 {\n    right: 75%;\n  }\n  .col-md-pull-8 {\n    right: 66.66666667%;\n  }\n  .col-md-pull-7 {\n    right: 58.33333333%;\n  }\n  .col-md-pull-6 {\n    right: 50%;\n  }\n  .col-md-pull-5 {\n    right: 41.66666667%;\n  }\n  .col-md-pull-4 {\n    right: 33.33333333%;\n  }\n  .col-md-pull-3 {\n    right: 25%;\n  }\n  .col-md-pull-2 {\n    right: 16.66666667%;\n  }\n  .col-md-pull-1 {\n    right: 8.33333333%;\n  }\n  .col-md-pull-0 {\n    right: auto;\n  }\n  .col-md-push-12 {\n    left: 100%;\n  }\n  .col-md-push-11 {\n    left: 91.66666667%;\n  }\n  .col-md-push-10 {\n    left: 83.33333333%;\n  }\n  .col-md-push-9 {\n    left: 75%;\n  }\n  .col-md-push-8 {\n    left: 66.66666667%;\n  }\n  .col-md-push-7 {\n    left: 58.33333333%;\n  }\n  .col-md-push-6 {\n    left: 50%;\n  }\n  .col-md-push-5 {\n    left: 41.66666667%;\n  }\n  .col-md-push-4 {\n    left: 33.33333333%;\n  }\n  .col-md-push-3 {\n    left: 25%;\n  }\n  .col-md-push-2 {\n    left: 16.66666667%;\n  }\n  .col-md-push-1 {\n    left: 8.33333333%;\n  }\n  .col-md-push-0 {\n    left: auto;\n  }\n  .col-md-offset-12 {\n    margin-left: 100%;\n  }\n  .col-md-offset-11 {\n    margin-left: 91.66666667%;\n  }\n  .col-md-offset-10 {\n    margin-left: 83.33333333%;\n  }\n  .col-md-offset-9 {\n    margin-left: 75%;\n  }\n  .col-md-offset-8 {\n    margin-left: 66.66666667%;\n  }\n  .col-md-offset-7 {\n    margin-left: 58.33333333%;\n  }\n  .col-md-offset-6 {\n    margin-left: 50%;\n  }\n  .col-md-offset-5 {\n    margin-left: 41.66666667%;\n  }\n  .col-md-offset-4 {\n    margin-left: 33.33333333%;\n  }\n  .col-md-offset-3 {\n    margin-left: 25%;\n  }\n  .col-md-offset-2 {\n    margin-left: 16.66666667%;\n  }\n  .col-md-offset-1 {\n    margin-left: 8.33333333%;\n  }\n  .col-md-offset-0 {\n    margin-left: 0;\n  }\n}\n@media (min-width: 1200px) {\n  .col-lg-1, .col-lg-2, .col-lg-3, .col-lg-4, .col-lg-5, .col-lg-6, .col-lg-7, .col-lg-8, .col-lg-9, .col-lg-10, .col-lg-11, .col-lg-12 {\n    float: left;\n  }\n  .col-lg-12 {\n    width: 100%;\n  }\n  .col-lg-11 {\n    width: 91.66666667%;\n  }\n  .col-lg-10 {\n    width: 83.33333333%;\n  }\n  .col-lg-9 {\n    width: 75%;\n  }\n  .col-lg-8 {\n    width: 66.66666667%;\n  }\n  .col-lg-7 {\n    width: 58.33333333%;\n  }\n  .col-lg-6 {\n    width: 50%;\n  }\n  .col-lg-5 {\n    width: 41.66666667%;\n  }\n  .col-lg-4 {\n    width: 33.33333333%;\n  }\n  .col-lg-3 {\n    width: 25%;\n  }\n  .col-lg-2 {\n    width: 16.66666667%;\n  }\n  .col-lg-1 {\n    width: 8.33333333%;\n  }\n  .col-lg-pull-12 {\n    right: 100%;\n  }\n  .col-lg-pull-11 {\n    right: 91.66666667%;\n  }\n  .col-lg-pull-10 {\n    right: 83.33333333%;\n  }\n  .col-lg-pull-9 {\n    right: 75%;\n  }\n  .col-lg-pull-8 {\n    right: 66.66666667%;\n  }\n  .col-lg-pull-7 {\n    right: 58.33333333%;\n  }\n  .col-lg-pull-6 {\n    right: 50%;\n  }\n  .col-lg-pull-5 {\n    right: 41.66666667%;\n  }\n  .col-lg-pull-4 {\n    right: 33.33333333%;\n  }\n  .col-lg-pull-3 {\n    right: 25%;\n  }\n  .col-lg-pull-2 {\n    right: 16.66666667%;\n  }\n  .col-lg-pull-1 {\n    right: 8.33333333%;\n  }\n  .col-lg-pull-0 {\n    right: auto;\n  }\n  .col-lg-push-12 {\n    left: 100%;\n  }\n  .col-lg-push-11 {\n    left: 91.66666667%;\n  }\n  .col-lg-push-10 {\n    left: 83.33333333%;\n  }\n  .col-lg-push-9 {\n    left: 75%;\n  }\n  .col-lg-push-8 {\n    left: 66.66666667%;\n  }\n  .col-lg-push-7 {\n    left: 58.33333333%;\n  }\n  .col-lg-push-6 {\n    left: 50%;\n  }\n  .col-lg-push-5 {\n    left: 41.66666667%;\n  }\n  .col-lg-push-4 {\n    left: 33.33333333%;\n  }\n  .col-lg-push-3 {\n    left: 25%;\n  }\n  .col-lg-push-2 {\n    left: 16.66666667%;\n  }\n  .col-lg-push-1 {\n    left: 8.33333333%;\n  }\n  .col-lg-push-0 {\n    left: auto;\n  }\n  .col-lg-offset-12 {\n    margin-left: 100%;\n  }\n  .col-lg-offset-11 {\n    margin-left: 91.66666667%;\n  }\n  .col-lg-offset-10 {\n    margin-left: 83.33333333%;\n  }\n  .col-lg-offset-9 {\n    margin-left: 75%;\n  }\n  .col-lg-offset-8 {\n    margin-left: 66.66666667%;\n  }\n  .col-lg-offset-7 {\n    margin-left: 58.33333333%;\n  }\n  .col-lg-offset-6 {\n    margin-left: 50%;\n  }\n  .col-lg-offset-5 {\n    margin-left: 41.66666667%;\n  }\n  .col-lg-offset-4 {\n    margin-left: 33.33333333%;\n  }\n  .col-lg-offset-3 {\n    margin-left: 25%;\n  }\n  .col-lg-offset-2 {\n    margin-left: 16.66666667%;\n  }\n  .col-lg-offset-1 {\n    margin-left: 8.33333333%;\n  }\n  .col-lg-offset-0 {\n    margin-left: 0;\n  }\n}\ntable {\n  background-color: transparent;\n}\ncaption {\n  padding-top: 8px;\n  padding-bottom: 8px;\n  color: #777;\n  text-align: left;\n}\nth {\n  text-align: left;\n}\n.table {\n  width: 100%;\n  max-width: 100%;\n  margin-bottom: 20px;\n}\n.table > thead > tr > th,\n.table > tbody > tr > th,\n.table > tfoot > tr > th,\n.table > thead > tr > td,\n.table > tbody > tr > td,\n.table > tfoot > tr > td {\n  padding: 8px;\n  line-height: 1.42857143;\n  vertical-align: top;\n  border-top: 1px solid #ddd;\n}\n.table > thead > tr > th {\n  vertical-align: bottom;\n  border-bottom: 2px solid #ddd;\n}\n.table > caption + thead > tr:first-child > th,\n.table > colgroup + thead > tr:first-child > th,\n.table > thead:first-child > tr:first-child > th,\n.table > caption + thead > tr:first-child > td,\n.table > colgroup + thead > tr:first-child > td,\n.table > thead:first-child > tr:first-child > td {\n  border-top: 0;\n}\n.table > tbody + tbody {\n  border-top: 2px solid #ddd;\n}\n.table .table {\n  background-color: #fff;\n}\n.table-condensed > thead > tr > th,\n.table-condensed > tbody > tr > th,\n.table-condensed > tfoot > tr > th,\n.table-condensed > thead > tr > td,\n.table-condensed > tbody > tr > td,\n.table-condensed > tfoot > tr > td {\n  padding: 5px;\n}\n.table-bordered {\n  border: 1px solid #ddd;\n}\n.table-bordered > thead > tr > th,\n.table-bordered > tbody > tr > th,\n.table-bordered > tfoot > tr > th,\n.table-bordered > thead > tr > td,\n.table-bordered > tbody > tr > td,\n.table-bordered > tfoot > tr > td {\n  border: 1px solid #ddd;\n}\n.table-bordered > thead > tr > th,\n.table-bordered > thead > tr > td {\n  border-bottom-width: 2px;\n}\n.table-striped > tbody > tr:nth-of-type(odd) {\n  background-color: #f9f9f9;\n}\n.table-hover > tbody > tr:hover {\n  background-color: #f5f5f5;\n}\ntable col[class*=\"col-\"] {\n  position: static;\n  display: table-column;\n  float: none;\n}\ntable td[class*=\"col-\"],\ntable th[class*=\"col-\"] {\n  position: static;\n  display: table-cell;\n  float: none;\n}\n.table > thead > tr > td.active,\n.table > tbody > tr > td.active,\n.table > tfoot > tr > td.active,\n.table > thead > tr > th.active,\n.table > tbody > tr > th.active,\n.table > tfoot > tr > th.active,\n.table > thead > tr.active > td,\n.table > tbody > tr.active > td,\n.table > tfoot > tr.active > td,\n.table > thead > tr.active > th,\n.table > tbody > tr.active > th,\n.table > tfoot > tr.active > th {\n  background-color: #f5f5f5;\n}\n.table-hover > tbody > tr > td.active:hover,\n.table-hover > tbody > tr > th.active:hover,\n.table-hover > tbody > tr.active:hover > td,\n.table-hover > tbody > tr:hover > .active,\n.table-hover > tbody > tr.active:hover > th {\n  background-color: #e8e8e8;\n}\n.table > thead > tr > td.success,\n.table > tbody > tr > td.success,\n.table > tfoot > tr > td.success,\n.table > thead > tr > th.success,\n.table > tbody > tr > th.success,\n.table > tfoot > tr > th.success,\n.table > thead > tr.success > td,\n.table > tbody > tr.success > td,\n.table > tfoot > tr.success > td,\n.table > thead > tr.success > th,\n.table > tbody > tr.success > th,\n.table > tfoot > tr.success > th {\n  background-color: #dff0d8;\n}\n.table-hover > tbody > tr > td.success:hover,\n.table-hover > tbody > tr > th.success:hover,\n.table-hover > tbody > tr.success:hover > td,\n.table-hover > tbody > tr:hover > .success,\n.table-hover > tbody > tr.success:hover > th {\n  background-color: #d0e9c6;\n}\n.table > thead > tr > td.info,\n.table > tbody > tr > td.info,\n.table > tfoot > tr > td.info,\n.table > thead > tr > th.info,\n.table > tbody > tr > th.info,\n.table > tfoot > tr > th.info,\n.table > thead > tr.info > td,\n.table > tbody > tr.info > td,\n.table > tfoot > tr.info > td,\n.table > thead > tr.info > th,\n.table > tbody > tr.info > th,\n.table > tfoot > tr.info > th {\n  background-color: #d9edf7;\n}\n.table-hover > tbody > tr > td.info:hover,\n.table-hover > tbody > tr > th.info:hover,\n.table-hover > tbody > tr.info:hover > td,\n.table-hover > tbody > tr:hover > .info,\n.table-hover > tbody > tr.info:hover > th {\n  background-color: #c4e3f3;\n}\n.table > thead > tr > td.warning,\n.table > tbody > tr > td.warning,\n.table > tfoot > tr > td.warning,\n.table > thead > tr > th.warning,\n.table > tbody > tr > th.warning,\n.table > tfoot > tr > th.warning,\n.table > thead > tr.warning > td,\n.table > tbody > tr.warning > td,\n.table > tfoot > tr.warning > td,\n.table > thead > tr.warning > th,\n.table > tbody > tr.warning > th,\n.table > tfoot > tr.warning > th {\n  background-color: #fcf8e3;\n}\n.table-hover > tbody > tr > td.warning:hover,\n.table-hover > tbody > tr > th.warning:hover,\n.table-hover > tbody > tr.warning:hover > td,\n.table-hover > tbody > tr:hover > .warning,\n.table-hover > tbody > tr.warning:hover > th {\n  background-color: #faf2cc;\n}\n.table > thead > tr > td.danger,\n.table > tbody > tr > td.danger,\n.table > tfoot > tr > td.danger,\n.table > thead > tr > th.danger,\n.table > tbody > tr > th.danger,\n.table > tfoot > tr > th.danger,\n.table > thead > tr.danger > td,\n.table > tbody > tr.danger > td,\n.table > tfoot > tr.danger > td,\n.table > thead > tr.danger > th,\n.table > tbody > tr.danger > th,\n.table > tfoot > tr.danger > th {\n  background-color: #f2dede;\n}\n.table-hover > tbody > tr > td.danger:hover,\n.table-hover > tbody > tr > th.danger:hover,\n.table-hover > tbody > tr.danger:hover > td,\n.table-hover > tbody > tr:hover > .danger,\n.table-hover > tbody > tr.danger:hover > th {\n  background-color: #ebcccc;\n}\n.table-responsive {\n  min-height: .01%;\n  overflow-x: auto;\n}\n@media screen and (max-width: 767px) {\n  .table-responsive {\n    width: 100%;\n    margin-bottom: 15px;\n    overflow-y: hidden;\n    -ms-overflow-style: -ms-autohiding-scrollbar;\n    border: 1px solid #ddd;\n  }\n  .table-responsive > .table {\n    margin-bottom: 0;\n  }\n  .table-responsive > .table > thead > tr > th,\n  .table-responsive > .table > tbody > tr > th,\n  .table-responsive > .table > tfoot > tr > th,\n  .table-responsive > .table > thead > tr > td,\n  .table-responsive > .table > tbody > tr > td,\n  .table-responsive > .table > tfoot > tr > td {\n    white-space: nowrap;\n  }\n  .table-responsive > .table-bordered {\n    border: 0;\n  }\n  .table-responsive > .table-bordered > thead > tr > th:first-child,\n  .table-responsive > .table-bordered > tbody > tr > th:first-child,\n  .table-responsive > .table-bordered > tfoot > tr > th:first-child,\n  .table-responsive > .table-bordered > thead > tr > td:first-child,\n  .table-responsive > .table-bordered > tbody > tr > td:first-child,\n  .table-responsive > .table-bordered > tfoot > tr > td:first-child {\n    border-left: 0;\n  }\n  .table-responsive > .table-bordered > thead > tr > th:last-child,\n  .table-responsive > .table-bordered > tbody > tr > th:last-child,\n  .table-responsive > .table-bordered > tfoot > tr > th:last-child,\n  .table-responsive > .table-bordered > thead > tr > td:last-child,\n  .table-responsive > .table-bordered > tbody > tr > td:last-child,\n  .table-responsive > .table-bordered > tfoot > tr > td:last-child {\n    border-right: 0;\n  }\n  .table-responsive > .table-bordered > tbody > tr:last-child > th,\n  .table-responsive > .table-bordered > tfoot > tr:last-child > th,\n  .table-responsive > .table-bordered > tbody > tr:last-child > td,\n  .table-responsive > .table-bordered > tfoot > tr:last-child > td {\n    border-bottom: 0;\n  }\n}\nfieldset {\n  min-width: 0;\n  padding: 0;\n  margin: 0;\n  border: 0;\n}\nlegend {\n  display: block;\n  width: 100%;\n  padding: 0;\n  margin-bottom: 20px;\n  font-size: 21px;\n  line-height: inherit;\n  color: #333;\n  border: 0;\n  border-bottom: 1px solid #e5e5e5;\n}\nlabel {\n  display: inline-block;\n  max-width: 100%;\n  margin-bottom: 5px;\n  font-weight: bold;\n}\ninput[type=\"search\"] {\n  -webkit-box-sizing: border-box;\n     -moz-box-sizing: border-box;\n          box-sizing: border-box;\n}\ninput[type=\"radio\"],\ninput[type=\"checkbox\"] {\n  margin: 4px 0 0;\n  margin-top: 1px \\9;\n  line-height: normal;\n}\ninput[type=\"file\"] {\n  display: block;\n}\ninput[type=\"range\"] {\n  display: block;\n  width: 100%;\n}\nselect[multiple],\nselect[size] {\n  height: auto;\n}\ninput[type=\"file\"]:focus,\ninput[type=\"radio\"]:focus,\ninput[type=\"checkbox\"]:focus {\n  outline: 5px auto -webkit-focus-ring-color;\n  outline-offset: -2px;\n}\noutput {\n  display: block;\n  padding-top: 7px;\n  font-size: 14px;\n  line-height: 1.42857143;\n  color: #555;\n}\n.form-control {\n  display: block;\n  width: 100%;\n  height: 34px;\n  padding: 6px 12px;\n  font-size: 14px;\n  line-height: 1.42857143;\n  color: #555;\n  background-color: #fff;\n  background-image: none;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n  -webkit-transition: border-color ease-in-out .15s, -webkit-box-shadow ease-in-out .15s;\n       -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;\n          transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;\n}\n.form-control:focus {\n  border-color: #66afe9;\n  outline: 0;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, .6);\n          box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, .6);\n}\n.form-control::-moz-placeholder {\n  color: #999;\n  opacity: 1;\n}\n.form-control:-ms-input-placeholder {\n  color: #999;\n}\n.form-control::-webkit-input-placeholder {\n  color: #999;\n}\n.form-control::-ms-expand {\n  background-color: transparent;\n  border: 0;\n}\n.form-control[disabled],\n.form-control[readonly],\nfieldset[disabled] .form-control {\n  background-color: #eee;\n  opacity: 1;\n}\n.form-control[disabled],\nfieldset[disabled] .form-control {\n  cursor: not-allowed;\n}\ntextarea.form-control {\n  height: auto;\n}\ninput[type=\"search\"] {\n  -webkit-appearance: none;\n}\n@media screen and (-webkit-min-device-pixel-ratio: 0) {\n  input[type=\"date\"].form-control,\n  input[type=\"time\"].form-control,\n  input[type=\"datetime-local\"].form-control,\n  input[type=\"month\"].form-control {\n    line-height: 34px;\n  }\n  input[type=\"date\"].input-sm,\n  input[type=\"time\"].input-sm,\n  input[type=\"datetime-local\"].input-sm,\n  input[type=\"month\"].input-sm,\n  .input-group-sm input[type=\"date\"],\n  .input-group-sm input[type=\"time\"],\n  .input-group-sm input[type=\"datetime-local\"],\n  .input-group-sm input[type=\"month\"] {\n    line-height: 30px;\n  }\n  input[type=\"date\"].input-lg,\n  input[type=\"time\"].input-lg,\n  input[type=\"datetime-local\"].input-lg,\n  input[type=\"month\"].input-lg,\n  .input-group-lg input[type=\"date\"],\n  .input-group-lg input[type=\"time\"],\n  .input-group-lg input[type=\"datetime-local\"],\n  .input-group-lg input[type=\"month\"] {\n    line-height: 46px;\n  }\n}\n.form-group {\n  margin-bottom: 15px;\n}\n.radio,\n.checkbox {\n  position: relative;\n  display: block;\n  margin-top: 10px;\n  margin-bottom: 10px;\n}\n.radio label,\n.checkbox label {\n  min-height: 20px;\n  padding-left: 20px;\n  margin-bottom: 0;\n  font-weight: normal;\n  cursor: pointer;\n}\n.radio input[type=\"radio\"],\n.radio-inline input[type=\"radio\"],\n.checkbox input[type=\"checkbox\"],\n.checkbox-inline input[type=\"checkbox\"] {\n  position: absolute;\n  margin-top: 4px \\9;\n  margin-left: -20px;\n}\n.radio + .radio,\n.checkbox + .checkbox {\n  margin-top: -5px;\n}\n.radio-inline,\n.checkbox-inline {\n  position: relative;\n  display: inline-block;\n  padding-left: 20px;\n  margin-bottom: 0;\n  font-weight: normal;\n  vertical-align: middle;\n  cursor: pointer;\n}\n.radio-inline + .radio-inline,\n.checkbox-inline + .checkbox-inline {\n  margin-top: 0;\n  margin-left: 10px;\n}\ninput[type=\"radio\"][disabled],\ninput[type=\"checkbox\"][disabled],\ninput[type=\"radio\"].disabled,\ninput[type=\"checkbox\"].disabled,\nfieldset[disabled] input[type=\"radio\"],\nfieldset[disabled] input[type=\"checkbox\"] {\n  cursor: not-allowed;\n}\n.radio-inline.disabled,\n.checkbox-inline.disabled,\nfieldset[disabled] .radio-inline,\nfieldset[disabled] .checkbox-inline {\n  cursor: not-allowed;\n}\n.radio.disabled label,\n.checkbox.disabled label,\nfieldset[disabled] .radio label,\nfieldset[disabled] .checkbox label {\n  cursor: not-allowed;\n}\n.form-control-static {\n  min-height: 34px;\n  padding-top: 7px;\n  padding-bottom: 7px;\n  margin-bottom: 0;\n}\n.form-control-static.input-lg,\n.form-control-static.input-sm {\n  padding-right: 0;\n  padding-left: 0;\n}\n.input-sm {\n  height: 30px;\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\nselect.input-sm {\n  height: 30px;\n  line-height: 30px;\n}\ntextarea.input-sm,\nselect[multiple].input-sm {\n  height: auto;\n}\n.form-group-sm .form-control {\n  height: 30px;\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\n.form-group-sm select.form-control {\n  height: 30px;\n  line-height: 30px;\n}\n.form-group-sm textarea.form-control,\n.form-group-sm select[multiple].form-control {\n  height: auto;\n}\n.form-group-sm .form-control-static {\n  height: 30px;\n  min-height: 32px;\n  padding: 6px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n}\n.input-lg {\n  height: 46px;\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\nselect.input-lg {\n  height: 46px;\n  line-height: 46px;\n}\ntextarea.input-lg,\nselect[multiple].input-lg {\n  height: auto;\n}\n.form-group-lg .form-control {\n  height: 46px;\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\n.form-group-lg select.form-control {\n  height: 46px;\n  line-height: 46px;\n}\n.form-group-lg textarea.form-control,\n.form-group-lg select[multiple].form-control {\n  height: auto;\n}\n.form-group-lg .form-control-static {\n  height: 46px;\n  min-height: 38px;\n  padding: 11px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n}\n.has-feedback {\n  position: relative;\n}\n.has-feedback .form-control {\n  padding-right: 42.5px;\n}\n.form-control-feedback {\n  position: absolute;\n  top: 0;\n  right: 0;\n  z-index: 2;\n  display: block;\n  width: 34px;\n  height: 34px;\n  line-height: 34px;\n  text-align: center;\n  pointer-events: none;\n}\n.input-lg + .form-control-feedback,\n.input-group-lg + .form-control-feedback,\n.form-group-lg .form-control + .form-control-feedback {\n  width: 46px;\n  height: 46px;\n  line-height: 46px;\n}\n.input-sm + .form-control-feedback,\n.input-group-sm + .form-control-feedback,\n.form-group-sm .form-control + .form-control-feedback {\n  width: 30px;\n  height: 30px;\n  line-height: 30px;\n}\n.has-success .help-block,\n.has-success .control-label,\n.has-success .radio,\n.has-success .checkbox,\n.has-success .radio-inline,\n.has-success .checkbox-inline,\n.has-success.radio label,\n.has-success.checkbox label,\n.has-success.radio-inline label,\n.has-success.checkbox-inline label {\n  color: #3c763d;\n}\n.has-success .form-control {\n  border-color: #3c763d;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n}\n.has-success .form-control:focus {\n  border-color: #2b542c;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #67b168;\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #67b168;\n}\n.has-success .input-group-addon {\n  color: #3c763d;\n  background-color: #dff0d8;\n  border-color: #3c763d;\n}\n.has-success .form-control-feedback {\n  color: #3c763d;\n}\n.has-warning .help-block,\n.has-warning .control-label,\n.has-warning .radio,\n.has-warning .checkbox,\n.has-warning .radio-inline,\n.has-warning .checkbox-inline,\n.has-warning.radio label,\n.has-warning.checkbox label,\n.has-warning.radio-inline label,\n.has-warning.checkbox-inline label {\n  color: #8a6d3b;\n}\n.has-warning .form-control {\n  border-color: #8a6d3b;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n}\n.has-warning .form-control:focus {\n  border-color: #66512c;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #c0a16b;\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #c0a16b;\n}\n.has-warning .input-group-addon {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n  border-color: #8a6d3b;\n}\n.has-warning .form-control-feedback {\n  color: #8a6d3b;\n}\n.has-error .help-block,\n.has-error .control-label,\n.has-error .radio,\n.has-error .checkbox,\n.has-error .radio-inline,\n.has-error .checkbox-inline,\n.has-error.radio label,\n.has-error.checkbox label,\n.has-error.radio-inline label,\n.has-error.checkbox-inline label {\n  color: #a94442;\n}\n.has-error .form-control {\n  border-color: #a94442;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075);\n}\n.has-error .form-control:focus {\n  border-color: #843534;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #ce8483;\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 6px #ce8483;\n}\n.has-error .input-group-addon {\n  color: #a94442;\n  background-color: #f2dede;\n  border-color: #a94442;\n}\n.has-error .form-control-feedback {\n  color: #a94442;\n}\n.has-feedback label ~ .form-control-feedback {\n  top: 25px;\n}\n.has-feedback label.sr-only ~ .form-control-feedback {\n  top: 0;\n}\n.help-block {\n  display: block;\n  margin-top: 5px;\n  margin-bottom: 10px;\n  color: #737373;\n}\n@media (min-width: 768px) {\n  .form-inline .form-group {\n    display: inline-block;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .form-inline .form-control {\n    display: inline-block;\n    width: auto;\n    vertical-align: middle;\n  }\n  .form-inline .form-control-static {\n    display: inline-block;\n  }\n  .form-inline .input-group {\n    display: inline-table;\n    vertical-align: middle;\n  }\n  .form-inline .input-group .input-group-addon,\n  .form-inline .input-group .input-group-btn,\n  .form-inline .input-group .form-control {\n    width: auto;\n  }\n  .form-inline .input-group > .form-control {\n    width: 100%;\n  }\n  .form-inline .control-label {\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .form-inline .radio,\n  .form-inline .checkbox {\n    display: inline-block;\n    margin-top: 0;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .form-inline .radio label,\n  .form-inline .checkbox label {\n    padding-left: 0;\n  }\n  .form-inline .radio input[type=\"radio\"],\n  .form-inline .checkbox input[type=\"checkbox\"] {\n    position: relative;\n    margin-left: 0;\n  }\n  .form-inline .has-feedback .form-control-feedback {\n    top: 0;\n  }\n}\n.form-horizontal .radio,\n.form-horizontal .checkbox,\n.form-horizontal .radio-inline,\n.form-horizontal .checkbox-inline {\n  padding-top: 7px;\n  margin-top: 0;\n  margin-bottom: 0;\n}\n.form-horizontal .radio,\n.form-horizontal .checkbox {\n  min-height: 27px;\n}\n.form-horizontal .form-group {\n  margin-right: -15px;\n  margin-left: -15px;\n}\n@media (min-width: 768px) {\n  .form-horizontal .control-label {\n    padding-top: 7px;\n    margin-bottom: 0;\n    text-align: right;\n  }\n}\n.form-horizontal .has-feedback .form-control-feedback {\n  right: 15px;\n}\n@media (min-width: 768px) {\n  .form-horizontal .form-group-lg .control-label {\n    padding-top: 11px;\n    font-size: 18px;\n  }\n}\n@media (min-width: 768px) {\n  .form-horizontal .form-group-sm .control-label {\n    padding-top: 6px;\n    font-size: 12px;\n  }\n}\n.btn {\n  display: inline-block;\n  padding: 6px 12px;\n  margin-bottom: 0;\n  font-size: 14px;\n  font-weight: normal;\n  line-height: 1.42857143;\n  text-align: center;\n  white-space: nowrap;\n  vertical-align: middle;\n  -ms-touch-action: manipulation;\n      touch-action: manipulation;\n  cursor: pointer;\n  -webkit-user-select: none;\n     -moz-user-select: none;\n      -ms-user-select: none;\n          user-select: none;\n  background-image: none;\n  border: 1px solid transparent;\n  border-radius: 4px;\n}\n.btn:focus,\n.btn:active:focus,\n.btn.active:focus,\n.btn.focus,\n.btn:active.focus,\n.btn.active.focus {\n  outline: 5px auto -webkit-focus-ring-color;\n  outline-offset: -2px;\n}\n.btn:hover,\n.btn:focus,\n.btn.focus {\n  color: #333;\n  text-decoration: none;\n}\n.btn:active,\n.btn.active {\n  background-image: none;\n  outline: 0;\n  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n          box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n}\n.btn.disabled,\n.btn[disabled],\nfieldset[disabled] .btn {\n  cursor: not-allowed;\n  filter: alpha(opacity=65);\n  -webkit-box-shadow: none;\n          box-shadow: none;\n  opacity: .65;\n}\na.btn.disabled,\nfieldset[disabled] a.btn {\n  pointer-events: none;\n}\n.btn-default {\n  color: #333;\n  background-color: #fff;\n  border-color: #ccc;\n}\n.btn-default:focus,\n.btn-default.focus {\n  color: #333;\n  background-color: #e6e6e6;\n  border-color: #8c8c8c;\n}\n.btn-default:hover {\n  color: #333;\n  background-color: #e6e6e6;\n  border-color: #adadad;\n}\n.btn-default:active,\n.btn-default.active,\n.open > .dropdown-toggle.btn-default {\n  color: #333;\n  background-color: #e6e6e6;\n  border-color: #adadad;\n}\n.btn-default:active:hover,\n.btn-default.active:hover,\n.open > .dropdown-toggle.btn-default:hover,\n.btn-default:active:focus,\n.btn-default.active:focus,\n.open > .dropdown-toggle.btn-default:focus,\n.btn-default:active.focus,\n.btn-default.active.focus,\n.open > .dropdown-toggle.btn-default.focus {\n  color: #333;\n  background-color: #d4d4d4;\n  border-color: #8c8c8c;\n}\n.btn-default:active,\n.btn-default.active,\n.open > .dropdown-toggle.btn-default {\n  background-image: none;\n}\n.btn-default.disabled:hover,\n.btn-default[disabled]:hover,\nfieldset[disabled] .btn-default:hover,\n.btn-default.disabled:focus,\n.btn-default[disabled]:focus,\nfieldset[disabled] .btn-default:focus,\n.btn-default.disabled.focus,\n.btn-default[disabled].focus,\nfieldset[disabled] .btn-default.focus {\n  background-color: #fff;\n  border-color: #ccc;\n}\n.btn-default .badge {\n  color: #fff;\n  background-color: #333;\n}\n.btn-primary {\n  color: #fff;\n  background-color: #337ab7;\n  border-color: #2e6da4;\n}\n.btn-primary:focus,\n.btn-primary.focus {\n  color: #fff;\n  background-color: #286090;\n  border-color: #122b40;\n}\n.btn-primary:hover {\n  color: #fff;\n  background-color: #286090;\n  border-color: #204d74;\n}\n.btn-primary:active,\n.btn-primary.active,\n.open > .dropdown-toggle.btn-primary {\n  color: #fff;\n  background-color: #286090;\n  border-color: #204d74;\n}\n.btn-primary:active:hover,\n.btn-primary.active:hover,\n.open > .dropdown-toggle.btn-primary:hover,\n.btn-primary:active:focus,\n.btn-primary.active:focus,\n.open > .dropdown-toggle.btn-primary:focus,\n.btn-primary:active.focus,\n.btn-primary.active.focus,\n.open > .dropdown-toggle.btn-primary.focus {\n  color: #fff;\n  background-color: #204d74;\n  border-color: #122b40;\n}\n.btn-primary:active,\n.btn-primary.active,\n.open > .dropdown-toggle.btn-primary {\n  background-image: none;\n}\n.btn-primary.disabled:hover,\n.btn-primary[disabled]:hover,\nfieldset[disabled] .btn-primary:hover,\n.btn-primary.disabled:focus,\n.btn-primary[disabled]:focus,\nfieldset[disabled] .btn-primary:focus,\n.btn-primary.disabled.focus,\n.btn-primary[disabled].focus,\nfieldset[disabled] .btn-primary.focus {\n  background-color: #337ab7;\n  border-color: #2e6da4;\n}\n.btn-primary .badge {\n  color: #337ab7;\n  background-color: #fff;\n}\n.btn-success {\n  color: #fff;\n  background-color: #5cb85c;\n  border-color: #4cae4c;\n}\n.btn-success:focus,\n.btn-success.focus {\n  color: #fff;\n  background-color: #449d44;\n  border-color: #255625;\n}\n.btn-success:hover {\n  color: #fff;\n  background-color: #449d44;\n  border-color: #398439;\n}\n.btn-success:active,\n.btn-success.active,\n.open > .dropdown-toggle.btn-success {\n  color: #fff;\n  background-color: #449d44;\n  border-color: #398439;\n}\n.btn-success:active:hover,\n.btn-success.active:hover,\n.open > .dropdown-toggle.btn-success:hover,\n.btn-success:active:focus,\n.btn-success.active:focus,\n.open > .dropdown-toggle.btn-success:focus,\n.btn-success:active.focus,\n.btn-success.active.focus,\n.open > .dropdown-toggle.btn-success.focus {\n  color: #fff;\n  background-color: #398439;\n  border-color: #255625;\n}\n.btn-success:active,\n.btn-success.active,\n.open > .dropdown-toggle.btn-success {\n  background-image: none;\n}\n.btn-success.disabled:hover,\n.btn-success[disabled]:hover,\nfieldset[disabled] .btn-success:hover,\n.btn-success.disabled:focus,\n.btn-success[disabled]:focus,\nfieldset[disabled] .btn-success:focus,\n.btn-success.disabled.focus,\n.btn-success[disabled].focus,\nfieldset[disabled] .btn-success.focus {\n  background-color: #5cb85c;\n  border-color: #4cae4c;\n}\n.btn-success .badge {\n  color: #5cb85c;\n  background-color: #fff;\n}\n.btn-info {\n  color: #fff;\n  background-color: #5bc0de;\n  border-color: #46b8da;\n}\n.btn-info:focus,\n.btn-info.focus {\n  color: #fff;\n  background-color: #31b0d5;\n  border-color: #1b6d85;\n}\n.btn-info:hover {\n  color: #fff;\n  background-color: #31b0d5;\n  border-color: #269abc;\n}\n.btn-info:active,\n.btn-info.active,\n.open > .dropdown-toggle.btn-info {\n  color: #fff;\n  background-color: #31b0d5;\n  border-color: #269abc;\n}\n.btn-info:active:hover,\n.btn-info.active:hover,\n.open > .dropdown-toggle.btn-info:hover,\n.btn-info:active:focus,\n.btn-info.active:focus,\n.open > .dropdown-toggle.btn-info:focus,\n.btn-info:active.focus,\n.btn-info.active.focus,\n.open > .dropdown-toggle.btn-info.focus {\n  color: #fff;\n  background-color: #269abc;\n  border-color: #1b6d85;\n}\n.btn-info:active,\n.btn-info.active,\n.open > .dropdown-toggle.btn-info {\n  background-image: none;\n}\n.btn-info.disabled:hover,\n.btn-info[disabled]:hover,\nfieldset[disabled] .btn-info:hover,\n.btn-info.disabled:focus,\n.btn-info[disabled]:focus,\nfieldset[disabled] .btn-info:focus,\n.btn-info.disabled.focus,\n.btn-info[disabled].focus,\nfieldset[disabled] .btn-info.focus {\n  background-color: #5bc0de;\n  border-color: #46b8da;\n}\n.btn-info .badge {\n  color: #5bc0de;\n  background-color: #fff;\n}\n.btn-warning {\n  color: #fff;\n  background-color: #f0ad4e;\n  border-color: #eea236;\n}\n.btn-warning:focus,\n.btn-warning.focus {\n  color: #fff;\n  background-color: #ec971f;\n  border-color: #985f0d;\n}\n.btn-warning:hover {\n  color: #fff;\n  background-color: #ec971f;\n  border-color: #d58512;\n}\n.btn-warning:active,\n.btn-warning.active,\n.open > .dropdown-toggle.btn-warning {\n  color: #fff;\n  background-color: #ec971f;\n  border-color: #d58512;\n}\n.btn-warning:active:hover,\n.btn-warning.active:hover,\n.open > .dropdown-toggle.btn-warning:hover,\n.btn-warning:active:focus,\n.btn-warning.active:focus,\n.open > .dropdown-toggle.btn-warning:focus,\n.btn-warning:active.focus,\n.btn-warning.active.focus,\n.open > .dropdown-toggle.btn-warning.focus {\n  color: #fff;\n  background-color: #d58512;\n  border-color: #985f0d;\n}\n.btn-warning:active,\n.btn-warning.active,\n.open > .dropdown-toggle.btn-warning {\n  background-image: none;\n}\n.btn-warning.disabled:hover,\n.btn-warning[disabled]:hover,\nfieldset[disabled] .btn-warning:hover,\n.btn-warning.disabled:focus,\n.btn-warning[disabled]:focus,\nfieldset[disabled] .btn-warning:focus,\n.btn-warning.disabled.focus,\n.btn-warning[disabled].focus,\nfieldset[disabled] .btn-warning.focus {\n  background-color: #f0ad4e;\n  border-color: #eea236;\n}\n.btn-warning .badge {\n  color: #f0ad4e;\n  background-color: #fff;\n}\n.btn-danger {\n  color: #fff;\n  background-color: #d9534f;\n  border-color: #d43f3a;\n}\n.btn-danger:focus,\n.btn-danger.focus {\n  color: #fff;\n  background-color: #c9302c;\n  border-color: #761c19;\n}\n.btn-danger:hover {\n  color: #fff;\n  background-color: #c9302c;\n  border-color: #ac2925;\n}\n.btn-danger:active,\n.btn-danger.active,\n.open > .dropdown-toggle.btn-danger {\n  color: #fff;\n  background-color: #c9302c;\n  border-color: #ac2925;\n}\n.btn-danger:active:hover,\n.btn-danger.active:hover,\n.open > .dropdown-toggle.btn-danger:hover,\n.btn-danger:active:focus,\n.btn-danger.active:focus,\n.open > .dropdown-toggle.btn-danger:focus,\n.btn-danger:active.focus,\n.btn-danger.active.focus,\n.open > .dropdown-toggle.btn-danger.focus {\n  color: #fff;\n  background-color: #ac2925;\n  border-color: #761c19;\n}\n.btn-danger:active,\n.btn-danger.active,\n.open > .dropdown-toggle.btn-danger {\n  background-image: none;\n}\n.btn-danger.disabled:hover,\n.btn-danger[disabled]:hover,\nfieldset[disabled] .btn-danger:hover,\n.btn-danger.disabled:focus,\n.btn-danger[disabled]:focus,\nfieldset[disabled] .btn-danger:focus,\n.btn-danger.disabled.focus,\n.btn-danger[disabled].focus,\nfieldset[disabled] .btn-danger.focus {\n  background-color: #d9534f;\n  border-color: #d43f3a;\n}\n.btn-danger .badge {\n  color: #d9534f;\n  background-color: #fff;\n}\n.btn-link {\n  font-weight: normal;\n  color: #337ab7;\n  border-radius: 0;\n}\n.btn-link,\n.btn-link:active,\n.btn-link.active,\n.btn-link[disabled],\nfieldset[disabled] .btn-link {\n  background-color: transparent;\n  -webkit-box-shadow: none;\n          box-shadow: none;\n}\n.btn-link,\n.btn-link:hover,\n.btn-link:focus,\n.btn-link:active {\n  border-color: transparent;\n}\n.btn-link:hover,\n.btn-link:focus {\n  color: #23527c;\n  text-decoration: underline;\n  background-color: transparent;\n}\n.btn-link[disabled]:hover,\nfieldset[disabled] .btn-link:hover,\n.btn-link[disabled]:focus,\nfieldset[disabled] .btn-link:focus {\n  color: #777;\n  text-decoration: none;\n}\n.btn-lg,\n.btn-group-lg > .btn {\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\n.btn-sm,\n.btn-group-sm > .btn {\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\n.btn-xs,\n.btn-group-xs > .btn {\n  padding: 1px 5px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\n.btn-block {\n  display: block;\n  width: 100%;\n}\n.btn-block + .btn-block {\n  margin-top: 5px;\n}\ninput[type=\"submit\"].btn-block,\ninput[type=\"reset\"].btn-block,\ninput[type=\"button\"].btn-block {\n  width: 100%;\n}\n.fade {\n  opacity: 0;\n  -webkit-transition: opacity .15s linear;\n       -o-transition: opacity .15s linear;\n          transition: opacity .15s linear;\n}\n.fade.in {\n  opacity: 1;\n}\n.collapse {\n  display: none;\n}\n.collapse.in {\n  display: block;\n}\ntr.collapse.in {\n  display: table-row;\n}\ntbody.collapse.in {\n  display: table-row-group;\n}\n.collapsing {\n  position: relative;\n  height: 0;\n  overflow: hidden;\n  -webkit-transition-timing-function: ease;\n       -o-transition-timing-function: ease;\n          transition-timing-function: ease;\n  -webkit-transition-duration: .35s;\n       -o-transition-duration: .35s;\n          transition-duration: .35s;\n  -webkit-transition-property: height, visibility;\n       -o-transition-property: height, visibility;\n          transition-property: height, visibility;\n}\n.caret {\n  display: inline-block;\n  width: 0;\n  height: 0;\n  margin-left: 2px;\n  vertical-align: middle;\n  border-top: 4px dashed;\n  border-top: 4px solid \\9;\n  border-right: 4px solid transparent;\n  border-left: 4px solid transparent;\n}\n.dropup,\n.dropdown {\n  position: relative;\n}\n.dropdown-toggle:focus {\n  outline: 0;\n}\n.dropdown-menu {\n  position: absolute;\n  top: 100%;\n  left: 0;\n  z-index: 1000;\n  display: none;\n  float: left;\n  min-width: 160px;\n  padding: 5px 0;\n  margin: 2px 0 0;\n  font-size: 14px;\n  text-align: left;\n  list-style: none;\n  background-color: #fff;\n  -webkit-background-clip: padding-box;\n          background-clip: padding-box;\n  border: 1px solid #ccc;\n  border: 1px solid rgba(0, 0, 0, .15);\n  border-radius: 4px;\n  -webkit-box-shadow: 0 6px 12px rgba(0, 0, 0, .175);\n          box-shadow: 0 6px 12px rgba(0, 0, 0, .175);\n}\n.dropdown-menu.pull-right {\n  right: 0;\n  left: auto;\n}\n.dropdown-menu .divider {\n  height: 1px;\n  margin: 9px 0;\n  overflow: hidden;\n  background-color: #e5e5e5;\n}\n.dropdown-menu > li > a {\n  display: block;\n  padding: 3px 20px;\n  clear: both;\n  font-weight: normal;\n  line-height: 1.42857143;\n  color: #333;\n  white-space: nowrap;\n}\n.dropdown-menu > li > a:hover,\n.dropdown-menu > li > a:focus {\n  color: #262626;\n  text-decoration: none;\n  background-color: #f5f5f5;\n}\n.dropdown-menu > .active > a,\n.dropdown-menu > .active > a:hover,\n.dropdown-menu > .active > a:focus {\n  color: #fff;\n  text-decoration: none;\n  background-color: #337ab7;\n  outline: 0;\n}\n.dropdown-menu > .disabled > a,\n.dropdown-menu > .disabled > a:hover,\n.dropdown-menu > .disabled > a:focus {\n  color: #777;\n}\n.dropdown-menu > .disabled > a:hover,\n.dropdown-menu > .disabled > a:focus {\n  text-decoration: none;\n  cursor: not-allowed;\n  background-color: transparent;\n  background-image: none;\n  filter: progid:DXImageTransform.Microsoft.gradient(enabled = false);\n}\n.open > .dropdown-menu {\n  display: block;\n}\n.open > a {\n  outline: 0;\n}\n.dropdown-menu-right {\n  right: 0;\n  left: auto;\n}\n.dropdown-menu-left {\n  right: auto;\n  left: 0;\n}\n.dropdown-header {\n  display: block;\n  padding: 3px 20px;\n  font-size: 12px;\n  line-height: 1.42857143;\n  color: #777;\n  white-space: nowrap;\n}\n.dropdown-backdrop {\n  position: fixed;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  z-index: 990;\n}\n.pull-right > .dropdown-menu {\n  right: 0;\n  left: auto;\n}\n.dropup .caret,\n.navbar-fixed-bottom .dropdown .caret {\n  content: \"\";\n  border-top: 0;\n  border-bottom: 4px dashed;\n  border-bottom: 4px solid \\9;\n}\n.dropup .dropdown-menu,\n.navbar-fixed-bottom .dropdown .dropdown-menu {\n  top: auto;\n  bottom: 100%;\n  margin-bottom: 2px;\n}\n@media (min-width: 768px) {\n  .navbar-right .dropdown-menu {\n    right: 0;\n    left: auto;\n  }\n  .navbar-right .dropdown-menu-left {\n    right: auto;\n    left: 0;\n  }\n}\n.btn-group,\n.btn-group-vertical {\n  position: relative;\n  display: inline-block;\n  vertical-align: middle;\n}\n.btn-group > .btn,\n.btn-group-vertical > .btn {\n  position: relative;\n  float: left;\n}\n.btn-group > .btn:hover,\n.btn-group-vertical > .btn:hover,\n.btn-group > .btn:focus,\n.btn-group-vertical > .btn:focus,\n.btn-group > .btn:active,\n.btn-group-vertical > .btn:active,\n.btn-group > .btn.active,\n.btn-group-vertical > .btn.active {\n  z-index: 2;\n}\n.btn-group .btn + .btn,\n.btn-group .btn + .btn-group,\n.btn-group .btn-group + .btn,\n.btn-group .btn-group + .btn-group {\n  margin-left: -1px;\n}\n.btn-toolbar {\n  margin-left: -5px;\n}\n.btn-toolbar .btn,\n.btn-toolbar .btn-group,\n.btn-toolbar .input-group {\n  float: left;\n}\n.btn-toolbar > .btn,\n.btn-toolbar > .btn-group,\n.btn-toolbar > .input-group {\n  margin-left: 5px;\n}\n.btn-group > .btn:not(:first-child):not(:last-child):not(.dropdown-toggle) {\n  border-radius: 0;\n}\n.btn-group > .btn:first-child {\n  margin-left: 0;\n}\n.btn-group > .btn:first-child:not(:last-child):not(.dropdown-toggle) {\n  border-top-right-radius: 0;\n  border-bottom-right-radius: 0;\n}\n.btn-group > .btn:last-child:not(:first-child),\n.btn-group > .dropdown-toggle:not(:first-child) {\n  border-top-left-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group > .btn-group {\n  float: left;\n}\n.btn-group > .btn-group:not(:first-child):not(:last-child) > .btn {\n  border-radius: 0;\n}\n.btn-group > .btn-group:first-child:not(:last-child) > .btn:last-child,\n.btn-group > .btn-group:first-child:not(:last-child) > .dropdown-toggle {\n  border-top-right-radius: 0;\n  border-bottom-right-radius: 0;\n}\n.btn-group > .btn-group:last-child:not(:first-child) > .btn:first-child {\n  border-top-left-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group .dropdown-toggle:active,\n.btn-group.open .dropdown-toggle {\n  outline: 0;\n}\n.btn-group > .btn + .dropdown-toggle {\n  padding-right: 8px;\n  padding-left: 8px;\n}\n.btn-group > .btn-lg + .dropdown-toggle {\n  padding-right: 12px;\n  padding-left: 12px;\n}\n.btn-group.open .dropdown-toggle {\n  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n          box-shadow: inset 0 3px 5px rgba(0, 0, 0, .125);\n}\n.btn-group.open .dropdown-toggle.btn-link {\n  -webkit-box-shadow: none;\n          box-shadow: none;\n}\n.btn .caret {\n  margin-left: 0;\n}\n.btn-lg .caret {\n  border-width: 5px 5px 0;\n  border-bottom-width: 0;\n}\n.dropup .btn-lg .caret {\n  border-width: 0 5px 5px;\n}\n.btn-group-vertical > .btn,\n.btn-group-vertical > .btn-group,\n.btn-group-vertical > .btn-group > .btn {\n  display: block;\n  float: none;\n  width: 100%;\n  max-width: 100%;\n}\n.btn-group-vertical > .btn-group > .btn {\n  float: none;\n}\n.btn-group-vertical > .btn + .btn,\n.btn-group-vertical > .btn + .btn-group,\n.btn-group-vertical > .btn-group + .btn,\n.btn-group-vertical > .btn-group + .btn-group {\n  margin-top: -1px;\n  margin-left: 0;\n}\n.btn-group-vertical > .btn:not(:first-child):not(:last-child) {\n  border-radius: 0;\n}\n.btn-group-vertical > .btn:first-child:not(:last-child) {\n  border-top-left-radius: 4px;\n  border-top-right-radius: 4px;\n  border-bottom-right-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group-vertical > .btn:last-child:not(:first-child) {\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n  border-bottom-right-radius: 4px;\n  border-bottom-left-radius: 4px;\n}\n.btn-group-vertical > .btn-group:not(:first-child):not(:last-child) > .btn {\n  border-radius: 0;\n}\n.btn-group-vertical > .btn-group:first-child:not(:last-child) > .btn:last-child,\n.btn-group-vertical > .btn-group:first-child:not(:last-child) > .dropdown-toggle {\n  border-bottom-right-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.btn-group-vertical > .btn-group:last-child:not(:first-child) > .btn:first-child {\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n}\n.btn-group-justified {\n  display: table;\n  width: 100%;\n  table-layout: fixed;\n  border-collapse: separate;\n}\n.btn-group-justified > .btn,\n.btn-group-justified > .btn-group {\n  display: table-cell;\n  float: none;\n  width: 1%;\n}\n.btn-group-justified > .btn-group .btn {\n  width: 100%;\n}\n.btn-group-justified > .btn-group .dropdown-menu {\n  left: auto;\n}\n[data-toggle=\"buttons\"] > .btn input[type=\"radio\"],\n[data-toggle=\"buttons\"] > .btn-group > .btn input[type=\"radio\"],\n[data-toggle=\"buttons\"] > .btn input[type=\"checkbox\"],\n[data-toggle=\"buttons\"] > .btn-group > .btn input[type=\"checkbox\"] {\n  position: absolute;\n  clip: rect(0, 0, 0, 0);\n  pointer-events: none;\n}\n.input-group {\n  position: relative;\n  display: table;\n  border-collapse: separate;\n}\n.input-group[class*=\"col-\"] {\n  float: none;\n  padding-right: 0;\n  padding-left: 0;\n}\n.input-group .form-control {\n  position: relative;\n  z-index: 2;\n  float: left;\n  width: 100%;\n  margin-bottom: 0;\n}\n.input-group .form-control:focus {\n  z-index: 3;\n}\n.input-group-lg > .form-control,\n.input-group-lg > .input-group-addon,\n.input-group-lg > .input-group-btn > .btn {\n  height: 46px;\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n  border-radius: 6px;\n}\nselect.input-group-lg > .form-control,\nselect.input-group-lg > .input-group-addon,\nselect.input-group-lg > .input-group-btn > .btn {\n  height: 46px;\n  line-height: 46px;\n}\ntextarea.input-group-lg > .form-control,\ntextarea.input-group-lg > .input-group-addon,\ntextarea.input-group-lg > .input-group-btn > .btn,\nselect[multiple].input-group-lg > .form-control,\nselect[multiple].input-group-lg > .input-group-addon,\nselect[multiple].input-group-lg > .input-group-btn > .btn {\n  height: auto;\n}\n.input-group-sm > .form-control,\n.input-group-sm > .input-group-addon,\n.input-group-sm > .input-group-btn > .btn {\n  height: 30px;\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n  border-radius: 3px;\n}\nselect.input-group-sm > .form-control,\nselect.input-group-sm > .input-group-addon,\nselect.input-group-sm > .input-group-btn > .btn {\n  height: 30px;\n  line-height: 30px;\n}\ntextarea.input-group-sm > .form-control,\ntextarea.input-group-sm > .input-group-addon,\ntextarea.input-group-sm > .input-group-btn > .btn,\nselect[multiple].input-group-sm > .form-control,\nselect[multiple].input-group-sm > .input-group-addon,\nselect[multiple].input-group-sm > .input-group-btn > .btn {\n  height: auto;\n}\n.input-group-addon,\n.input-group-btn,\n.input-group .form-control {\n  display: table-cell;\n}\n.input-group-addon:not(:first-child):not(:last-child),\n.input-group-btn:not(:first-child):not(:last-child),\n.input-group .form-control:not(:first-child):not(:last-child) {\n  border-radius: 0;\n}\n.input-group-addon,\n.input-group-btn {\n  width: 1%;\n  white-space: nowrap;\n  vertical-align: middle;\n}\n.input-group-addon {\n  padding: 6px 12px;\n  font-size: 14px;\n  font-weight: normal;\n  line-height: 1;\n  color: #555;\n  text-align: center;\n  background-color: #eee;\n  border: 1px solid #ccc;\n  border-radius: 4px;\n}\n.input-group-addon.input-sm {\n  padding: 5px 10px;\n  font-size: 12px;\n  border-radius: 3px;\n}\n.input-group-addon.input-lg {\n  padding: 10px 16px;\n  font-size: 18px;\n  border-radius: 6px;\n}\n.input-group-addon input[type=\"radio\"],\n.input-group-addon input[type=\"checkbox\"] {\n  margin-top: 0;\n}\n.input-group .form-control:first-child,\n.input-group-addon:first-child,\n.input-group-btn:first-child > .btn,\n.input-group-btn:first-child > .btn-group > .btn,\n.input-group-btn:first-child > .dropdown-toggle,\n.input-group-btn:last-child > .btn:not(:last-child):not(.dropdown-toggle),\n.input-group-btn:last-child > .btn-group:not(:last-child) > .btn {\n  border-top-right-radius: 0;\n  border-bottom-right-radius: 0;\n}\n.input-group-addon:first-child {\n  border-right: 0;\n}\n.input-group .form-control:last-child,\n.input-group-addon:last-child,\n.input-group-btn:last-child > .btn,\n.input-group-btn:last-child > .btn-group > .btn,\n.input-group-btn:last-child > .dropdown-toggle,\n.input-group-btn:first-child > .btn:not(:first-child),\n.input-group-btn:first-child > .btn-group:not(:first-child) > .btn {\n  border-top-left-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.input-group-addon:last-child {\n  border-left: 0;\n}\n.input-group-btn {\n  position: relative;\n  font-size: 0;\n  white-space: nowrap;\n}\n.input-group-btn > .btn {\n  position: relative;\n}\n.input-group-btn > .btn + .btn {\n  margin-left: -1px;\n}\n.input-group-btn > .btn:hover,\n.input-group-btn > .btn:focus,\n.input-group-btn > .btn:active {\n  z-index: 2;\n}\n.input-group-btn:first-child > .btn,\n.input-group-btn:first-child > .btn-group {\n  margin-right: -1px;\n}\n.input-group-btn:last-child > .btn,\n.input-group-btn:last-child > .btn-group {\n  z-index: 2;\n  margin-left: -1px;\n}\n.nav {\n  padding-left: 0;\n  margin-bottom: 0;\n  list-style: none;\n}\n.nav > li {\n  position: relative;\n  display: block;\n}\n.nav > li > a {\n  position: relative;\n  display: block;\n  padding: 10px 15px;\n}\n.nav > li > a:hover,\n.nav > li > a:focus {\n  text-decoration: none;\n  background-color: #eee;\n}\n.nav > li.disabled > a {\n  color: #777;\n}\n.nav > li.disabled > a:hover,\n.nav > li.disabled > a:focus {\n  color: #777;\n  text-decoration: none;\n  cursor: not-allowed;\n  background-color: transparent;\n}\n.nav .open > a,\n.nav .open > a:hover,\n.nav .open > a:focus {\n  background-color: #eee;\n  border-color: #337ab7;\n}\n.nav .nav-divider {\n  height: 1px;\n  margin: 9px 0;\n  overflow: hidden;\n  background-color: #e5e5e5;\n}\n.nav > li > a > img {\n  max-width: none;\n}\n.nav-tabs {\n  border-bottom: 1px solid #ddd;\n}\n.nav-tabs > li {\n  float: left;\n  margin-bottom: -1px;\n}\n.nav-tabs > li > a {\n  margin-right: 2px;\n  line-height: 1.42857143;\n  border: 1px solid transparent;\n  border-radius: 4px 4px 0 0;\n}\n.nav-tabs > li > a:hover {\n  border-color: #eee #eee #ddd;\n}\n.nav-tabs > li.active > a,\n.nav-tabs > li.active > a:hover,\n.nav-tabs > li.active > a:focus {\n  color: #555;\n  cursor: default;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-bottom-color: transparent;\n}\n.nav-tabs.nav-justified {\n  width: 100%;\n  border-bottom: 0;\n}\n.nav-tabs.nav-justified > li {\n  float: none;\n}\n.nav-tabs.nav-justified > li > a {\n  margin-bottom: 5px;\n  text-align: center;\n}\n.nav-tabs.nav-justified > .dropdown .dropdown-menu {\n  top: auto;\n  left: auto;\n}\n@media (min-width: 768px) {\n  .nav-tabs.nav-justified > li {\n    display: table-cell;\n    width: 1%;\n  }\n  .nav-tabs.nav-justified > li > a {\n    margin-bottom: 0;\n  }\n}\n.nav-tabs.nav-justified > li > a {\n  margin-right: 0;\n  border-radius: 4px;\n}\n.nav-tabs.nav-justified > .active > a,\n.nav-tabs.nav-justified > .active > a:hover,\n.nav-tabs.nav-justified > .active > a:focus {\n  border: 1px solid #ddd;\n}\n@media (min-width: 768px) {\n  .nav-tabs.nav-justified > li > a {\n    border-bottom: 1px solid #ddd;\n    border-radius: 4px 4px 0 0;\n  }\n  .nav-tabs.nav-justified > .active > a,\n  .nav-tabs.nav-justified > .active > a:hover,\n  .nav-tabs.nav-justified > .active > a:focus {\n    border-bottom-color: #fff;\n  }\n}\n.nav-pills > li {\n  float: left;\n}\n.nav-pills > li > a {\n  border-radius: 4px;\n}\n.nav-pills > li + li {\n  margin-left: 2px;\n}\n.nav-pills > li.active > a,\n.nav-pills > li.active > a:hover,\n.nav-pills > li.active > a:focus {\n  color: #fff;\n  background-color: #337ab7;\n}\n.nav-stacked > li {\n  float: none;\n}\n.nav-stacked > li + li {\n  margin-top: 2px;\n  margin-left: 0;\n}\n.nav-justified {\n  width: 100%;\n}\n.nav-justified > li {\n  float: none;\n}\n.nav-justified > li > a {\n  margin-bottom: 5px;\n  text-align: center;\n}\n.nav-justified > .dropdown .dropdown-menu {\n  top: auto;\n  left: auto;\n}\n@media (min-width: 768px) {\n  .nav-justified > li {\n    display: table-cell;\n    width: 1%;\n  }\n  .nav-justified > li > a {\n    margin-bottom: 0;\n  }\n}\n.nav-tabs-justified {\n  border-bottom: 0;\n}\n.nav-tabs-justified > li > a {\n  margin-right: 0;\n  border-radius: 4px;\n}\n.nav-tabs-justified > .active > a,\n.nav-tabs-justified > .active > a:hover,\n.nav-tabs-justified > .active > a:focus {\n  border: 1px solid #ddd;\n}\n@media (min-width: 768px) {\n  .nav-tabs-justified > li > a {\n    border-bottom: 1px solid #ddd;\n    border-radius: 4px 4px 0 0;\n  }\n  .nav-tabs-justified > .active > a,\n  .nav-tabs-justified > .active > a:hover,\n  .nav-tabs-justified > .active > a:focus {\n    border-bottom-color: #fff;\n  }\n}\n.tab-content > .tab-pane {\n  display: none;\n}\n.tab-content > .active {\n  display: block;\n}\n.nav-tabs .dropdown-menu {\n  margin-top: -1px;\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n}\n.navbar {\n  position: relative;\n  min-height: 50px;\n  margin-bottom: 20px;\n  border: 1px solid transparent;\n}\n@media (min-width: 768px) {\n  .navbar {\n    border-radius: 4px;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-header {\n    float: left;\n  }\n}\n.navbar-collapse {\n  padding-right: 15px;\n  padding-left: 15px;\n  overflow-x: visible;\n  -webkit-overflow-scrolling: touch;\n  border-top: 1px solid transparent;\n  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1);\n          box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1);\n}\n.navbar-collapse.in {\n  overflow-y: auto;\n}\n@media (min-width: 768px) {\n  .navbar-collapse {\n    width: auto;\n    border-top: 0;\n    -webkit-box-shadow: none;\n            box-shadow: none;\n  }\n  .navbar-collapse.collapse {\n    display: block !important;\n    height: auto !important;\n    padding-bottom: 0;\n    overflow: visible !important;\n  }\n  .navbar-collapse.in {\n    overflow-y: visible;\n  }\n  .navbar-fixed-top .navbar-collapse,\n  .navbar-static-top .navbar-collapse,\n  .navbar-fixed-bottom .navbar-collapse {\n    padding-right: 0;\n    padding-left: 0;\n  }\n}\n.navbar-fixed-top .navbar-collapse,\n.navbar-fixed-bottom .navbar-collapse {\n  max-height: 340px;\n}\n@media (max-device-width: 480px) and (orientation: landscape) {\n  .navbar-fixed-top .navbar-collapse,\n  .navbar-fixed-bottom .navbar-collapse {\n    max-height: 200px;\n  }\n}\n.container > .navbar-header,\n.container-fluid > .navbar-header,\n.container > .navbar-collapse,\n.container-fluid > .navbar-collapse {\n  margin-right: -15px;\n  margin-left: -15px;\n}\n@media (min-width: 768px) {\n  .container > .navbar-header,\n  .container-fluid > .navbar-header,\n  .container > .navbar-collapse,\n  .container-fluid > .navbar-collapse {\n    margin-right: 0;\n    margin-left: 0;\n  }\n}\n.navbar-static-top {\n  z-index: 1000;\n  border-width: 0 0 1px;\n}\n@media (min-width: 768px) {\n  .navbar-static-top {\n    border-radius: 0;\n  }\n}\n.navbar-fixed-top,\n.navbar-fixed-bottom {\n  position: fixed;\n  right: 0;\n  left: 0;\n  z-index: 1030;\n}\n@media (min-width: 768px) {\n  .navbar-fixed-top,\n  .navbar-fixed-bottom {\n    border-radius: 0;\n  }\n}\n.navbar-fixed-top {\n  top: 0;\n  border-width: 0 0 1px;\n}\n.navbar-fixed-bottom {\n  bottom: 0;\n  margin-bottom: 0;\n  border-width: 1px 0 0;\n}\n.navbar-brand {\n  float: left;\n  height: 50px;\n  padding: 15px 15px;\n  font-size: 18px;\n  line-height: 20px;\n}\n.navbar-brand:hover,\n.navbar-brand:focus {\n  text-decoration: none;\n}\n.navbar-brand > img {\n  display: block;\n}\n@media (min-width: 768px) {\n  .navbar > .container .navbar-brand,\n  .navbar > .container-fluid .navbar-brand {\n    margin-left: -15px;\n  }\n}\n.navbar-toggle {\n  position: relative;\n  float: right;\n  padding: 9px 10px;\n  margin-top: 8px;\n  margin-right: 15px;\n  margin-bottom: 8px;\n  background-color: transparent;\n  background-image: none;\n  border: 1px solid transparent;\n  border-radius: 4px;\n}\n.navbar-toggle:focus {\n  outline: 0;\n}\n.navbar-toggle .icon-bar {\n  display: block;\n  width: 22px;\n  height: 2px;\n  border-radius: 1px;\n}\n.navbar-toggle .icon-bar + .icon-bar {\n  margin-top: 4px;\n}\n@media (min-width: 768px) {\n  .navbar-toggle {\n    display: none;\n  }\n}\n.navbar-nav {\n  margin: 7.5px -15px;\n}\n.navbar-nav > li > a {\n  padding-top: 10px;\n  padding-bottom: 10px;\n  line-height: 20px;\n}\n@media (max-width: 767px) {\n  .navbar-nav .open .dropdown-menu {\n    position: static;\n    float: none;\n    width: auto;\n    margin-top: 0;\n    background-color: transparent;\n    border: 0;\n    -webkit-box-shadow: none;\n            box-shadow: none;\n  }\n  .navbar-nav .open .dropdown-menu > li > a,\n  .navbar-nav .open .dropdown-menu .dropdown-header {\n    padding: 5px 15px 5px 25px;\n  }\n  .navbar-nav .open .dropdown-menu > li > a {\n    line-height: 20px;\n  }\n  .navbar-nav .open .dropdown-menu > li > a:hover,\n  .navbar-nav .open .dropdown-menu > li > a:focus {\n    background-image: none;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-nav {\n    float: left;\n    margin: 0;\n  }\n  .navbar-nav > li {\n    float: left;\n  }\n  .navbar-nav > li > a {\n    padding-top: 15px;\n    padding-bottom: 15px;\n  }\n}\n.navbar-form {\n  padding: 10px 15px;\n  margin-top: 8px;\n  margin-right: -15px;\n  margin-bottom: 8px;\n  margin-left: -15px;\n  border-top: 1px solid transparent;\n  border-bottom: 1px solid transparent;\n  -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 1px 0 rgba(255, 255, 255, .1);\n          box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), 0 1px 0 rgba(255, 255, 255, .1);\n}\n@media (min-width: 768px) {\n  .navbar-form .form-group {\n    display: inline-block;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .navbar-form .form-control {\n    display: inline-block;\n    width: auto;\n    vertical-align: middle;\n  }\n  .navbar-form .form-control-static {\n    display: inline-block;\n  }\n  .navbar-form .input-group {\n    display: inline-table;\n    vertical-align: middle;\n  }\n  .navbar-form .input-group .input-group-addon,\n  .navbar-form .input-group .input-group-btn,\n  .navbar-form .input-group .form-control {\n    width: auto;\n  }\n  .navbar-form .input-group > .form-control {\n    width: 100%;\n  }\n  .navbar-form .control-label {\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .navbar-form .radio,\n  .navbar-form .checkbox {\n    display: inline-block;\n    margin-top: 0;\n    margin-bottom: 0;\n    vertical-align: middle;\n  }\n  .navbar-form .radio label,\n  .navbar-form .checkbox label {\n    padding-left: 0;\n  }\n  .navbar-form .radio input[type=\"radio\"],\n  .navbar-form .checkbox input[type=\"checkbox\"] {\n    position: relative;\n    margin-left: 0;\n  }\n  .navbar-form .has-feedback .form-control-feedback {\n    top: 0;\n  }\n}\n@media (max-width: 767px) {\n  .navbar-form .form-group {\n    margin-bottom: 5px;\n  }\n  .navbar-form .form-group:last-child {\n    margin-bottom: 0;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-form {\n    width: auto;\n    padding-top: 0;\n    padding-bottom: 0;\n    margin-right: 0;\n    margin-left: 0;\n    border: 0;\n    -webkit-box-shadow: none;\n            box-shadow: none;\n  }\n}\n.navbar-nav > li > .dropdown-menu {\n  margin-top: 0;\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n}\n.navbar-fixed-bottom .navbar-nav > li > .dropdown-menu {\n  margin-bottom: 0;\n  border-top-left-radius: 4px;\n  border-top-right-radius: 4px;\n  border-bottom-right-radius: 0;\n  border-bottom-left-radius: 0;\n}\n.navbar-btn {\n  margin-top: 8px;\n  margin-bottom: 8px;\n}\n.navbar-btn.btn-sm {\n  margin-top: 10px;\n  margin-bottom: 10px;\n}\n.navbar-btn.btn-xs {\n  margin-top: 14px;\n  margin-bottom: 14px;\n}\n.navbar-text {\n  margin-top: 15px;\n  margin-bottom: 15px;\n}\n@media (min-width: 768px) {\n  .navbar-text {\n    float: left;\n    margin-right: 15px;\n    margin-left: 15px;\n  }\n}\n@media (min-width: 768px) {\n  .navbar-left {\n    float: left !important;\n  }\n  .navbar-right {\n    float: right !important;\n    margin-right: -15px;\n  }\n  .navbar-right ~ .navbar-right {\n    margin-right: 0;\n  }\n}\n.navbar-default {\n  background-color: #f8f8f8;\n  border-color: #e7e7e7;\n}\n.navbar-default .navbar-brand {\n  color: #777;\n}\n.navbar-default .navbar-brand:hover,\n.navbar-default .navbar-brand:focus {\n  color: #5e5e5e;\n  background-color: transparent;\n}\n.navbar-default .navbar-text {\n  color: #777;\n}\n.navbar-default .navbar-nav > li > a {\n  color: #777;\n}\n.navbar-default .navbar-nav > li > a:hover,\n.navbar-default .navbar-nav > li > a:focus {\n  color: #333;\n  background-color: transparent;\n}\n.navbar-default .navbar-nav > .active > a,\n.navbar-default .navbar-nav > .active > a:hover,\n.navbar-default .navbar-nav > .active > a:focus {\n  color: #555;\n  background-color: #e7e7e7;\n}\n.navbar-default .navbar-nav > .disabled > a,\n.navbar-default .navbar-nav > .disabled > a:hover,\n.navbar-default .navbar-nav > .disabled > a:focus {\n  color: #ccc;\n  background-color: transparent;\n}\n.navbar-default .navbar-toggle {\n  border-color: #ddd;\n}\n.navbar-default .navbar-toggle:hover,\n.navbar-default .navbar-toggle:focus {\n  background-color: #ddd;\n}\n.navbar-default .navbar-toggle .icon-bar {\n  background-color: #888;\n}\n.navbar-default .navbar-collapse,\n.navbar-default .navbar-form {\n  border-color: #e7e7e7;\n}\n.navbar-default .navbar-nav > .open > a,\n.navbar-default .navbar-nav > .open > a:hover,\n.navbar-default .navbar-nav > .open > a:focus {\n  color: #555;\n  background-color: #e7e7e7;\n}\n@media (max-width: 767px) {\n  .navbar-default .navbar-nav .open .dropdown-menu > li > a {\n    color: #777;\n  }\n  .navbar-default .navbar-nav .open .dropdown-menu > li > a:hover,\n  .navbar-default .navbar-nav .open .dropdown-menu > li > a:focus {\n    color: #333;\n    background-color: transparent;\n  }\n  .navbar-default .navbar-nav .open .dropdown-menu > .active > a,\n  .navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover,\n  .navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {\n    color: #555;\n    background-color: #e7e7e7;\n  }\n  .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a,\n  .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a:hover,\n  .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a:focus {\n    color: #ccc;\n    background-color: transparent;\n  }\n}\n.navbar-default .navbar-link {\n  color: #777;\n}\n.navbar-default .navbar-link:hover {\n  color: #333;\n}\n.navbar-default .btn-link {\n  color: #777;\n}\n.navbar-default .btn-link:hover,\n.navbar-default .btn-link:focus {\n  color: #333;\n}\n.navbar-default .btn-link[disabled]:hover,\nfieldset[disabled] .navbar-default .btn-link:hover,\n.navbar-default .btn-link[disabled]:focus,\nfieldset[disabled] .navbar-default .btn-link:focus {\n  color: #ccc;\n}\n.navbar-inverse {\n  background-color: #222;\n  border-color: #080808;\n}\n.navbar-inverse .navbar-brand {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-brand:hover,\n.navbar-inverse .navbar-brand:focus {\n  color: #fff;\n  background-color: transparent;\n}\n.navbar-inverse .navbar-text {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-nav > li > a {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-nav > li > a:hover,\n.navbar-inverse .navbar-nav > li > a:focus {\n  color: #fff;\n  background-color: transparent;\n}\n.navbar-inverse .navbar-nav > .active > a,\n.navbar-inverse .navbar-nav > .active > a:hover,\n.navbar-inverse .navbar-nav > .active > a:focus {\n  color: #fff;\n  background-color: #080808;\n}\n.navbar-inverse .navbar-nav > .disabled > a,\n.navbar-inverse .navbar-nav > .disabled > a:hover,\n.navbar-inverse .navbar-nav > .disabled > a:focus {\n  color: #444;\n  background-color: transparent;\n}\n.navbar-inverse .navbar-toggle {\n  border-color: #333;\n}\n.navbar-inverse .navbar-toggle:hover,\n.navbar-inverse .navbar-toggle:focus {\n  background-color: #333;\n}\n.navbar-inverse .navbar-toggle .icon-bar {\n  background-color: #fff;\n}\n.navbar-inverse .navbar-collapse,\n.navbar-inverse .navbar-form {\n  border-color: #101010;\n}\n.navbar-inverse .navbar-nav > .open > a,\n.navbar-inverse .navbar-nav > .open > a:hover,\n.navbar-inverse .navbar-nav > .open > a:focus {\n  color: #fff;\n  background-color: #080808;\n}\n@media (max-width: 767px) {\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .dropdown-header {\n    border-color: #080808;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu .divider {\n    background-color: #080808;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a {\n    color: #9d9d9d;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a:hover,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > li > a:focus {\n    color: #fff;\n    background-color: transparent;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a:hover,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a:focus {\n    color: #fff;\n    background-color: #080808;\n  }\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a:hover,\n  .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a:focus {\n    color: #444;\n    background-color: transparent;\n  }\n}\n.navbar-inverse .navbar-link {\n  color: #9d9d9d;\n}\n.navbar-inverse .navbar-link:hover {\n  color: #fff;\n}\n.navbar-inverse .btn-link {\n  color: #9d9d9d;\n}\n.navbar-inverse .btn-link:hover,\n.navbar-inverse .btn-link:focus {\n  color: #fff;\n}\n.navbar-inverse .btn-link[disabled]:hover,\nfieldset[disabled] .navbar-inverse .btn-link:hover,\n.navbar-inverse .btn-link[disabled]:focus,\nfieldset[disabled] .navbar-inverse .btn-link:focus {\n  color: #444;\n}\n.breadcrumb {\n  padding: 8px 15px;\n  margin-bottom: 20px;\n  list-style: none;\n  background-color: #f5f5f5;\n  border-radius: 4px;\n}\n.breadcrumb > li {\n  display: inline-block;\n}\n.breadcrumb > li + li:before {\n  padding: 0 5px;\n  color: #ccc;\n  content: \"/\\A0\";\n}\n.breadcrumb > .active {\n  color: #777;\n}\n.pagination {\n  display: inline-block;\n  padding-left: 0;\n  margin: 20px 0;\n  border-radius: 4px;\n}\n.pagination > li {\n  display: inline;\n}\n.pagination > li > a,\n.pagination > li > span {\n  position: relative;\n  float: left;\n  padding: 6px 12px;\n  margin-left: -1px;\n  line-height: 1.42857143;\n  color: #337ab7;\n  text-decoration: none;\n  background-color: #fff;\n  border: 1px solid #ddd;\n}\n.pagination > li:first-child > a,\n.pagination > li:first-child > span {\n  margin-left: 0;\n  border-top-left-radius: 4px;\n  border-bottom-left-radius: 4px;\n}\n.pagination > li:last-child > a,\n.pagination > li:last-child > span {\n  border-top-right-radius: 4px;\n  border-bottom-right-radius: 4px;\n}\n.pagination > li > a:hover,\n.pagination > li > span:hover,\n.pagination > li > a:focus,\n.pagination > li > span:focus {\n  z-index: 2;\n  color: #23527c;\n  background-color: #eee;\n  border-color: #ddd;\n}\n.pagination > .active > a,\n.pagination > .active > span,\n.pagination > .active > a:hover,\n.pagination > .active > span:hover,\n.pagination > .active > a:focus,\n.pagination > .active > span:focus {\n  z-index: 3;\n  color: #fff;\n  cursor: default;\n  background-color: #337ab7;\n  border-color: #337ab7;\n}\n.pagination > .disabled > span,\n.pagination > .disabled > span:hover,\n.pagination > .disabled > span:focus,\n.pagination > .disabled > a,\n.pagination > .disabled > a:hover,\n.pagination > .disabled > a:focus {\n  color: #777;\n  cursor: not-allowed;\n  background-color: #fff;\n  border-color: #ddd;\n}\n.pagination-lg > li > a,\n.pagination-lg > li > span {\n  padding: 10px 16px;\n  font-size: 18px;\n  line-height: 1.3333333;\n}\n.pagination-lg > li:first-child > a,\n.pagination-lg > li:first-child > span {\n  border-top-left-radius: 6px;\n  border-bottom-left-radius: 6px;\n}\n.pagination-lg > li:last-child > a,\n.pagination-lg > li:last-child > span {\n  border-top-right-radius: 6px;\n  border-bottom-right-radius: 6px;\n}\n.pagination-sm > li > a,\n.pagination-sm > li > span {\n  padding: 5px 10px;\n  font-size: 12px;\n  line-height: 1.5;\n}\n.pagination-sm > li:first-child > a,\n.pagination-sm > li:first-child > span {\n  border-top-left-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.pagination-sm > li:last-child > a,\n.pagination-sm > li:last-child > span {\n  border-top-right-radius: 3px;\n  border-bottom-right-radius: 3px;\n}\n.pager {\n  padding-left: 0;\n  margin: 20px 0;\n  text-align: center;\n  list-style: none;\n}\n.pager li {\n  display: inline;\n}\n.pager li > a,\n.pager li > span {\n  display: inline-block;\n  padding: 5px 14px;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-radius: 15px;\n}\n.pager li > a:hover,\n.pager li > a:focus {\n  text-decoration: none;\n  background-color: #eee;\n}\n.pager .next > a,\n.pager .next > span {\n  float: right;\n}\n.pager .previous > a,\n.pager .previous > span {\n  float: left;\n}\n.pager .disabled > a,\n.pager .disabled > a:hover,\n.pager .disabled > a:focus,\n.pager .disabled > span {\n  color: #777;\n  cursor: not-allowed;\n  background-color: #fff;\n}\n.label {\n  display: inline;\n  padding: .2em .6em .3em;\n  font-size: 75%;\n  font-weight: bold;\n  line-height: 1;\n  color: #fff;\n  text-align: center;\n  white-space: nowrap;\n  vertical-align: baseline;\n  border-radius: .25em;\n}\na.label:hover,\na.label:focus {\n  color: #fff;\n  text-decoration: none;\n  cursor: pointer;\n}\n.label:empty {\n  display: none;\n}\n.btn .label {\n  position: relative;\n  top: -1px;\n}\n.label-default {\n  background-color: #777;\n}\n.label-default[href]:hover,\n.label-default[href]:focus {\n  background-color: #5e5e5e;\n}\n.label-primary {\n  background-color: #337ab7;\n}\n.label-primary[href]:hover,\n.label-primary[href]:focus {\n  background-color: #286090;\n}\n.label-success {\n  background-color: #5cb85c;\n}\n.label-success[href]:hover,\n.label-success[href]:focus {\n  background-color: #449d44;\n}\n.label-info {\n  background-color: #5bc0de;\n}\n.label-info[href]:hover,\n.label-info[href]:focus {\n  background-color: #31b0d5;\n}\n.label-warning {\n  background-color: #f0ad4e;\n}\n.label-warning[href]:hover,\n.label-warning[href]:focus {\n  background-color: #ec971f;\n}\n.label-danger {\n  background-color: #d9534f;\n}\n.label-danger[href]:hover,\n.label-danger[href]:focus {\n  background-color: #c9302c;\n}\n.badge {\n  display: inline-block;\n  min-width: 10px;\n  padding: 3px 7px;\n  font-size: 12px;\n  font-weight: bold;\n  line-height: 1;\n  color: #fff;\n  text-align: center;\n  white-space: nowrap;\n  vertical-align: middle;\n  background-color: #777;\n  border-radius: 10px;\n}\n.badge:empty {\n  display: none;\n}\n.btn .badge {\n  position: relative;\n  top: -1px;\n}\n.btn-xs .badge,\n.btn-group-xs > .btn .badge {\n  top: 0;\n  padding: 1px 5px;\n}\na.badge:hover,\na.badge:focus {\n  color: #fff;\n  text-decoration: none;\n  cursor: pointer;\n}\n.list-group-item.active > .badge,\n.nav-pills > .active > a > .badge {\n  color: #337ab7;\n  background-color: #fff;\n}\n.list-group-item > .badge {\n  float: right;\n}\n.list-group-item > .badge + .badge {\n  margin-right: 5px;\n}\n.nav-pills > li > a > .badge {\n  margin-left: 3px;\n}\n.jumbotron {\n  padding-top: 30px;\n  padding-bottom: 30px;\n  margin-bottom: 30px;\n  color: inherit;\n  background-color: #eee;\n}\n.jumbotron h1,\n.jumbotron .h1 {\n  color: inherit;\n}\n.jumbotron p {\n  margin-bottom: 15px;\n  font-size: 21px;\n  font-weight: 200;\n}\n.jumbotron > hr {\n  border-top-color: #d5d5d5;\n}\n.container .jumbotron,\n.container-fluid .jumbotron {\n  padding-right: 15px;\n  padding-left: 15px;\n  border-radius: 6px;\n}\n.jumbotron .container {\n  max-width: 100%;\n}\n@media screen and (min-width: 768px) {\n  .jumbotron {\n    padding-top: 48px;\n    padding-bottom: 48px;\n  }\n  .container .jumbotron,\n  .container-fluid .jumbotron {\n    padding-right: 60px;\n    padding-left: 60px;\n  }\n  .jumbotron h1,\n  .jumbotron .h1 {\n    font-size: 63px;\n  }\n}\n.thumbnail {\n  display: block;\n  padding: 4px;\n  margin-bottom: 20px;\n  line-height: 1.42857143;\n  background-color: #fff;\n  border: 1px solid #ddd;\n  border-radius: 4px;\n  -webkit-transition: border .2s ease-in-out;\n       -o-transition: border .2s ease-in-out;\n          transition: border .2s ease-in-out;\n}\n.thumbnail > img,\n.thumbnail a > img {\n  margin-right: auto;\n  margin-left: auto;\n}\na.thumbnail:hover,\na.thumbnail:focus,\na.thumbnail.active {\n  border-color: #337ab7;\n}\n.thumbnail .caption {\n  padding: 9px;\n  color: #333;\n}\n.alert {\n  padding: 15px;\n  margin-bottom: 20px;\n  border: 1px solid transparent;\n  border-radius: 4px;\n}\n.alert h4 {\n  margin-top: 0;\n  color: inherit;\n}\n.alert .alert-link {\n  font-weight: bold;\n}\n.alert > p,\n.alert > ul {\n  margin-bottom: 0;\n}\n.alert > p + p {\n  margin-top: 5px;\n}\n.alert-dismissable,\n.alert-dismissible {\n  padding-right: 35px;\n}\n.alert-dismissable .close,\n.alert-dismissible .close {\n  position: relative;\n  top: -2px;\n  right: -21px;\n  color: inherit;\n}\n.alert-success {\n  color: #3c763d;\n  background-color: #dff0d8;\n  border-color: #d6e9c6;\n}\n.alert-success hr {\n  border-top-color: #c9e2b3;\n}\n.alert-success .alert-link {\n  color: #2b542c;\n}\n.alert-info {\n  color: #31708f;\n  background-color: #d9edf7;\n  border-color: #bce8f1;\n}\n.alert-info hr {\n  border-top-color: #a6e1ec;\n}\n.alert-info .alert-link {\n  color: #245269;\n}\n.alert-warning {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n  border-color: #faebcc;\n}\n.alert-warning hr {\n  border-top-color: #f7e1b5;\n}\n.alert-warning .alert-link {\n  color: #66512c;\n}\n.alert-danger {\n  color: #a94442;\n  background-color: #f2dede;\n  border-color: #ebccd1;\n}\n.alert-danger hr {\n  border-top-color: #e4b9c0;\n}\n.alert-danger .alert-link {\n  color: #843534;\n}\n@-webkit-keyframes progress-bar-stripes {\n  from {\n    background-position: 40px 0;\n  }\n  to {\n    background-position: 0 0;\n  }\n}\n@-o-keyframes progress-bar-stripes {\n  from {\n    background-position: 40px 0;\n  }\n  to {\n    background-position: 0 0;\n  }\n}\n@keyframes progress-bar-stripes {\n  from {\n    background-position: 40px 0;\n  }\n  to {\n    background-position: 0 0;\n  }\n}\n.progress {\n  height: 20px;\n  margin-bottom: 20px;\n  overflow: hidden;\n  background-color: #f5f5f5;\n  border-radius: 4px;\n  -webkit-box-shadow: inset 0 1px 2px rgba(0, 0, 0, .1);\n          box-shadow: inset 0 1px 2px rgba(0, 0, 0, .1);\n}\n.progress-bar {\n  float: left;\n  width: 0;\n  height: 100%;\n  font-size: 12px;\n  line-height: 20px;\n  color: #fff;\n  text-align: center;\n  background-color: #337ab7;\n  -webkit-box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .15);\n          box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .15);\n  -webkit-transition: width .6s ease;\n       -o-transition: width .6s ease;\n          transition: width .6s ease;\n}\n.progress-striped .progress-bar,\n.progress-bar-striped {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  -webkit-background-size: 40px 40px;\n          background-size: 40px 40px;\n}\n.progress.active .progress-bar,\n.progress-bar.active {\n  -webkit-animation: progress-bar-stripes 2s linear infinite;\n       -o-animation: progress-bar-stripes 2s linear infinite;\n          animation: progress-bar-stripes 2s linear infinite;\n}\n.progress-bar-success {\n  background-color: #5cb85c;\n}\n.progress-striped .progress-bar-success {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.progress-bar-info {\n  background-color: #5bc0de;\n}\n.progress-striped .progress-bar-info {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.progress-bar-warning {\n  background-color: #f0ad4e;\n}\n.progress-striped .progress-bar-warning {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.progress-bar-danger {\n  background-color: #d9534f;\n}\n.progress-striped .progress-bar-danger {\n  background-image: -webkit-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:      -o-linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n  background-image:         linear-gradient(45deg, rgba(255, 255, 255, .15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, .15) 50%, rgba(255, 255, 255, .15) 75%, transparent 75%, transparent);\n}\n.media {\n  margin-top: 15px;\n}\n.media:first-child {\n  margin-top: 0;\n}\n.media,\n.media-body {\n  overflow: hidden;\n  zoom: 1;\n}\n.media-body {\n  width: 10000px;\n}\n.media-object {\n  display: block;\n}\n.media-object.img-thumbnail {\n  max-width: none;\n}\n.media-right,\n.media > .pull-right {\n  padding-left: 10px;\n}\n.media-left,\n.media > .pull-left {\n  padding-right: 10px;\n}\n.media-left,\n.media-right,\n.media-body {\n  display: table-cell;\n  vertical-align: top;\n}\n.media-middle {\n  vertical-align: middle;\n}\n.media-bottom {\n  vertical-align: bottom;\n}\n.media-heading {\n  margin-top: 0;\n  margin-bottom: 5px;\n}\n.media-list {\n  padding-left: 0;\n  list-style: none;\n}\n.list-group {\n  padding-left: 0;\n  margin-bottom: 20px;\n}\n.list-group-item {\n  position: relative;\n  display: block;\n  padding: 10px 15px;\n  margin-bottom: -1px;\n  background-color: #fff;\n  border: 1px solid #ddd;\n}\n.list-group-item:first-child {\n  border-top-left-radius: 4px;\n  border-top-right-radius: 4px;\n}\n.list-group-item:last-child {\n  margin-bottom: 0;\n  border-bottom-right-radius: 4px;\n  border-bottom-left-radius: 4px;\n}\na.list-group-item,\nbutton.list-group-item {\n  color: #555;\n}\na.list-group-item .list-group-item-heading,\nbutton.list-group-item .list-group-item-heading {\n  color: #333;\n}\na.list-group-item:hover,\nbutton.list-group-item:hover,\na.list-group-item:focus,\nbutton.list-group-item:focus {\n  color: #555;\n  text-decoration: none;\n  background-color: #f5f5f5;\n}\nbutton.list-group-item {\n  width: 100%;\n  text-align: left;\n}\n.list-group-item.disabled,\n.list-group-item.disabled:hover,\n.list-group-item.disabled:focus {\n  color: #777;\n  cursor: not-allowed;\n  background-color: #eee;\n}\n.list-group-item.disabled .list-group-item-heading,\n.list-group-item.disabled:hover .list-group-item-heading,\n.list-group-item.disabled:focus .list-group-item-heading {\n  color: inherit;\n}\n.list-group-item.disabled .list-group-item-text,\n.list-group-item.disabled:hover .list-group-item-text,\n.list-group-item.disabled:focus .list-group-item-text {\n  color: #777;\n}\n.list-group-item.active,\n.list-group-item.active:hover,\n.list-group-item.active:focus {\n  z-index: 2;\n  color: #fff;\n  background-color: #337ab7;\n  border-color: #337ab7;\n}\n.list-group-item.active .list-group-item-heading,\n.list-group-item.active:hover .list-group-item-heading,\n.list-group-item.active:focus .list-group-item-heading,\n.list-group-item.active .list-group-item-heading > small,\n.list-group-item.active:hover .list-group-item-heading > small,\n.list-group-item.active:focus .list-group-item-heading > small,\n.list-group-item.active .list-group-item-heading > .small,\n.list-group-item.active:hover .list-group-item-heading > .small,\n.list-group-item.active:focus .list-group-item-heading > .small {\n  color: inherit;\n}\n.list-group-item.active .list-group-item-text,\n.list-group-item.active:hover .list-group-item-text,\n.list-group-item.active:focus .list-group-item-text {\n  color: #c7ddef;\n}\n.list-group-item-success {\n  color: #3c763d;\n  background-color: #dff0d8;\n}\na.list-group-item-success,\nbutton.list-group-item-success {\n  color: #3c763d;\n}\na.list-group-item-success .list-group-item-heading,\nbutton.list-group-item-success .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-success:hover,\nbutton.list-group-item-success:hover,\na.list-group-item-success:focus,\nbutton.list-group-item-success:focus {\n  color: #3c763d;\n  background-color: #d0e9c6;\n}\na.list-group-item-success.active,\nbutton.list-group-item-success.active,\na.list-group-item-success.active:hover,\nbutton.list-group-item-success.active:hover,\na.list-group-item-success.active:focus,\nbutton.list-group-item-success.active:focus {\n  color: #fff;\n  background-color: #3c763d;\n  border-color: #3c763d;\n}\n.list-group-item-info {\n  color: #31708f;\n  background-color: #d9edf7;\n}\na.list-group-item-info,\nbutton.list-group-item-info {\n  color: #31708f;\n}\na.list-group-item-info .list-group-item-heading,\nbutton.list-group-item-info .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-info:hover,\nbutton.list-group-item-info:hover,\na.list-group-item-info:focus,\nbutton.list-group-item-info:focus {\n  color: #31708f;\n  background-color: #c4e3f3;\n}\na.list-group-item-info.active,\nbutton.list-group-item-info.active,\na.list-group-item-info.active:hover,\nbutton.list-group-item-info.active:hover,\na.list-group-item-info.active:focus,\nbutton.list-group-item-info.active:focus {\n  color: #fff;\n  background-color: #31708f;\n  border-color: #31708f;\n}\n.list-group-item-warning {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n}\na.list-group-item-warning,\nbutton.list-group-item-warning {\n  color: #8a6d3b;\n}\na.list-group-item-warning .list-group-item-heading,\nbutton.list-group-item-warning .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-warning:hover,\nbutton.list-group-item-warning:hover,\na.list-group-item-warning:focus,\nbutton.list-group-item-warning:focus {\n  color: #8a6d3b;\n  background-color: #faf2cc;\n}\na.list-group-item-warning.active,\nbutton.list-group-item-warning.active,\na.list-group-item-warning.active:hover,\nbutton.list-group-item-warning.active:hover,\na.list-group-item-warning.active:focus,\nbutton.list-group-item-warning.active:focus {\n  color: #fff;\n  background-color: #8a6d3b;\n  border-color: #8a6d3b;\n}\n.list-group-item-danger {\n  color: #a94442;\n  background-color: #f2dede;\n}\na.list-group-item-danger,\nbutton.list-group-item-danger {\n  color: #a94442;\n}\na.list-group-item-danger .list-group-item-heading,\nbutton.list-group-item-danger .list-group-item-heading {\n  color: inherit;\n}\na.list-group-item-danger:hover,\nbutton.list-group-item-danger:hover,\na.list-group-item-danger:focus,\nbutton.list-group-item-danger:focus {\n  color: #a94442;\n  background-color: #ebcccc;\n}\na.list-group-item-danger.active,\nbutton.list-group-item-danger.active,\na.list-group-item-danger.active:hover,\nbutton.list-group-item-danger.active:hover,\na.list-group-item-danger.active:focus,\nbutton.list-group-item-danger.active:focus {\n  color: #fff;\n  background-color: #a94442;\n  border-color: #a94442;\n}\n.list-group-item-heading {\n  margin-top: 0;\n  margin-bottom: 5px;\n}\n.list-group-item-text {\n  margin-bottom: 0;\n  line-height: 1.3;\n}\n.panel {\n  margin-bottom: 20px;\n  background-color: #fff;\n  border: 1px solid transparent;\n  border-radius: 4px;\n  -webkit-box-shadow: 0 1px 1px rgba(0, 0, 0, .05);\n          box-shadow: 0 1px 1px rgba(0, 0, 0, .05);\n}\n.panel-body {\n  padding: 15px;\n}\n.panel-heading {\n  padding: 10px 15px;\n  border-bottom: 1px solid transparent;\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel-heading > .dropdown .dropdown-toggle {\n  color: inherit;\n}\n.panel-title {\n  margin-top: 0;\n  margin-bottom: 0;\n  font-size: 16px;\n  color: inherit;\n}\n.panel-title > a,\n.panel-title > small,\n.panel-title > .small,\n.panel-title > small > a,\n.panel-title > .small > a {\n  color: inherit;\n}\n.panel-footer {\n  padding: 10px 15px;\n  background-color: #f5f5f5;\n  border-top: 1px solid #ddd;\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel > .list-group,\n.panel > .panel-collapse > .list-group {\n  margin-bottom: 0;\n}\n.panel > .list-group .list-group-item,\n.panel > .panel-collapse > .list-group .list-group-item {\n  border-width: 1px 0;\n  border-radius: 0;\n}\n.panel > .list-group:first-child .list-group-item:first-child,\n.panel > .panel-collapse > .list-group:first-child .list-group-item:first-child {\n  border-top: 0;\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel > .list-group:last-child .list-group-item:last-child,\n.panel > .panel-collapse > .list-group:last-child .list-group-item:last-child {\n  border-bottom: 0;\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel > .panel-heading + .panel-collapse > .list-group .list-group-item:first-child {\n  border-top-left-radius: 0;\n  border-top-right-radius: 0;\n}\n.panel-heading + .list-group .list-group-item:first-child {\n  border-top-width: 0;\n}\n.list-group + .panel-footer {\n  border-top-width: 0;\n}\n.panel > .table,\n.panel > .table-responsive > .table,\n.panel > .panel-collapse > .table {\n  margin-bottom: 0;\n}\n.panel > .table caption,\n.panel > .table-responsive > .table caption,\n.panel > .panel-collapse > .table caption {\n  padding-right: 15px;\n  padding-left: 15px;\n}\n.panel > .table:first-child,\n.panel > .table-responsive:first-child > .table:first-child {\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel > .table:first-child > thead:first-child > tr:first-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child {\n  border-top-left-radius: 3px;\n  border-top-right-radius: 3px;\n}\n.panel > .table:first-child > thead:first-child > tr:first-child td:first-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child td:first-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child td:first-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child td:first-child,\n.panel > .table:first-child > thead:first-child > tr:first-child th:first-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child th:first-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child th:first-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child th:first-child {\n  border-top-left-radius: 3px;\n}\n.panel > .table:first-child > thead:first-child > tr:first-child td:last-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child td:last-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child td:last-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child td:last-child,\n.panel > .table:first-child > thead:first-child > tr:first-child th:last-child,\n.panel > .table-responsive:first-child > .table:first-child > thead:first-child > tr:first-child th:last-child,\n.panel > .table:first-child > tbody:first-child > tr:first-child th:last-child,\n.panel > .table-responsive:first-child > .table:first-child > tbody:first-child > tr:first-child th:last-child {\n  border-top-right-radius: 3px;\n}\n.panel > .table:last-child,\n.panel > .table-responsive:last-child > .table:last-child {\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel > .table:last-child > tbody:last-child > tr:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child {\n  border-bottom-right-radius: 3px;\n  border-bottom-left-radius: 3px;\n}\n.panel > .table:last-child > tbody:last-child > tr:last-child td:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child td:first-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child td:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child td:first-child,\n.panel > .table:last-child > tbody:last-child > tr:last-child th:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child th:first-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child th:first-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child th:first-child {\n  border-bottom-left-radius: 3px;\n}\n.panel > .table:last-child > tbody:last-child > tr:last-child td:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child td:last-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child td:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child td:last-child,\n.panel > .table:last-child > tbody:last-child > tr:last-child th:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tbody:last-child > tr:last-child th:last-child,\n.panel > .table:last-child > tfoot:last-child > tr:last-child th:last-child,\n.panel > .table-responsive:last-child > .table:last-child > tfoot:last-child > tr:last-child th:last-child {\n  border-bottom-right-radius: 3px;\n}\n.panel > .panel-body + .table,\n.panel > .panel-body + .table-responsive,\n.panel > .table + .panel-body,\n.panel > .table-responsive + .panel-body {\n  border-top: 1px solid #ddd;\n}\n.panel > .table > tbody:first-child > tr:first-child th,\n.panel > .table > tbody:first-child > tr:first-child td {\n  border-top: 0;\n}\n.panel > .table-bordered,\n.panel > .table-responsive > .table-bordered {\n  border: 0;\n}\n.panel > .table-bordered > thead > tr > th:first-child,\n.panel > .table-responsive > .table-bordered > thead > tr > th:first-child,\n.panel > .table-bordered > tbody > tr > th:first-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > th:first-child,\n.panel > .table-bordered > tfoot > tr > th:first-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > th:first-child,\n.panel > .table-bordered > thead > tr > td:first-child,\n.panel > .table-responsive > .table-bordered > thead > tr > td:first-child,\n.panel > .table-bordered > tbody > tr > td:first-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > td:first-child,\n.panel > .table-bordered > tfoot > tr > td:first-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > td:first-child {\n  border-left: 0;\n}\n.panel > .table-bordered > thead > tr > th:last-child,\n.panel > .table-responsive > .table-bordered > thead > tr > th:last-child,\n.panel > .table-bordered > tbody > tr > th:last-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > th:last-child,\n.panel > .table-bordered > tfoot > tr > th:last-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > th:last-child,\n.panel > .table-bordered > thead > tr > td:last-child,\n.panel > .table-responsive > .table-bordered > thead > tr > td:last-child,\n.panel > .table-bordered > tbody > tr > td:last-child,\n.panel > .table-responsive > .table-bordered > tbody > tr > td:last-child,\n.panel > .table-bordered > tfoot > tr > td:last-child,\n.panel > .table-responsive > .table-bordered > tfoot > tr > td:last-child {\n  border-right: 0;\n}\n.panel > .table-bordered > thead > tr:first-child > td,\n.panel > .table-responsive > .table-bordered > thead > tr:first-child > td,\n.panel > .table-bordered > tbody > tr:first-child > td,\n.panel > .table-responsive > .table-bordered > tbody > tr:first-child > td,\n.panel > .table-bordered > thead > tr:first-child > th,\n.panel > .table-responsive > .table-bordered > thead > tr:first-child > th,\n.panel > .table-bordered > tbody > tr:first-child > th,\n.panel > .table-responsive > .table-bordered > tbody > tr:first-child > th {\n  border-bottom: 0;\n}\n.panel > .table-bordered > tbody > tr:last-child > td,\n.panel > .table-responsive > .table-bordered > tbody > tr:last-child > td,\n.panel > .table-bordered > tfoot > tr:last-child > td,\n.panel > .table-responsive > .table-bordered > tfoot > tr:last-child > td,\n.panel > .table-bordered > tbody > tr:last-child > th,\n.panel > .table-responsive > .table-bordered > tbody > tr:last-child > th,\n.panel > .table-bordered > tfoot > tr:last-child > th,\n.panel > .table-responsive > .table-bordered > tfoot > tr:last-child > th {\n  border-bottom: 0;\n}\n.panel > .table-responsive {\n  margin-bottom: 0;\n  border: 0;\n}\n.panel-group {\n  margin-bottom: 20px;\n}\n.panel-group .panel {\n  margin-bottom: 0;\n  border-radius: 4px;\n}\n.panel-group .panel + .panel {\n  margin-top: 5px;\n}\n.panel-group .panel-heading {\n  border-bottom: 0;\n}\n.panel-group .panel-heading + .panel-collapse > .panel-body,\n.panel-group .panel-heading + .panel-collapse > .list-group {\n  border-top: 1px solid #ddd;\n}\n.panel-group .panel-footer {\n  border-top: 0;\n}\n.panel-group .panel-footer + .panel-collapse .panel-body {\n  border-bottom: 1px solid #ddd;\n}\n.panel-default {\n  border-color: #ddd;\n}\n.panel-default > .panel-heading {\n  color: #333;\n  background-color: #f5f5f5;\n  border-color: #ddd;\n}\n.panel-default > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #ddd;\n}\n.panel-default > .panel-heading .badge {\n  color: #f5f5f5;\n  background-color: #333;\n}\n.panel-default > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #ddd;\n}\n.panel-primary {\n  border-color: #337ab7;\n}\n.panel-primary > .panel-heading {\n  color: #fff;\n  background-color: #337ab7;\n  border-color: #337ab7;\n}\n.panel-primary > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #337ab7;\n}\n.panel-primary > .panel-heading .badge {\n  color: #337ab7;\n  background-color: #fff;\n}\n.panel-primary > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #337ab7;\n}\n.panel-success {\n  border-color: #d6e9c6;\n}\n.panel-success > .panel-heading {\n  color: #3c763d;\n  background-color: #dff0d8;\n  border-color: #d6e9c6;\n}\n.panel-success > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #d6e9c6;\n}\n.panel-success > .panel-heading .badge {\n  color: #dff0d8;\n  background-color: #3c763d;\n}\n.panel-success > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #d6e9c6;\n}\n.panel-info {\n  border-color: #bce8f1;\n}\n.panel-info > .panel-heading {\n  color: #31708f;\n  background-color: #d9edf7;\n  border-color: #bce8f1;\n}\n.panel-info > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #bce8f1;\n}\n.panel-info > .panel-heading .badge {\n  color: #d9edf7;\n  background-color: #31708f;\n}\n.panel-info > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #bce8f1;\n}\n.panel-warning {\n  border-color: #faebcc;\n}\n.panel-warning > .panel-heading {\n  color: #8a6d3b;\n  background-color: #fcf8e3;\n  border-color: #faebcc;\n}\n.panel-warning > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #faebcc;\n}\n.panel-warning > .panel-heading .badge {\n  color: #fcf8e3;\n  background-color: #8a6d3b;\n}\n.panel-warning > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #faebcc;\n}\n.panel-danger {\n  border-color: #ebccd1;\n}\n.panel-danger > .panel-heading {\n  color: #a94442;\n  background-color: #f2dede;\n  border-color: #ebccd1;\n}\n.panel-danger > .panel-heading + .panel-collapse > .panel-body {\n  border-top-color: #ebccd1;\n}\n.panel-danger > .panel-heading .badge {\n  color: #f2dede;\n  background-color: #a94442;\n}\n.panel-danger > .panel-footer + .panel-collapse > .panel-body {\n  border-bottom-color: #ebccd1;\n}\n.embed-responsive {\n  position: relative;\n  display: block;\n  height: 0;\n  padding: 0;\n  overflow: hidden;\n}\n.embed-responsive .embed-responsive-item,\n.embed-responsive iframe,\n.embed-responsive embed,\n.embed-responsive object,\n.embed-responsive video {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  border: 0;\n}\n.embed-responsive-16by9 {\n  padding-bottom: 56.25%;\n}\n.embed-responsive-4by3 {\n  padding-bottom: 75%;\n}\n.well {\n  min-height: 20px;\n  padding: 19px;\n  margin-bottom: 20px;\n  background-color: #f5f5f5;\n  border: 1px solid #e3e3e3;\n  border-radius: 4px;\n  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);\n          box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);\n}\n.well blockquote {\n  border-color: #ddd;\n  border-color: rgba(0, 0, 0, .15);\n}\n.well-lg {\n  padding: 24px;\n  border-radius: 6px;\n}\n.well-sm {\n  padding: 9px;\n  border-radius: 3px;\n}\n.close {\n  float: right;\n  font-size: 21px;\n  font-weight: bold;\n  line-height: 1;\n  color: #000;\n  text-shadow: 0 1px 0 #fff;\n  filter: alpha(opacity=20);\n  opacity: .2;\n}\n.close:hover,\n.close:focus {\n  color: #000;\n  text-decoration: none;\n  cursor: pointer;\n  filter: alpha(opacity=50);\n  opacity: .5;\n}\nbutton.close {\n  -webkit-appearance: none;\n  padding: 0;\n  cursor: pointer;\n  background: transparent;\n  border: 0;\n}\n.modal-open {\n  overflow: hidden;\n}\n.modal {\n  position: fixed;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  z-index: 1050;\n  display: none;\n  overflow: hidden;\n  -webkit-overflow-scrolling: touch;\n  outline: 0;\n}\n.modal.fade .modal-dialog {\n  -webkit-transition: -webkit-transform .3s ease-out;\n       -o-transition:      -o-transform .3s ease-out;\n          transition:         transform .3s ease-out;\n  -webkit-transform: translate(0, -25%);\n      -ms-transform: translate(0, -25%);\n       -o-transform: translate(0, -25%);\n          transform: translate(0, -25%);\n}\n.modal.in .modal-dialog {\n  -webkit-transform: translate(0, 0);\n      -ms-transform: translate(0, 0);\n       -o-transform: translate(0, 0);\n          transform: translate(0, 0);\n}\n.modal-open .modal {\n  overflow-x: hidden;\n  overflow-y: auto;\n}\n.modal-dialog {\n  position: relative;\n  width: auto;\n  margin: 10px;\n}\n.modal-content {\n  position: relative;\n  background-color: #fff;\n  -webkit-background-clip: padding-box;\n          background-clip: padding-box;\n  border: 1px solid #999;\n  border: 1px solid rgba(0, 0, 0, .2);\n  border-radius: 6px;\n  outline: 0;\n  -webkit-box-shadow: 0 3px 9px rgba(0, 0, 0, .5);\n          box-shadow: 0 3px 9px rgba(0, 0, 0, .5);\n}\n.modal-backdrop {\n  position: fixed;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  left: 0;\n  z-index: 1040;\n  background-color: #000;\n}\n.modal-backdrop.fade {\n  filter: alpha(opacity=0);\n  opacity: 0;\n}\n.modal-backdrop.in {\n  filter: alpha(opacity=50);\n  opacity: .5;\n}\n.modal-header {\n  padding: 15px;\n  border-bottom: 1px solid #e5e5e5;\n}\n.modal-header .close {\n  margin-top: -2px;\n}\n.modal-title {\n  margin: 0;\n  line-height: 1.42857143;\n}\n.modal-body {\n  position: relative;\n  padding: 15px;\n}\n.modal-footer {\n  padding: 15px;\n  text-align: right;\n  border-top: 1px solid #e5e5e5;\n}\n.modal-footer .btn + .btn {\n  margin-bottom: 0;\n  margin-left: 5px;\n}\n.modal-footer .btn-group .btn + .btn {\n  margin-left: -1px;\n}\n.modal-footer .btn-block + .btn-block {\n  margin-left: 0;\n}\n.modal-scrollbar-measure {\n  position: absolute;\n  top: -9999px;\n  width: 50px;\n  height: 50px;\n  overflow: scroll;\n}\n@media (min-width: 768px) {\n  .modal-dialog {\n    width: 600px;\n    margin: 30px auto;\n  }\n  .modal-content {\n    -webkit-box-shadow: 0 5px 15px rgba(0, 0, 0, .5);\n            box-shadow: 0 5px 15px rgba(0, 0, 0, .5);\n  }\n  .modal-sm {\n    width: 300px;\n  }\n}\n@media (min-width: 992px) {\n  .modal-lg {\n    width: 900px;\n  }\n}\n.tooltip {\n  position: absolute;\n  z-index: 1070;\n  display: block;\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  font-size: 12px;\n  font-style: normal;\n  font-weight: normal;\n  line-height: 1.42857143;\n  text-align: left;\n  text-align: start;\n  text-decoration: none;\n  text-shadow: none;\n  text-transform: none;\n  letter-spacing: normal;\n  word-break: normal;\n  word-spacing: normal;\n  word-wrap: normal;\n  white-space: normal;\n  filter: alpha(opacity=0);\n  opacity: 0;\n\n  line-break: auto;\n}\n.tooltip.in {\n  filter: alpha(opacity=90);\n  opacity: .9;\n}\n.tooltip.top {\n  padding: 5px 0;\n  margin-top: -3px;\n}\n.tooltip.right {\n  padding: 0 5px;\n  margin-left: 3px;\n}\n.tooltip.bottom {\n  padding: 5px 0;\n  margin-top: 3px;\n}\n.tooltip.left {\n  padding: 0 5px;\n  margin-left: -3px;\n}\n.tooltip-inner {\n  max-width: 200px;\n  padding: 3px 8px;\n  color: #fff;\n  text-align: center;\n  background-color: #000;\n  border-radius: 4px;\n}\n.tooltip-arrow {\n  position: absolute;\n  width: 0;\n  height: 0;\n  border-color: transparent;\n  border-style: solid;\n}\n.tooltip.top .tooltip-arrow {\n  bottom: 0;\n  left: 50%;\n  margin-left: -5px;\n  border-width: 5px 5px 0;\n  border-top-color: #000;\n}\n.tooltip.top-left .tooltip-arrow {\n  right: 5px;\n  bottom: 0;\n  margin-bottom: -5px;\n  border-width: 5px 5px 0;\n  border-top-color: #000;\n}\n.tooltip.top-right .tooltip-arrow {\n  bottom: 0;\n  left: 5px;\n  margin-bottom: -5px;\n  border-width: 5px 5px 0;\n  border-top-color: #000;\n}\n.tooltip.right .tooltip-arrow {\n  top: 50%;\n  left: 0;\n  margin-top: -5px;\n  border-width: 5px 5px 5px 0;\n  border-right-color: #000;\n}\n.tooltip.left .tooltip-arrow {\n  top: 50%;\n  right: 0;\n  margin-top: -5px;\n  border-width: 5px 0 5px 5px;\n  border-left-color: #000;\n}\n.tooltip.bottom .tooltip-arrow {\n  top: 0;\n  left: 50%;\n  margin-left: -5px;\n  border-width: 0 5px 5px;\n  border-bottom-color: #000;\n}\n.tooltip.bottom-left .tooltip-arrow {\n  top: 0;\n  right: 5px;\n  margin-top: -5px;\n  border-width: 0 5px 5px;\n  border-bottom-color: #000;\n}\n.tooltip.bottom-right .tooltip-arrow {\n  top: 0;\n  left: 5px;\n  margin-top: -5px;\n  border-width: 0 5px 5px;\n  border-bottom-color: #000;\n}\n.popover {\n  position: absolute;\n  top: 0;\n  left: 0;\n  z-index: 1060;\n  display: none;\n  max-width: 276px;\n  padding: 1px;\n  font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  font-size: 14px;\n  font-style: normal;\n  font-weight: normal;\n  line-height: 1.42857143;\n  text-align: left;\n  text-align: start;\n  text-decoration: none;\n  text-shadow: none;\n  text-transform: none;\n  letter-spacing: normal;\n  word-break: normal;\n  word-spacing: normal;\n  word-wrap: normal;\n  white-space: normal;\n  background-color: #fff;\n  -webkit-background-clip: padding-box;\n          background-clip: padding-box;\n  border: 1px solid #ccc;\n  border: 1px solid rgba(0, 0, 0, .2);\n  border-radius: 6px;\n  -webkit-box-shadow: 0 5px 10px rgba(0, 0, 0, .2);\n          box-shadow: 0 5px 10px rgba(0, 0, 0, .2);\n\n  line-break: auto;\n}\n.popover.top {\n  margin-top: -10px;\n}\n.popover.right {\n  margin-left: 10px;\n}\n.popover.bottom {\n  margin-top: 10px;\n}\n.popover.left {\n  margin-left: -10px;\n}\n.popover-title {\n  padding: 8px 14px;\n  margin: 0;\n  font-size: 14px;\n  background-color: #f7f7f7;\n  border-bottom: 1px solid #ebebeb;\n  border-radius: 5px 5px 0 0;\n}\n.popover-content {\n  padding: 9px 14px;\n}\n.popover > .arrow,\n.popover > .arrow:after {\n  position: absolute;\n  display: block;\n  width: 0;\n  height: 0;\n  border-color: transparent;\n  border-style: solid;\n}\n.popover > .arrow {\n  border-width: 11px;\n}\n.popover > .arrow:after {\n  content: \"\";\n  border-width: 10px;\n}\n.popover.top > .arrow {\n  bottom: -11px;\n  left: 50%;\n  margin-left: -11px;\n  border-top-color: #999;\n  border-top-color: rgba(0, 0, 0, .25);\n  border-bottom-width: 0;\n}\n.popover.top > .arrow:after {\n  bottom: 1px;\n  margin-left: -10px;\n  content: \" \";\n  border-top-color: #fff;\n  border-bottom-width: 0;\n}\n.popover.right > .arrow {\n  top: 50%;\n  left: -11px;\n  margin-top: -11px;\n  border-right-color: #999;\n  border-right-color: rgba(0, 0, 0, .25);\n  border-left-width: 0;\n}\n.popover.right > .arrow:after {\n  bottom: -10px;\n  left: 1px;\n  content: \" \";\n  border-right-color: #fff;\n  border-left-width: 0;\n}\n.popover.bottom > .arrow {\n  top: -11px;\n  left: 50%;\n  margin-left: -11px;\n  border-top-width: 0;\n  border-bottom-color: #999;\n  border-bottom-color: rgba(0, 0, 0, .25);\n}\n.popover.bottom > .arrow:after {\n  top: 1px;\n  margin-left: -10px;\n  content: \" \";\n  border-top-width: 0;\n  border-bottom-color: #fff;\n}\n.popover.left > .arrow {\n  top: 50%;\n  right: -11px;\n  margin-top: -11px;\n  border-right-width: 0;\n  border-left-color: #999;\n  border-left-color: rgba(0, 0, 0, .25);\n}\n.popover.left > .arrow:after {\n  right: 1px;\n  bottom: -10px;\n  content: \" \";\n  border-right-width: 0;\n  border-left-color: #fff;\n}\n.carousel {\n  position: relative;\n}\n.carousel-inner {\n  position: relative;\n  width: 100%;\n  overflow: hidden;\n}\n.carousel-inner > .item {\n  position: relative;\n  display: none;\n  -webkit-transition: .6s ease-in-out left;\n       -o-transition: .6s ease-in-out left;\n          transition: .6s ease-in-out left;\n}\n.carousel-inner > .item > img,\n.carousel-inner > .item > a > img {\n  line-height: 1;\n}\n@media all and (transform-3d), (-webkit-transform-3d) {\n  .carousel-inner > .item {\n    -webkit-transition: -webkit-transform .6s ease-in-out;\n         -o-transition:      -o-transform .6s ease-in-out;\n            transition:         transform .6s ease-in-out;\n\n    -webkit-backface-visibility: hidden;\n            backface-visibility: hidden;\n    -webkit-perspective: 1000px;\n            perspective: 1000px;\n  }\n  .carousel-inner > .item.next,\n  .carousel-inner > .item.active.right {\n    left: 0;\n    -webkit-transform: translate3d(100%, 0, 0);\n            transform: translate3d(100%, 0, 0);\n  }\n  .carousel-inner > .item.prev,\n  .carousel-inner > .item.active.left {\n    left: 0;\n    -webkit-transform: translate3d(-100%, 0, 0);\n            transform: translate3d(-100%, 0, 0);\n  }\n  .carousel-inner > .item.next.left,\n  .carousel-inner > .item.prev.right,\n  .carousel-inner > .item.active {\n    left: 0;\n    -webkit-transform: translate3d(0, 0, 0);\n            transform: translate3d(0, 0, 0);\n  }\n}\n.carousel-inner > .active,\n.carousel-inner > .next,\n.carousel-inner > .prev {\n  display: block;\n}\n.carousel-inner > .active {\n  left: 0;\n}\n.carousel-inner > .next,\n.carousel-inner > .prev {\n  position: absolute;\n  top: 0;\n  width: 100%;\n}\n.carousel-inner > .next {\n  left: 100%;\n}\n.carousel-inner > .prev {\n  left: -100%;\n}\n.carousel-inner > .next.left,\n.carousel-inner > .prev.right {\n  left: 0;\n}\n.carousel-inner > .active.left {\n  left: -100%;\n}\n.carousel-inner > .active.right {\n  left: 100%;\n}\n.carousel-control {\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 0;\n  width: 15%;\n  font-size: 20px;\n  color: #fff;\n  text-align: center;\n  text-shadow: 0 1px 2px rgba(0, 0, 0, .6);\n  background-color: rgba(0, 0, 0, 0);\n  filter: alpha(opacity=50);\n  opacity: .5;\n}\n.carousel-control.left {\n  background-image: -webkit-linear-gradient(left, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .0001) 100%);\n  background-image:      -o-linear-gradient(left, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .0001) 100%);\n  background-image: -webkit-gradient(linear, left top, right top, from(rgba(0, 0, 0, .5)), to(rgba(0, 0, 0, .0001)));\n  background-image:         linear-gradient(to right, rgba(0, 0, 0, .5) 0%, rgba(0, 0, 0, .0001) 100%);\n  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#80000000', endColorstr='#00000000', GradientType=1);\n  background-repeat: repeat-x;\n}\n.carousel-control.right {\n  right: 0;\n  left: auto;\n  background-image: -webkit-linear-gradient(left, rgba(0, 0, 0, .0001) 0%, rgba(0, 0, 0, .5) 100%);\n  background-image:      -o-linear-gradient(left, rgba(0, 0, 0, .0001) 0%, rgba(0, 0, 0, .5) 100%);\n  background-image: -webkit-gradient(linear, left top, right top, from(rgba(0, 0, 0, .0001)), to(rgba(0, 0, 0, .5)));\n  background-image:         linear-gradient(to right, rgba(0, 0, 0, .0001) 0%, rgba(0, 0, 0, .5) 100%);\n  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#00000000', endColorstr='#80000000', GradientType=1);\n  background-repeat: repeat-x;\n}\n.carousel-control:hover,\n.carousel-control:focus {\n  color: #fff;\n  text-decoration: none;\n  filter: alpha(opacity=90);\n  outline: 0;\n  opacity: .9;\n}\n.carousel-control .icon-prev,\n.carousel-control .icon-next,\n.carousel-control .glyphicon-chevron-left,\n.carousel-control .glyphicon-chevron-right {\n  position: absolute;\n  top: 50%;\n  z-index: 5;\n  display: inline-block;\n  margin-top: -10px;\n}\n.carousel-control .icon-prev,\n.carousel-control .glyphicon-chevron-left {\n  left: 50%;\n  margin-left: -10px;\n}\n.carousel-control .icon-next,\n.carousel-control .glyphicon-chevron-right {\n  right: 50%;\n  margin-right: -10px;\n}\n.carousel-control .icon-prev,\n.carousel-control .icon-next {\n  width: 20px;\n  height: 20px;\n  font-family: serif;\n  line-height: 1;\n}\n.carousel-control .icon-prev:before {\n  content: '\\2039';\n}\n.carousel-control .icon-next:before {\n  content: '\\203A';\n}\n.carousel-indicators {\n  position: absolute;\n  bottom: 10px;\n  left: 50%;\n  z-index: 15;\n  width: 60%;\n  padding-left: 0;\n  margin-left: -30%;\n  text-align: center;\n  list-style: none;\n}\n.carousel-indicators li {\n  display: inline-block;\n  width: 10px;\n  height: 10px;\n  margin: 1px;\n  text-indent: -999px;\n  cursor: pointer;\n  background-color: #000 \\9;\n  background-color: rgba(0, 0, 0, 0);\n  border: 1px solid #fff;\n  border-radius: 10px;\n}\n.carousel-indicators .active {\n  width: 12px;\n  height: 12px;\n  margin: 0;\n  background-color: #fff;\n}\n.carousel-caption {\n  position: absolute;\n  right: 15%;\n  bottom: 20px;\n  left: 15%;\n  z-index: 10;\n  padding-top: 20px;\n  padding-bottom: 20px;\n  color: #fff;\n  text-align: center;\n  text-shadow: 0 1px 2px rgba(0, 0, 0, .6);\n}\n.carousel-caption .btn {\n  text-shadow: none;\n}\n@media screen and (min-width: 768px) {\n  .carousel-control .glyphicon-chevron-left,\n  .carousel-control .glyphicon-chevron-right,\n  .carousel-control .icon-prev,\n  .carousel-control .icon-next {\n    width: 30px;\n    height: 30px;\n    margin-top: -10px;\n    font-size: 30px;\n  }\n  .carousel-control .glyphicon-chevron-left,\n  .carousel-control .icon-prev {\n    margin-left: -10px;\n  }\n  .carousel-control .glyphicon-chevron-right,\n  .carousel-control .icon-next {\n    margin-right: -10px;\n  }\n  .carousel-caption {\n    right: 20%;\n    left: 20%;\n    padding-bottom: 30px;\n  }\n  .carousel-indicators {\n    bottom: 20px;\n  }\n}\n.clearfix:before,\n.clearfix:after,\n.dl-horizontal dd:before,\n.dl-horizontal dd:after,\n.container:before,\n.container:after,\n.container-fluid:before,\n.container-fluid:after,\n.row:before,\n.row:after,\n.form-horizontal .form-group:before,\n.form-horizontal .form-group:after,\n.btn-toolbar:before,\n.btn-toolbar:after,\n.btn-group-vertical > .btn-group:before,\n.btn-group-vertical > .btn-group:after,\n.nav:before,\n.nav:after,\n.navbar:before,\n.navbar:after,\n.navbar-header:before,\n.navbar-header:after,\n.navbar-collapse:before,\n.navbar-collapse:after,\n.pager:before,\n.pager:after,\n.panel-body:before,\n.panel-body:after,\n.modal-header:before,\n.modal-header:after,\n.modal-footer:before,\n.modal-footer:after {\n  display: table;\n  content: \" \";\n}\n.clearfix:after,\n.dl-horizontal dd:after,\n.container:after,\n.container-fluid:after,\n.row:after,\n.form-horizontal .form-group:after,\n.btn-toolbar:after,\n.btn-group-vertical > .btn-group:after,\n.nav:after,\n.navbar:after,\n.navbar-header:after,\n.navbar-collapse:after,\n.pager:after,\n.panel-body:after,\n.modal-header:after,\n.modal-footer:after {\n  clear: both;\n}\n.center-block {\n  display: block;\n  margin-right: auto;\n  margin-left: auto;\n}\n.pull-right {\n  float: right !important;\n}\n.pull-left {\n  float: left !important;\n}\n.hide {\n  display: none !important;\n}\n.show {\n  display: block !important;\n}\n.invisible {\n  visibility: hidden;\n}\n.text-hide {\n  font: 0/0 a;\n  color: transparent;\n  text-shadow: none;\n  background-color: transparent;\n  border: 0;\n}\n.hidden {\n  display: none !important;\n}\n.affix {\n  position: fixed;\n}\n@-ms-viewport {\n  width: device-width;\n}\n.visible-xs,\n.visible-sm,\n.visible-md,\n.visible-lg {\n  display: none !important;\n}\n.visible-xs-block,\n.visible-xs-inline,\n.visible-xs-inline-block,\n.visible-sm-block,\n.visible-sm-inline,\n.visible-sm-inline-block,\n.visible-md-block,\n.visible-md-inline,\n.visible-md-inline-block,\n.visible-lg-block,\n.visible-lg-inline,\n.visible-lg-inline-block {\n  display: none !important;\n}\n@media (max-width: 767px) {\n  .visible-xs {\n    display: block !important;\n  }\n  table.visible-xs {\n    display: table !important;\n  }\n  tr.visible-xs {\n    display: table-row !important;\n  }\n  th.visible-xs,\n  td.visible-xs {\n    display: table-cell !important;\n  }\n}\n@media (max-width: 767px) {\n  .visible-xs-block {\n    display: block !important;\n  }\n}\n@media (max-width: 767px) {\n  .visible-xs-inline {\n    display: inline !important;\n  }\n}\n@media (max-width: 767px) {\n  .visible-xs-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm {\n    display: block !important;\n  }\n  table.visible-sm {\n    display: table !important;\n  }\n  tr.visible-sm {\n    display: table-row !important;\n  }\n  th.visible-sm,\n  td.visible-sm {\n    display: table-cell !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm-block {\n    display: block !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm-inline {\n    display: inline !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .visible-sm-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md {\n    display: block !important;\n  }\n  table.visible-md {\n    display: table !important;\n  }\n  tr.visible-md {\n    display: table-row !important;\n  }\n  th.visible-md,\n  td.visible-md {\n    display: table-cell !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md-block {\n    display: block !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md-inline {\n    display: inline !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .visible-md-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg {\n    display: block !important;\n  }\n  table.visible-lg {\n    display: table !important;\n  }\n  tr.visible-lg {\n    display: table-row !important;\n  }\n  th.visible-lg,\n  td.visible-lg {\n    display: table-cell !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg-block {\n    display: block !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg-inline {\n    display: inline !important;\n  }\n}\n@media (min-width: 1200px) {\n  .visible-lg-inline-block {\n    display: inline-block !important;\n  }\n}\n@media (max-width: 767px) {\n  .hidden-xs {\n    display: none !important;\n  }\n}\n@media (min-width: 768px) and (max-width: 991px) {\n  .hidden-sm {\n    display: none !important;\n  }\n}\n@media (min-width: 992px) and (max-width: 1199px) {\n  .hidden-md {\n    display: none !important;\n  }\n}\n@media (min-width: 1200px) {\n  .hidden-lg {\n    display: none !important;\n  }\n}\n.visible-print {\n  display: none !important;\n}\n@media print {\n  .visible-print {\n    display: block !important;\n  }\n  table.visible-print {\n    display: table !important;\n  }\n  tr.visible-print {\n    display: table-row !important;\n  }\n  th.visible-print,\n  td.visible-print {\n    display: table-cell !important;\n  }\n}\n.visible-print-block {\n  display: none !important;\n}\n@media print {\n  .visible-print-block {\n    display: block !important;\n  }\n}\n.visible-print-inline {\n  display: none !important;\n}\n@media print {\n  .visible-print-inline {\n    display: inline !important;\n  }\n}\n.visible-print-inline-block {\n  display: none !important;\n}\n@media print {\n  .visible-print-inline-block {\n    display: inline-block !important;\n  }\n}\n@media print {\n  .hidden-print {\n    display: none !important;\n  }\n}\n", ""]);
 
 // exports
 
 
 /***/ }),
-/* 379 */
-/***/ (function(module, exports, __webpack_require__) {
+/* 376 */
+/***/ (function(module, exports) {
 
-/* WEBPACK VAR INJECTION */(function(Buffer) {/*
+/*
 	MIT License http://www.opensource.org/licenses/mit-license.php
 	Author Tobias Koppers @sokra
 */
@@ -59674,7 +58060,7 @@ function cssWithMappingToString(item, useSourceMap) {
 		return content;
 	}
 
-	if (useSourceMap) {
+	if (useSourceMap && typeof btoa === 'function') {
 		var sourceMapping = toComment(cssMapping);
 		var sourceURLs = cssMapping.sources.map(function (source) {
 			return '/*# sourceURL=' + cssMapping.sourceRoot + source + ' */'
@@ -59688,16 +58074,16 @@ function cssWithMappingToString(item, useSourceMap) {
 
 // Adapted from convert-source-map (MIT)
 function toComment(sourceMap) {
-  var base64 = new Buffer(JSON.stringify(sourceMap)).toString('base64');
-  var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
+	// eslint-disable-next-line no-undef
+	var base64 = btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap))));
+	var data = 'sourceMappingURL=data:application/json;charset=utf-8;base64,' + base64;
 
-  return '/*# ' + data + ' */';
+	return '/*# ' + data + ' */';
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(376).Buffer))
 
 /***/ }),
-/* 380 */
+/* 377 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {/**
@@ -59706,7 +58092,7 @@ function toComment(sourceMap) {
  * Expose `debug()` as the module.
  */
 
-exports = module.exports = __webpack_require__(381);
+exports = module.exports = __webpack_require__(378);
 exports.log = log;
 exports.formatArgs = formatArgs;
 exports.save = save;
@@ -59742,20 +58128,20 @@ function useColors() {
   // NB: In an Electron preload script, document will be defined but not fully
   // initialized. Since we know we're in Chrome, we'll just detect this case
   // explicitly
-  if (typeof window !== 'undefined' && window && typeof window.process !== 'undefined' && window.process.type === 'renderer') {
+  if (typeof window !== 'undefined' && window.process && window.process.type === 'renderer') {
     return true;
   }
 
   // is webkit? http://stackoverflow.com/a/16459606/376773
   // document is undefined in react-native: https://github.com/facebook/react-native/pull/1632
-  return (typeof document !== 'undefined' && document && 'WebkitAppearance' in document.documentElement.style) ||
+  return (typeof document !== 'undefined' && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance) ||
     // is firebug? http://stackoverflow.com/a/398120/376773
-    (typeof window !== 'undefined' && window && window.console && (console.firebug || (console.exception && console.table))) ||
+    (typeof window !== 'undefined' && window.console && (window.console.firebug || (window.console.exception && window.console.table))) ||
     // is firefox >= v31?
     // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
-    (typeof navigator !== 'undefined' && navigator && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31) ||
+    (typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31) ||
     // double check webkit in userAgent just in case we are in a worker
-    (typeof navigator !== 'undefined' && navigator && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/));
+    (typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/));
 }
 
 /**
@@ -59889,7 +58275,7 @@ function localstorage() {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 381 */
+/* 378 */
 /***/ (function(module, exports, __webpack_require__) {
 
 
@@ -59905,7 +58291,7 @@ exports.coerce = coerce;
 exports.disable = disable;
 exports.enable = enable;
 exports.enabled = enabled;
-exports.humanize = __webpack_require__(400);
+exports.humanize = __webpack_require__(396);
 
 /**
  * The currently active debug mode names, and names to skip.
@@ -60035,7 +58421,7 @@ function enable(namespaces) {
   exports.names = [];
   exports.skips = [];
 
-  var split = (namespaces || '').split(/[\s,]+/);
+  var split = (typeof namespaces === 'string' ? namespaces : '').split(/[\s,]+/);
   var len = split.length;
 
   for (var i = 0; i < len; i++) {
@@ -60097,7 +58483,7 @@ function coerce(val) {
 
 
 /***/ }),
-/* 382 */
+/* 379 */
 /***/ (function(module, exports) {
 
 // Copyright Joyent, Inc. and other Node contributors.
@@ -60405,7 +58791,7 @@ function isUndefined(arg) {
 
 
 /***/ }),
-/* 383 */
+/* 380 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -60442,7 +58828,7 @@ function camelize(string) {
 module.exports = camelize;
 
 /***/ }),
-/* 384 */
+/* 381 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -60459,7 +58845,7 @@ module.exports = camelize;
 
 
 
-var camelize = __webpack_require__(383);
+var camelize = __webpack_require__(380);
 
 var msPattern = /^-ms-/;
 
@@ -60487,7 +58873,7 @@ function camelizeStyleName(string) {
 module.exports = camelizeStyleName;
 
 /***/ }),
-/* 385 */
+/* 382 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -60504,7 +58890,7 @@ module.exports = camelizeStyleName;
  * 
  */
 
-var isTextNode = __webpack_require__(393);
+var isTextNode = __webpack_require__(390);
 
 /*eslint-disable no-bitwise */
 
@@ -60532,7 +58918,7 @@ function containsNode(outerNode, innerNode) {
 module.exports = containsNode;
 
 /***/ }),
-/* 386 */
+/* 383 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -60665,7 +59051,7 @@ module.exports = createArrayFromMixed;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 387 */
+/* 384 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -60686,8 +59072,8 @@ module.exports = createArrayFromMixed;
 
 var ExecutionEnvironment = __webpack_require__(13);
 
-var createArrayFromMixed = __webpack_require__(386);
-var getMarkupWrap = __webpack_require__(388);
+var createArrayFromMixed = __webpack_require__(383);
+var getMarkupWrap = __webpack_require__(385);
 var invariant = __webpack_require__(5);
 
 /**
@@ -60755,7 +59141,7 @@ module.exports = createNodesFromMarkup;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 388 */
+/* 385 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -60856,7 +59242,7 @@ module.exports = getMarkupWrap;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 389 */
+/* 386 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -60900,7 +59286,7 @@ function getUnboundedScrollPosition(scrollable) {
 module.exports = getUnboundedScrollPosition;
 
 /***/ }),
-/* 390 */
+/* 387 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -60938,7 +59324,7 @@ function hyphenate(string) {
 module.exports = hyphenate;
 
 /***/ }),
-/* 391 */
+/* 388 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -60955,7 +59341,7 @@ module.exports = hyphenate;
 
 
 
-var hyphenate = __webpack_require__(390);
+var hyphenate = __webpack_require__(387);
 
 var msPattern = /^ms-/;
 
@@ -60982,7 +59368,7 @@ function hyphenateStyleName(string) {
 module.exports = hyphenateStyleName;
 
 /***/ }),
-/* 392 */
+/* 389 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -61012,7 +59398,7 @@ function isNode(object) {
 module.exports = isNode;
 
 /***/ }),
-/* 393 */
+/* 390 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -61029,7 +59415,7 @@ module.exports = isNode;
  * @typechecks
  */
 
-var isNode = __webpack_require__(392);
+var isNode = __webpack_require__(389);
 
 /**
  * @param {*} object The object to check.
@@ -61042,7 +59428,7 @@ function isTextNode(object) {
 module.exports = isTextNode;
 
 /***/ }),
-/* 394 */
+/* 391 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -61077,7 +59463,7 @@ function memoizeStringOnly(callback) {
 module.exports = memoizeStringOnly;
 
 /***/ }),
-/* 395 */
+/* 392 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -61105,7 +59491,7 @@ if (ExecutionEnvironment.canUseDOM) {
 module.exports = performance || {};
 
 /***/ }),
-/* 396 */
+/* 393 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -61122,7 +59508,7 @@ module.exports = performance || {};
  * @typechecks
  */
 
-var performance = __webpack_require__(395);
+var performance = __webpack_require__(392);
 
 var performanceNow;
 
@@ -61144,106 +59530,16 @@ if (performance.now) {
 module.exports = performanceNow;
 
 /***/ }),
-/* 397 */
-/***/ (function(module, exports) {
-
-exports.read = function (buffer, offset, isLE, mLen, nBytes) {
-  var e, m
-  var eLen = nBytes * 8 - mLen - 1
-  var eMax = (1 << eLen) - 1
-  var eBias = eMax >> 1
-  var nBits = -7
-  var i = isLE ? (nBytes - 1) : 0
-  var d = isLE ? -1 : 1
-  var s = buffer[offset + i]
-
-  i += d
-
-  e = s & ((1 << (-nBits)) - 1)
-  s >>= (-nBits)
-  nBits += eLen
-  for (; nBits > 0; e = e * 256 + buffer[offset + i], i += d, nBits -= 8) {}
-
-  m = e & ((1 << (-nBits)) - 1)
-  e >>= (-nBits)
-  nBits += mLen
-  for (; nBits > 0; m = m * 256 + buffer[offset + i], i += d, nBits -= 8) {}
-
-  if (e === 0) {
-    e = 1 - eBias
-  } else if (e === eMax) {
-    return m ? NaN : ((s ? -1 : 1) * Infinity)
-  } else {
-    m = m + Math.pow(2, mLen)
-    e = e - eBias
-  }
-  return (s ? -1 : 1) * m * Math.pow(2, e - mLen)
-}
-
-exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
-  var e, m, c
-  var eLen = nBytes * 8 - mLen - 1
-  var eMax = (1 << eLen) - 1
-  var eBias = eMax >> 1
-  var rt = (mLen === 23 ? Math.pow(2, -24) - Math.pow(2, -77) : 0)
-  var i = isLE ? 0 : (nBytes - 1)
-  var d = isLE ? 1 : -1
-  var s = value < 0 || (value === 0 && 1 / value < 0) ? 1 : 0
-
-  value = Math.abs(value)
-
-  if (isNaN(value) || value === Infinity) {
-    m = isNaN(value) ? 1 : 0
-    e = eMax
-  } else {
-    e = Math.floor(Math.log(value) / Math.LN2)
-    if (value * (c = Math.pow(2, -e)) < 1) {
-      e--
-      c *= 2
-    }
-    if (e + eBias >= 1) {
-      value += rt / c
-    } else {
-      value += rt * Math.pow(2, 1 - eBias)
-    }
-    if (value * c >= 2) {
-      e++
-      c /= 2
-    }
-
-    if (e + eBias >= eMax) {
-      m = 0
-      e = eMax
-    } else if (e + eBias >= 1) {
-      m = (value * c - 1) * Math.pow(2, mLen)
-      e = e + eBias
-    } else {
-      m = value * Math.pow(2, eBias - 1) * Math.pow(2, mLen)
-      e = 0
-    }
-  }
-
-  for (; mLen >= 8; buffer[offset + i] = m & 0xff, i += d, m /= 256, mLen -= 8) {}
-
-  e = (e << mLen) | m
-  eLen += mLen
-  for (; eLen > 0; buffer[offset + i] = e & 0xff, i += d, e /= 256, eLen -= 8) {}
-
-  buffer[offset + i - d] |= s * 128
-}
-
-
-/***/ }),
-/* 398 */
+/* 394 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_kefir__ = __webpack_require__(57);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_kefir___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_kefir__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_infestines__ = __webpack_require__(43);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "c", function() { return lift1Shallow; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "d", function() { return lift1; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "a", function() { return lift; });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_kefir__ = __webpack_require__(57);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_kefir___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_kefir__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_infestines__ = __webpack_require__(37);
 
 
 
@@ -61539,240 +59835,240 @@ var kefir_combines = function () {
 
 
 /***/ }),
-/* 399 */
+/* 395 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var map = {
-	"./af": 147,
-	"./af.js": 147,
-	"./ar": 154,
-	"./ar-dz": 148,
-	"./ar-dz.js": 148,
-	"./ar-kw": 149,
-	"./ar-kw.js": 149,
-	"./ar-ly": 150,
-	"./ar-ly.js": 150,
-	"./ar-ma": 151,
-	"./ar-ma.js": 151,
-	"./ar-sa": 152,
-	"./ar-sa.js": 152,
-	"./ar-tn": 153,
-	"./ar-tn.js": 153,
-	"./ar.js": 154,
-	"./az": 155,
-	"./az.js": 155,
-	"./be": 156,
-	"./be.js": 156,
-	"./bg": 157,
-	"./bg.js": 157,
-	"./bn": 158,
-	"./bn.js": 158,
-	"./bo": 159,
-	"./bo.js": 159,
-	"./br": 160,
-	"./br.js": 160,
-	"./bs": 161,
-	"./bs.js": 161,
-	"./ca": 162,
-	"./ca.js": 162,
-	"./cs": 163,
-	"./cs.js": 163,
-	"./cv": 164,
-	"./cv.js": 164,
-	"./cy": 165,
-	"./cy.js": 165,
-	"./da": 166,
-	"./da.js": 166,
-	"./de": 169,
-	"./de-at": 167,
-	"./de-at.js": 167,
-	"./de-ch": 168,
-	"./de-ch.js": 168,
-	"./de.js": 169,
-	"./dv": 170,
-	"./dv.js": 170,
-	"./el": 171,
-	"./el.js": 171,
-	"./en-au": 172,
-	"./en-au.js": 172,
-	"./en-ca": 173,
-	"./en-ca.js": 173,
-	"./en-gb": 174,
-	"./en-gb.js": 174,
-	"./en-ie": 175,
-	"./en-ie.js": 175,
-	"./en-nz": 176,
-	"./en-nz.js": 176,
-	"./eo": 177,
-	"./eo.js": 177,
-	"./es": 179,
-	"./es-do": 178,
-	"./es-do.js": 178,
-	"./es.js": 179,
-	"./et": 180,
-	"./et.js": 180,
-	"./eu": 181,
-	"./eu.js": 181,
-	"./fa": 182,
-	"./fa.js": 182,
-	"./fi": 183,
-	"./fi.js": 183,
-	"./fo": 184,
-	"./fo.js": 184,
-	"./fr": 187,
-	"./fr-ca": 185,
-	"./fr-ca.js": 185,
-	"./fr-ch": 186,
-	"./fr-ch.js": 186,
-	"./fr.js": 187,
-	"./fy": 188,
-	"./fy.js": 188,
-	"./gd": 189,
-	"./gd.js": 189,
-	"./gl": 190,
-	"./gl.js": 190,
-	"./gom-latn": 191,
-	"./gom-latn.js": 191,
-	"./he": 192,
-	"./he.js": 192,
-	"./hi": 193,
-	"./hi.js": 193,
-	"./hr": 194,
-	"./hr.js": 194,
-	"./hu": 195,
-	"./hu.js": 195,
-	"./hy-am": 196,
-	"./hy-am.js": 196,
-	"./id": 197,
-	"./id.js": 197,
-	"./is": 198,
-	"./is.js": 198,
-	"./it": 199,
-	"./it.js": 199,
-	"./ja": 200,
-	"./ja.js": 200,
-	"./jv": 201,
-	"./jv.js": 201,
-	"./ka": 202,
-	"./ka.js": 202,
-	"./kk": 203,
-	"./kk.js": 203,
-	"./km": 204,
-	"./km.js": 204,
-	"./kn": 205,
-	"./kn.js": 205,
-	"./ko": 206,
-	"./ko.js": 206,
-	"./ky": 207,
-	"./ky.js": 207,
-	"./lb": 208,
-	"./lb.js": 208,
-	"./lo": 209,
-	"./lo.js": 209,
-	"./lt": 210,
-	"./lt.js": 210,
-	"./lv": 211,
-	"./lv.js": 211,
-	"./me": 212,
-	"./me.js": 212,
-	"./mi": 213,
-	"./mi.js": 213,
-	"./mk": 214,
-	"./mk.js": 214,
-	"./ml": 215,
-	"./ml.js": 215,
-	"./mr": 216,
-	"./mr.js": 216,
-	"./ms": 218,
-	"./ms-my": 217,
-	"./ms-my.js": 217,
-	"./ms.js": 218,
-	"./my": 219,
-	"./my.js": 219,
-	"./nb": 220,
-	"./nb.js": 220,
-	"./ne": 221,
-	"./ne.js": 221,
-	"./nl": 223,
-	"./nl-be": 222,
-	"./nl-be.js": 222,
-	"./nl.js": 223,
-	"./nn": 224,
-	"./nn.js": 224,
-	"./pa-in": 225,
-	"./pa-in.js": 225,
-	"./pl": 226,
-	"./pl.js": 226,
-	"./pt": 228,
-	"./pt-br": 227,
-	"./pt-br.js": 227,
-	"./pt.js": 228,
-	"./ro": 229,
-	"./ro.js": 229,
-	"./ru": 230,
-	"./ru.js": 230,
-	"./sd": 231,
-	"./sd.js": 231,
-	"./se": 232,
-	"./se.js": 232,
-	"./si": 233,
-	"./si.js": 233,
-	"./sk": 234,
-	"./sk.js": 234,
-	"./sl": 235,
-	"./sl.js": 235,
-	"./sq": 236,
-	"./sq.js": 236,
-	"./sr": 238,
-	"./sr-cyrl": 237,
-	"./sr-cyrl.js": 237,
-	"./sr.js": 238,
-	"./ss": 239,
-	"./ss.js": 239,
-	"./sv": 240,
-	"./sv.js": 240,
-	"./sw": 241,
-	"./sw.js": 241,
-	"./ta": 242,
-	"./ta.js": 242,
-	"./te": 243,
-	"./te.js": 243,
-	"./tet": 244,
-	"./tet.js": 244,
-	"./th": 245,
-	"./th.js": 245,
-	"./tl-ph": 246,
-	"./tl-ph.js": 246,
-	"./tlh": 247,
-	"./tlh.js": 247,
-	"./tr": 248,
-	"./tr.js": 248,
-	"./tzl": 249,
-	"./tzl.js": 249,
-	"./tzm": 251,
-	"./tzm-latn": 250,
-	"./tzm-latn.js": 250,
-	"./tzm.js": 251,
-	"./uk": 252,
-	"./uk.js": 252,
-	"./ur": 253,
-	"./ur.js": 253,
-	"./uz": 255,
-	"./uz-latn": 254,
-	"./uz-latn.js": 254,
-	"./uz.js": 255,
-	"./vi": 256,
-	"./vi.js": 256,
-	"./x-pseudo": 257,
-	"./x-pseudo.js": 257,
-	"./yo": 258,
-	"./yo.js": 258,
-	"./zh-cn": 259,
-	"./zh-cn.js": 259,
-	"./zh-hk": 260,
-	"./zh-hk.js": 260,
-	"./zh-tw": 261,
-	"./zh-tw.js": 261
+	"./af": 148,
+	"./af.js": 148,
+	"./ar": 155,
+	"./ar-dz": 149,
+	"./ar-dz.js": 149,
+	"./ar-kw": 150,
+	"./ar-kw.js": 150,
+	"./ar-ly": 151,
+	"./ar-ly.js": 151,
+	"./ar-ma": 152,
+	"./ar-ma.js": 152,
+	"./ar-sa": 153,
+	"./ar-sa.js": 153,
+	"./ar-tn": 154,
+	"./ar-tn.js": 154,
+	"./ar.js": 155,
+	"./az": 156,
+	"./az.js": 156,
+	"./be": 157,
+	"./be.js": 157,
+	"./bg": 158,
+	"./bg.js": 158,
+	"./bn": 159,
+	"./bn.js": 159,
+	"./bo": 160,
+	"./bo.js": 160,
+	"./br": 161,
+	"./br.js": 161,
+	"./bs": 162,
+	"./bs.js": 162,
+	"./ca": 163,
+	"./ca.js": 163,
+	"./cs": 164,
+	"./cs.js": 164,
+	"./cv": 165,
+	"./cv.js": 165,
+	"./cy": 166,
+	"./cy.js": 166,
+	"./da": 167,
+	"./da.js": 167,
+	"./de": 170,
+	"./de-at": 168,
+	"./de-at.js": 168,
+	"./de-ch": 169,
+	"./de-ch.js": 169,
+	"./de.js": 170,
+	"./dv": 171,
+	"./dv.js": 171,
+	"./el": 172,
+	"./el.js": 172,
+	"./en-au": 173,
+	"./en-au.js": 173,
+	"./en-ca": 174,
+	"./en-ca.js": 174,
+	"./en-gb": 175,
+	"./en-gb.js": 175,
+	"./en-ie": 176,
+	"./en-ie.js": 176,
+	"./en-nz": 177,
+	"./en-nz.js": 177,
+	"./eo": 178,
+	"./eo.js": 178,
+	"./es": 180,
+	"./es-do": 179,
+	"./es-do.js": 179,
+	"./es.js": 180,
+	"./et": 181,
+	"./et.js": 181,
+	"./eu": 182,
+	"./eu.js": 182,
+	"./fa": 183,
+	"./fa.js": 183,
+	"./fi": 184,
+	"./fi.js": 184,
+	"./fo": 185,
+	"./fo.js": 185,
+	"./fr": 188,
+	"./fr-ca": 186,
+	"./fr-ca.js": 186,
+	"./fr-ch": 187,
+	"./fr-ch.js": 187,
+	"./fr.js": 188,
+	"./fy": 189,
+	"./fy.js": 189,
+	"./gd": 190,
+	"./gd.js": 190,
+	"./gl": 191,
+	"./gl.js": 191,
+	"./gom-latn": 192,
+	"./gom-latn.js": 192,
+	"./he": 193,
+	"./he.js": 193,
+	"./hi": 194,
+	"./hi.js": 194,
+	"./hr": 195,
+	"./hr.js": 195,
+	"./hu": 196,
+	"./hu.js": 196,
+	"./hy-am": 197,
+	"./hy-am.js": 197,
+	"./id": 198,
+	"./id.js": 198,
+	"./is": 199,
+	"./is.js": 199,
+	"./it": 200,
+	"./it.js": 200,
+	"./ja": 201,
+	"./ja.js": 201,
+	"./jv": 202,
+	"./jv.js": 202,
+	"./ka": 203,
+	"./ka.js": 203,
+	"./kk": 204,
+	"./kk.js": 204,
+	"./km": 205,
+	"./km.js": 205,
+	"./kn": 206,
+	"./kn.js": 206,
+	"./ko": 207,
+	"./ko.js": 207,
+	"./ky": 208,
+	"./ky.js": 208,
+	"./lb": 209,
+	"./lb.js": 209,
+	"./lo": 210,
+	"./lo.js": 210,
+	"./lt": 211,
+	"./lt.js": 211,
+	"./lv": 212,
+	"./lv.js": 212,
+	"./me": 213,
+	"./me.js": 213,
+	"./mi": 214,
+	"./mi.js": 214,
+	"./mk": 215,
+	"./mk.js": 215,
+	"./ml": 216,
+	"./ml.js": 216,
+	"./mr": 217,
+	"./mr.js": 217,
+	"./ms": 219,
+	"./ms-my": 218,
+	"./ms-my.js": 218,
+	"./ms.js": 219,
+	"./my": 220,
+	"./my.js": 220,
+	"./nb": 221,
+	"./nb.js": 221,
+	"./ne": 222,
+	"./ne.js": 222,
+	"./nl": 224,
+	"./nl-be": 223,
+	"./nl-be.js": 223,
+	"./nl.js": 224,
+	"./nn": 225,
+	"./nn.js": 225,
+	"./pa-in": 226,
+	"./pa-in.js": 226,
+	"./pl": 227,
+	"./pl.js": 227,
+	"./pt": 229,
+	"./pt-br": 228,
+	"./pt-br.js": 228,
+	"./pt.js": 229,
+	"./ro": 230,
+	"./ro.js": 230,
+	"./ru": 231,
+	"./ru.js": 231,
+	"./sd": 232,
+	"./sd.js": 232,
+	"./se": 233,
+	"./se.js": 233,
+	"./si": 234,
+	"./si.js": 234,
+	"./sk": 235,
+	"./sk.js": 235,
+	"./sl": 236,
+	"./sl.js": 236,
+	"./sq": 237,
+	"./sq.js": 237,
+	"./sr": 239,
+	"./sr-cyrl": 238,
+	"./sr-cyrl.js": 238,
+	"./sr.js": 239,
+	"./ss": 240,
+	"./ss.js": 240,
+	"./sv": 241,
+	"./sv.js": 241,
+	"./sw": 242,
+	"./sw.js": 242,
+	"./ta": 243,
+	"./ta.js": 243,
+	"./te": 244,
+	"./te.js": 244,
+	"./tet": 245,
+	"./tet.js": 245,
+	"./th": 246,
+	"./th.js": 246,
+	"./tl-ph": 247,
+	"./tl-ph.js": 247,
+	"./tlh": 248,
+	"./tlh.js": 248,
+	"./tr": 249,
+	"./tr.js": 249,
+	"./tzl": 250,
+	"./tzl.js": 250,
+	"./tzm": 252,
+	"./tzm-latn": 251,
+	"./tzm-latn.js": 251,
+	"./tzm.js": 252,
+	"./uk": 253,
+	"./uk.js": 253,
+	"./ur": 254,
+	"./ur.js": 254,
+	"./uz": 256,
+	"./uz-latn": 255,
+	"./uz-latn.js": 255,
+	"./uz.js": 256,
+	"./vi": 257,
+	"./vi.js": 257,
+	"./x-pseudo": 258,
+	"./x-pseudo.js": 258,
+	"./yo": 259,
+	"./yo.js": 259,
+	"./zh-cn": 260,
+	"./zh-cn.js": 260,
+	"./zh-hk": 261,
+	"./zh-hk.js": 261,
+	"./zh-tw": 262,
+	"./zh-tw.js": 262
 };
 function webpackContext(req) {
 	return __webpack_require__(webpackContextResolve(req));
@@ -61788,21 +60084,21 @@ webpackContext.keys = function webpackContextKeys() {
 };
 webpackContext.resolve = webpackContextResolve;
 module.exports = webpackContext;
-webpackContext.id = 399;
+webpackContext.id = 395;
 
 /***/ }),
-/* 400 */
+/* 396 */
 /***/ (function(module, exports) {
 
 /**
  * Helpers.
  */
 
-var s = 1000
-var m = s * 60
-var h = m * 60
-var d = h * 24
-var y = d * 365.25
+var s = 1000;
+var m = s * 60;
+var h = m * 60;
+var d = h * 24;
+var y = d * 365.25;
 
 /**
  * Parse or format the given `val`.
@@ -61812,24 +60108,25 @@ var y = d * 365.25
  *  - `long` verbose formatting [false]
  *
  * @param {String|Number} val
- * @param {Object} options
+ * @param {Object} [options]
  * @throws {Error} throw an error if val is not a non-empty string or a number
  * @return {String|Number}
  * @api public
  */
 
-module.exports = function (val, options) {
-  options = options || {}
-  var type = typeof val
+module.exports = function(val, options) {
+  options = options || {};
+  var type = typeof val;
   if (type === 'string' && val.length > 0) {
-    return parse(val)
+    return parse(val);
   } else if (type === 'number' && isNaN(val) === false) {
-    return options.long ?
-			fmtLong(val) :
-			fmtShort(val)
+    return options.long ? fmtLong(val) : fmtShort(val);
   }
-  throw new Error('val is not a non-empty string or a valid number. val=' + JSON.stringify(val))
-}
+  throw new Error(
+    'val is not a non-empty string or a valid number. val=' +
+      JSON.stringify(val)
+  );
+};
 
 /**
  * Parse the given `str` and return milliseconds.
@@ -61840,53 +60137,55 @@ module.exports = function (val, options) {
  */
 
 function parse(str) {
-  str = String(str)
-  if (str.length > 10000) {
-    return
+  str = String(str);
+  if (str.length > 100) {
+    return;
   }
-  var match = /^((?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|years?|yrs?|y)?$/i.exec(str)
+  var match = /^((?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|years?|yrs?|y)?$/i.exec(
+    str
+  );
   if (!match) {
-    return
+    return;
   }
-  var n = parseFloat(match[1])
-  var type = (match[2] || 'ms').toLowerCase()
+  var n = parseFloat(match[1]);
+  var type = (match[2] || 'ms').toLowerCase();
   switch (type) {
     case 'years':
     case 'year':
     case 'yrs':
     case 'yr':
     case 'y':
-      return n * y
+      return n * y;
     case 'days':
     case 'day':
     case 'd':
-      return n * d
+      return n * d;
     case 'hours':
     case 'hour':
     case 'hrs':
     case 'hr':
     case 'h':
-      return n * h
+      return n * h;
     case 'minutes':
     case 'minute':
     case 'mins':
     case 'min':
     case 'm':
-      return n * m
+      return n * m;
     case 'seconds':
     case 'second':
     case 'secs':
     case 'sec':
     case 's':
-      return n * s
+      return n * s;
     case 'milliseconds':
     case 'millisecond':
     case 'msecs':
     case 'msec':
     case 'ms':
-      return n
+      return n;
     default:
-      return undefined
+      return undefined;
   }
 }
 
@@ -61900,18 +60199,18 @@ function parse(str) {
 
 function fmtShort(ms) {
   if (ms >= d) {
-    return Math.round(ms / d) + 'd'
+    return Math.round(ms / d) + 'd';
   }
   if (ms >= h) {
-    return Math.round(ms / h) + 'h'
+    return Math.round(ms / h) + 'h';
   }
   if (ms >= m) {
-    return Math.round(ms / m) + 'm'
+    return Math.round(ms / m) + 'm';
   }
   if (ms >= s) {
-    return Math.round(ms / s) + 's'
+    return Math.round(ms / s) + 's';
   }
-  return ms + 'ms'
+  return ms + 'ms';
 }
 
 /**
@@ -61927,7 +60226,7 @@ function fmtLong(ms) {
     plural(ms, h, 'hour') ||
     plural(ms, m, 'minute') ||
     plural(ms, s, 'second') ||
-    ms + ' ms'
+    ms + ' ms';
 }
 
 /**
@@ -61936,17 +60235,17 @@ function fmtLong(ms) {
 
 function plural(ms, n, name) {
   if (ms < n) {
-    return
+    return;
   }
   if (ms < n * 1.5) {
-    return Math.floor(ms / n) + ' ' + name
+    return Math.floor(ms / n) + ' ' + name;
   }
-  return Math.ceil(ms / n) + ' ' + name + 's'
+  return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
 
 /***/ }),
-/* 401 */
+/* 397 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -61964,7 +60263,7 @@ function plural(ms, n, name) {
 if (process.env.NODE_ENV !== 'production') {
   var invariant = __webpack_require__(5);
   var warning = __webpack_require__(7);
-  var ReactPropTypesSecret = __webpack_require__(264);
+  var ReactPropTypesSecret = __webpack_require__(82);
   var loggedTypeFailures = {};
 }
 
@@ -62015,7 +60314,7 @@ module.exports = checkPropTypes;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 402 */
+/* 398 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -62032,11 +60331,14 @@ module.exports = checkPropTypes;
 
 var emptyFunction = __webpack_require__(18);
 var invariant = __webpack_require__(5);
+var ReactPropTypesSecret = __webpack_require__(82);
 
 module.exports = function() {
-  // Important!
-  // Keep this list in sync with production version in `./factoryWithTypeCheckers.js`.
-  function shim() {
+  function shim(props, propName, componentName, location, propFullName, secret) {
+    if (secret === ReactPropTypesSecret) {
+      // It is still safe when called from React.
+      return;
+    }
     invariant(
       false,
       'Calling PropTypes validators directly is not supported by the `prop-types` package. ' +
@@ -62048,6 +60350,8 @@ module.exports = function() {
   function getShim() {
     return shim;
   };
+  // Important!
+  // Keep this list in sync with production version in `./factoryWithTypeCheckers.js`.
   var ReactPropTypes = {
     array: shim,
     bool: shim,
@@ -62076,7 +60380,7 @@ module.exports = function() {
 
 
 /***/ }),
-/* 403 */
+/* 399 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {/**
@@ -62103,20 +60407,20 @@ if (process.env.NODE_ENV !== 'production') {
   // By explicitly using `prop-types` you are opting into new development behavior.
   // http://fb.me/prop-types-in-prod
   var throwOnDirectAccess = true;
-  module.exports = __webpack_require__(263)(isValidElement, throwOnDirectAccess);
+  module.exports = __webpack_require__(264)(isValidElement, throwOnDirectAccess);
 } else {
   // By explicitly using `prop-types` you are opting into new production behavior.
   // http://fb.me/prop-types-in-prod
-  module.exports = __webpack_require__(402)();
+  module.exports = __webpack_require__(398)();
 }
 
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 404 */
+/* 400 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var always = __webpack_require__(37);
+var always = __webpack_require__(38);
 
 
 /**
@@ -62138,10 +60442,10 @@ module.exports = always(false);
 
 
 /***/ }),
-/* 405 */
+/* 401 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var always = __webpack_require__(37);
+var always = __webpack_require__(38);
 
 
 /**
@@ -62163,7 +60467,7 @@ module.exports = always(true);
 
 
 /***/ }),
-/* 406 */
+/* 402 */
 /***/ (function(module, exports) {
 
 /**
@@ -62196,7 +60500,7 @@ module.exports = {'@@functional/placeholder': true};
 
 
 /***/ }),
-/* 407 */
+/* 403 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _concat = __webpack_require__(21);
@@ -62245,12 +60549,12 @@ module.exports = _curry1(function addIndex(fn) {
 
 
 /***/ }),
-/* 408 */
+/* 404 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
 var _dispatchable = __webpack_require__(10);
-var _xall = __webpack_require__(479);
+var _xall = __webpack_require__(475);
 
 
 /**
@@ -62290,12 +60594,12 @@ module.exports = _curry2(_dispatchable(['all'], _xall, function all(fn, list) {
 
 
 /***/ }),
-/* 409 */
+/* 405 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
 var curryN = __webpack_require__(14);
-var max = __webpack_require__(38);
+var max = __webpack_require__(39);
 var pluck = __webpack_require__(49);
 var reduce = __webpack_require__(25);
 
@@ -62341,12 +60645,12 @@ module.exports = _curry1(function allPass(preds) {
 
 
 /***/ }),
-/* 410 */
+/* 406 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
 var curryN = __webpack_require__(14);
-var max = __webpack_require__(38);
+var max = __webpack_require__(39);
 var pluck = __webpack_require__(49);
 var reduce = __webpack_require__(25);
 
@@ -62393,13 +60697,13 @@ module.exports = _curry1(function anyPass(preds) {
 
 
 /***/ }),
-/* 411 */
+/* 407 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var _aperture = __webpack_require__(462);
+var _aperture = __webpack_require__(458);
 var _curry2 = __webpack_require__(0);
 var _dispatchable = __webpack_require__(10);
-var _xaperture = __webpack_require__(480);
+var _xaperture = __webpack_require__(476);
 
 
 /**
@@ -62427,7 +60731,7 @@ module.exports = _curry2(_dispatchable([], _xaperture, _aperture));
 
 
 /***/ }),
-/* 412 */
+/* 408 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _concat = __webpack_require__(21);
@@ -62460,14 +60764,14 @@ module.exports = _curry2(function append(el, list) {
 
 
 /***/ }),
-/* 413 */
+/* 409 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
 var apply = __webpack_require__(269);
 var curryN = __webpack_require__(14);
 var map = __webpack_require__(16);
-var max = __webpack_require__(38);
+var max = __webpack_require__(39);
 var pluck = __webpack_require__(49);
 var reduce = __webpack_require__(25);
 var values = __webpack_require__(321);
@@ -62510,7 +60814,7 @@ module.exports = _curry1(function applySpec(spec) {
 
 
 /***/ }),
-/* 414 */
+/* 410 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -62545,7 +60849,7 @@ module.exports = _curry3(function ascend(fn, a, b) {
 
 
 /***/ }),
-/* 415 */
+/* 411 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -62585,7 +60889,7 @@ module.exports = _curry1(function binary(fn) {
 
 
 /***/ }),
-/* 416 */
+/* 412 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -62632,7 +60936,7 @@ module.exports = _curry2(function both(f, g) {
 
 
 /***/ }),
-/* 417 */
+/* 413 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var curry = __webpack_require__(60);
@@ -62675,7 +60979,7 @@ module.exports = curry(function call(fn) {
 
 
 /***/ }),
-/* 418 */
+/* 414 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -62711,7 +61015,7 @@ module.exports = _curry3(function clamp(min, max, value) {
 
 
 /***/ }),
-/* 419 */
+/* 415 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _clone = __webpack_require__(283);
@@ -62747,7 +61051,7 @@ module.exports = _curry1(function clone(value) {
 
 
 /***/ }),
-/* 420 */
+/* 416 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -62781,7 +61085,7 @@ module.exports = _curry1(function comparator(pred) {
 
 
 /***/ }),
-/* 421 */
+/* 417 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var lift = __webpack_require__(68);
@@ -62814,7 +61118,7 @@ module.exports = lift(not);
 
 
 /***/ }),
-/* 422 */
+/* 418 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var pipeP = __webpack_require__(311);
@@ -62864,13 +61168,13 @@ module.exports = function composeP() {
 
 
 /***/ }),
-/* 423 */
+/* 419 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _arity = __webpack_require__(23);
 var _curry1 = __webpack_require__(4);
 var map = __webpack_require__(16);
-var max = __webpack_require__(38);
+var max = __webpack_require__(39);
 var reduce = __webpack_require__(25);
 
 
@@ -62917,7 +61221,7 @@ module.exports = _curry1(function cond(pairs) {
 
 
 /***/ }),
-/* 424 */
+/* 420 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -62961,7 +61265,7 @@ module.exports = _curry1(function construct(Fn) {
 
 
 /***/ }),
-/* 425 */
+/* 421 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _contains = __webpack_require__(32);
@@ -62992,7 +61296,7 @@ module.exports = _curry2(_contains);
 
 
 /***/ }),
-/* 426 */
+/* 422 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var reduceBy = __webpack_require__(70);
@@ -63026,7 +61330,7 @@ module.exports = reduceBy(function(acc, elem) { return acc + 1; }, 0);
 
 
 /***/ }),
-/* 427 */
+/* 423 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var add = __webpack_require__(58);
@@ -63051,7 +61355,7 @@ module.exports = add(-1);
 
 
 /***/ }),
-/* 428 */
+/* 424 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -63086,7 +61390,7 @@ module.exports = _curry3(function descend(fn, a, b) {
 
 
 /***/ }),
-/* 429 */
+/* 425 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -63127,7 +61431,7 @@ module.exports = _curry2(function dissocPath(path, obj) {
 
 
 /***/ }),
-/* 430 */
+/* 426 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -63159,13 +61463,13 @@ module.exports = _curry2(function divide(a, b) { return a / b; });
 
 
 /***/ }),
-/* 431 */
+/* 427 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
 var _dispatchable = __webpack_require__(10);
-var _dropLast = __webpack_require__(464);
-var _xdropLast = __webpack_require__(483);
+var _dropLast = __webpack_require__(460);
+var _xdropLast = __webpack_require__(479);
 
 
 /**
@@ -63193,13 +61497,13 @@ module.exports = _curry2(_dispatchable([], _xdropLast, _dropLast));
 
 
 /***/ }),
-/* 432 */
+/* 428 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
 var _dispatchable = __webpack_require__(10);
-var _dropLastWhile = __webpack_require__(465);
-var _xdropLastWhile = __webpack_require__(484);
+var _dropLastWhile = __webpack_require__(461);
+var _xdropLastWhile = __webpack_require__(480);
 
 
 /**
@@ -63228,7 +61532,7 @@ module.exports = _curry2(_dispatchable([], _xdropLastWhile, _dropLastWhile));
 
 
 /***/ }),
-/* 433 */
+/* 429 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -63260,12 +61564,12 @@ module.exports = _curry1(_dispatchable([], _xdropRepeatsWith(equals), dropRepeat
 
 
 /***/ }),
-/* 434 */
+/* 430 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
 var _dispatchable = __webpack_require__(10);
-var _xdropWhile = __webpack_require__(485);
+var _xdropWhile = __webpack_require__(481);
 
 
 /**
@@ -63304,7 +61608,7 @@ module.exports = _curry2(_dispatchable(['dropWhile'], _xdropWhile, function drop
 
 
 /***/ }),
-/* 435 */
+/* 431 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -63350,7 +61654,7 @@ module.exports = _curry2(function either(f, g) {
 
 
 /***/ }),
-/* 436 */
+/* 432 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -63380,7 +61684,7 @@ module.exports = _curry3(function eqBy(f, x, y) {
 
 
 /***/ }),
-/* 437 */
+/* 433 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -63414,7 +61718,7 @@ module.exports = _curry3(function eqProps(prop, obj1, obj2) {
 
 
 /***/ }),
-/* 438 */
+/* 434 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -63462,12 +61766,12 @@ module.exports = _curry2(function evolve(transformations, object) {
 
 
 /***/ }),
-/* 439 */
+/* 435 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
 var _dispatchable = __webpack_require__(10);
-var _xfind = __webpack_require__(487);
+var _xfind = __webpack_require__(483);
 
 
 /**
@@ -63507,12 +61811,12 @@ module.exports = _curry2(_dispatchable(['find'], _xfind, function find(fn, list)
 
 
 /***/ }),
-/* 440 */
+/* 436 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
 var _dispatchable = __webpack_require__(10);
-var _xfindIndex = __webpack_require__(488);
+var _xfindIndex = __webpack_require__(484);
 
 
 /**
@@ -63551,12 +61855,12 @@ module.exports = _curry2(_dispatchable([], _xfindIndex, function findIndex(fn, l
 
 
 /***/ }),
-/* 441 */
+/* 437 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
 var _dispatchable = __webpack_require__(10);
-var _xfindLast = __webpack_require__(489);
+var _xfindLast = __webpack_require__(485);
 
 
 /**
@@ -63593,12 +61897,12 @@ module.exports = _curry2(_dispatchable([], _xfindLast, function findLast(fn, lis
 
 
 /***/ }),
-/* 442 */
+/* 438 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
 var _dispatchable = __webpack_require__(10);
-var _xfindLastIndex = __webpack_require__(490);
+var _xfindLastIndex = __webpack_require__(486);
 
 
 /**
@@ -63636,7 +61940,7 @@ module.exports = _curry2(_dispatchable([], _xfindLastIndex, function findLastInd
 
 
 /***/ }),
-/* 443 */
+/* 439 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -63664,7 +61968,7 @@ module.exports = _curry1(_makeFlat(true));
 
 
 /***/ }),
-/* 444 */
+/* 440 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _checkForMethod = __webpack_require__(44);
@@ -63717,7 +62021,7 @@ module.exports = _curry2(_checkForMethod('forEach', function forEach(fn, list) {
 
 
 /***/ }),
-/* 445 */
+/* 441 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -63759,7 +62063,7 @@ module.exports = _curry2(function forEachObjIndexed(fn, obj) {
 
 
 /***/ }),
-/* 446 */
+/* 442 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -63793,7 +62097,7 @@ module.exports = _curry1(function fromPairs(pairs) {
 
 
 /***/ }),
-/* 447 */
+/* 443 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _checkForMethod = __webpack_require__(44);
@@ -63850,7 +62154,7 @@ module.exports = _curry2(_checkForMethod('groupBy', reduceBy(function(acc, item)
 
 
 /***/ }),
-/* 448 */
+/* 444 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -63898,7 +62202,7 @@ module.exports = _curry2(function(fn, list) {
 
 
 /***/ }),
-/* 449 */
+/* 445 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -63929,7 +62233,7 @@ module.exports = _curry2(function gt(a, b) { return a > b; });
 
 
 /***/ }),
-/* 450 */
+/* 446 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -63960,7 +62264,7 @@ module.exports = _curry2(function gte(a, b) { return a >= b; });
 
 
 /***/ }),
-/* 451 */
+/* 447 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -63995,7 +62299,7 @@ module.exports = _curry2(_has);
 
 
 /***/ }),
-/* 452 */
+/* 448 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -64033,7 +62337,7 @@ module.exports = _curry2(function hasIn(prop, obj) {
 
 
 /***/ }),
-/* 453 */
+/* 449 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var nth = __webpack_require__(47);
@@ -64064,7 +62368,7 @@ module.exports = nth(0);
 
 
 /***/ }),
-/* 454 */
+/* 450 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -64106,7 +62410,7 @@ module.exports = _curry3(function ifElse(condition, onTrue, onFalse) {
 
 
 /***/ }),
-/* 455 */
+/* 451 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var add = __webpack_require__(58);
@@ -64131,7 +62435,7 @@ module.exports = add(1);
 
 
 /***/ }),
-/* 456 */
+/* 452 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var reduceBy = __webpack_require__(70);
@@ -64163,7 +62467,7 @@ module.exports = reduceBy(function(acc, elem) { return elem; }, null);
 
 
 /***/ }),
-/* 457 */
+/* 453 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -64198,7 +62502,7 @@ module.exports = _curry2(function indexOf(target, xs) {
 
 
 /***/ }),
-/* 458 */
+/* 454 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var slice = __webpack_require__(33);
@@ -64232,7 +62536,7 @@ module.exports = slice(0, -1);
 
 
 /***/ }),
-/* 459 */
+/* 455 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -64265,7 +62569,7 @@ module.exports = _curry3(function insert(idx, elt, list) {
 
 
 /***/ }),
-/* 460 */
+/* 456 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -64298,7 +62602,7 @@ module.exports = _curry3(function insertAll(idx, elts, list) {
 
 
 /***/ }),
-/* 461 */
+/* 457 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _contains = __webpack_require__(32);
@@ -64475,7 +62779,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 462 */
+/* 458 */
 /***/ (function(module, exports) {
 
 module.exports = function _aperture(n, list) {
@@ -64491,7 +62795,7 @@ module.exports = function _aperture(n, list) {
 
 
 /***/ }),
-/* 463 */
+/* 459 */
 /***/ (function(module, exports) {
 
 module.exports = function _arrayFromIterator(iter) {
@@ -64505,7 +62809,7 @@ module.exports = function _arrayFromIterator(iter) {
 
 
 /***/ }),
-/* 464 */
+/* 460 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var take = __webpack_require__(316);
@@ -64516,7 +62820,7 @@ module.exports = function dropLast(n, xs) {
 
 
 /***/ }),
-/* 465 */
+/* 461 */
 /***/ (function(module, exports) {
 
 module.exports = function dropLastWhile(pred, list) {
@@ -64529,11 +62833,11 @@ module.exports = function dropLastWhile(pred, list) {
 
 
 /***/ }),
-/* 466 */
+/* 462 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var _arrayFromIterator = __webpack_require__(463);
-var _functionName = __webpack_require__(469);
+var _arrayFromIterator = __webpack_require__(459);
+var _functionName = __webpack_require__(465);
 var _has = __webpack_require__(15);
 var identical = __webpack_require__(282);
 var keys = __webpack_require__(24);
@@ -64644,10 +62948,10 @@ module.exports = function _equals(a, b, stackA, stackB) {
 
 
 /***/ }),
-/* 467 */
+/* 463 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var _forceReduced = __webpack_require__(468);
+var _forceReduced = __webpack_require__(464);
 var _reduce = __webpack_require__(19);
 var _xfBase = __webpack_require__(12);
 var isArrayLike = __webpack_require__(46);
@@ -64682,7 +62986,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 468 */
+/* 464 */
 /***/ (function(module, exports) {
 
 module.exports = function _forceReduced(x) {
@@ -64694,7 +62998,7 @@ module.exports = function _forceReduced(x) {
 
 
 /***/ }),
-/* 469 */
+/* 465 */
 /***/ (function(module, exports) {
 
 module.exports = function _functionName(f) {
@@ -64705,7 +63009,7 @@ module.exports = function _functionName(f) {
 
 
 /***/ }),
-/* 470 */
+/* 466 */
 /***/ (function(module, exports) {
 
 module.exports = function _isRegExp(x) {
@@ -64714,7 +63018,7 @@ module.exports = function _isRegExp(x) {
 
 
 /***/ }),
-/* 471 */
+/* 467 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _has = __webpack_require__(15);
@@ -64744,14 +63048,14 @@ module.exports = function _objectAssign(target) {
 
 
 /***/ }),
-/* 472 */
+/* 468 */
 /***/ (function(module, exports) {
 
 module.exports = function _of(x) { return [x]; };
 
 
 /***/ }),
-/* 473 */
+/* 469 */
 /***/ (function(module, exports) {
 
 module.exports = function _pipe(f, g) {
@@ -64762,7 +63066,7 @@ module.exports = function _pipe(f, g) {
 
 
 /***/ }),
-/* 474 */
+/* 470 */
 /***/ (function(module, exports) {
 
 module.exports = function _pipeP(f, g) {
@@ -64776,7 +63080,7 @@ module.exports = function _pipeP(f, g) {
 
 
 /***/ }),
-/* 475 */
+/* 471 */
 /***/ (function(module, exports) {
 
 module.exports = function _quote(s) {
@@ -64795,7 +63099,7 @@ module.exports = function _quote(s) {
 
 
 /***/ }),
-/* 476 */
+/* 472 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _assign = __webpack_require__(89);
@@ -64849,7 +63153,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 477 */
+/* 473 */
 /***/ (function(module, exports) {
 
 /**
@@ -64877,13 +63181,13 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 478 */
+/* 474 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _contains = __webpack_require__(32);
 var _map = __webpack_require__(66);
-var _quote = __webpack_require__(475);
-var _toISOString = __webpack_require__(477);
+var _quote = __webpack_require__(471);
+var _toISOString = __webpack_require__(473);
 var keys = __webpack_require__(24);
 var reject = __webpack_require__(71);
 
@@ -64929,7 +63233,7 @@ module.exports = function _toString(x, seen) {
 
 
 /***/ }),
-/* 479 */
+/* 475 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -64963,7 +63267,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 480 */
+/* 476 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _concat = __webpack_require__(21);
@@ -65005,11 +63309,11 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 481 */
+/* 477 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
-var _flatCat = __webpack_require__(467);
+var _flatCat = __webpack_require__(463);
 var map = __webpack_require__(16);
 
 
@@ -65019,7 +63323,7 @@ module.exports = _curry2(function _xchain(f, xf) {
 
 
 /***/ }),
-/* 482 */
+/* 478 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -65046,7 +63350,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 483 */
+/* 479 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -65086,7 +63390,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 484 */
+/* 480 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -65127,7 +63431,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 485 */
+/* 481 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -65156,7 +63460,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 486 */
+/* 482 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -65179,7 +63483,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 487 */
+/* 483 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -65213,7 +63517,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 488 */
+/* 484 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -65249,7 +63553,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 489 */
+/* 485 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -65277,7 +63581,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 490 */
+/* 486 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -65308,7 +63612,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 491 */
+/* 487 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -65331,7 +63635,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 492 */
+/* 488 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curryN = __webpack_require__(62);
@@ -65377,7 +63681,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 493 */
+/* 489 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -65403,7 +63707,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 494 */
+/* 490 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -65427,7 +63731,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 495 */
+/* 491 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _contains = __webpack_require__(32);
@@ -65468,7 +63772,7 @@ module.exports = _curry2(function intersection(list1, list2) {
 
 
 /***/ }),
-/* 496 */
+/* 492 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _containsWith = __webpack_require__(90);
@@ -65533,7 +63837,7 @@ module.exports = _curry3(function intersectionWith(pred, list1, list2) {
 
 
 /***/ }),
-/* 497 */
+/* 493 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _checkForMethod = __webpack_require__(44);
@@ -65574,14 +63878,14 @@ module.exports = _curry2(_checkForMethod('intersperse', function intersperse(sep
 
 
 /***/ }),
-/* 498 */
+/* 494 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _clone = __webpack_require__(283);
 var _curry3 = __webpack_require__(6);
 var _isTransformer = __webpack_require__(92);
 var _reduce = __webpack_require__(19);
-var _stepCat = __webpack_require__(476);
+var _stepCat = __webpack_require__(472);
 
 
 /**
@@ -65629,7 +63933,7 @@ module.exports = _curry3(function into(acc, xf, list) {
 
 
 /***/ }),
-/* 499 */
+/* 495 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -65677,7 +63981,7 @@ module.exports = _curry1(function invert(obj) {
 
 
 /***/ }),
-/* 500 */
+/* 496 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -65726,7 +64030,7 @@ module.exports = _curry1(function invertObj(obj) {
 
 
 /***/ }),
-/* 501 */
+/* 497 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -65761,7 +64065,7 @@ module.exports = _curry1(function isEmpty(x) {
 
 
 /***/ }),
-/* 502 */
+/* 498 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -65788,7 +64092,7 @@ module.exports = _curry1(function isNil(x) { return x == null; });
 
 
 /***/ }),
-/* 503 */
+/* 499 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var invoker = __webpack_require__(45);
@@ -65817,7 +64121,7 @@ module.exports = invoker(1, 'join');
 
 
 /***/ }),
-/* 504 */
+/* 500 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -65854,7 +64158,7 @@ module.exports = _curry1(function keysIn(obj) {
 
 
 /***/ }),
-/* 505 */
+/* 501 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -65898,7 +64202,7 @@ module.exports = _curry2(function lastIndexOf(target, xs) {
 
 
 /***/ }),
-/* 506 */
+/* 502 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -65933,7 +64237,7 @@ module.exports = _curry1(function lensIndex(n) {
 
 
 /***/ }),
-/* 507 */
+/* 503 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -65972,7 +64276,7 @@ module.exports = _curry1(function lensPath(p) {
 
 
 /***/ }),
-/* 508 */
+/* 504 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -66007,7 +64311,7 @@ module.exports = _curry1(function lensProp(k) {
 
 
 /***/ }),
-/* 509 */
+/* 505 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -66038,7 +64342,7 @@ module.exports = _curry2(function lt(a, b) { return a < b; });
 
 
 /***/ }),
-/* 510 */
+/* 506 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -66069,7 +64373,7 @@ module.exports = _curry2(function lte(a, b) { return a <= b; });
 
 
 /***/ }),
-/* 511 */
+/* 507 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -66124,7 +64428,7 @@ module.exports = _curry3(function mapAccum(fn, acc, list) {
 
 
 /***/ }),
-/* 512 */
+/* 508 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -66181,7 +64485,7 @@ module.exports = _curry3(function mapAccumRight(fn, acc, list) {
 
 
 /***/ }),
-/* 513 */
+/* 509 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -66219,7 +64523,7 @@ module.exports = _curry2(function mapObjIndexed(fn, obj) {
 
 
 /***/ }),
-/* 514 */
+/* 510 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -66252,7 +64556,7 @@ module.exports = _curry2(function match(rx, str) {
 
 
 /***/ }),
-/* 515 */
+/* 511 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -66299,7 +64603,7 @@ module.exports = _curry2(function mathMod(m, p) {
 
 
 /***/ }),
-/* 516 */
+/* 512 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -66335,7 +64639,7 @@ module.exports = _curry3(function maxBy(f, a, b) {
 
 
 /***/ }),
-/* 517 */
+/* 513 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -66372,7 +64676,7 @@ module.exports = _curry1(function median(list) {
 
 
 /***/ }),
-/* 518 */
+/* 514 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _arity = __webpack_require__(23);
@@ -66420,7 +64724,7 @@ module.exports = _curry1(function memoize(fn) {
 
 
 /***/ }),
-/* 519 */
+/* 515 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _assign = __webpack_require__(89);
@@ -66456,7 +64760,7 @@ module.exports = _curry2(function merge(l, r) {
 
 
 /***/ }),
-/* 520 */
+/* 516 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _assign = __webpack_require__(89);
@@ -66486,7 +64790,7 @@ module.exports = _curry1(function mergeAll(list) {
 
 
 /***/ }),
-/* 521 */
+/* 517 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -66525,7 +64829,7 @@ module.exports = _curry3(function mergeWith(fn, l, r) {
 
 
 /***/ }),
-/* 522 */
+/* 518 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -66552,7 +64856,7 @@ module.exports = _curry2(function min(a, b) { return b < a ? b : a; });
 
 
 /***/ }),
-/* 523 */
+/* 519 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -66588,7 +64892,7 @@ module.exports = _curry3(function minBy(f, a, b) {
 
 
 /***/ }),
-/* 524 */
+/* 520 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -66623,7 +64927,7 @@ module.exports = _curry2(function modulo(a, b) { return a % b; });
 
 
 /***/ }),
-/* 525 */
+/* 521 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -66647,7 +64951,7 @@ module.exports = _curry1(function negate(n) { return -n; });
 
 
 /***/ }),
-/* 526 */
+/* 522 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _complement = __webpack_require__(285);
@@ -66683,7 +64987,7 @@ module.exports = _curry2(_complement(_dispatchable(['any'], _xany, any)));
 
 
 /***/ }),
-/* 527 */
+/* 523 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -66718,11 +65022,11 @@ module.exports = _curry1(function nthArg(n) {
 
 
 /***/ }),
-/* 528 */
+/* 524 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
-var _of = __webpack_require__(472);
+var _of = __webpack_require__(468);
 
 
 /**
@@ -66747,7 +65051,7 @@ module.exports = _curry1(_of);
 
 
 /***/ }),
-/* 529 */
+/* 525 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _contains = __webpack_require__(32);
@@ -66782,7 +65086,7 @@ module.exports = _curry2(function omit(names, obj) {
 
 
 /***/ }),
-/* 530 */
+/* 526 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _arity = __webpack_require__(23);
@@ -66823,7 +65127,7 @@ module.exports = _curry1(function once(fn) {
 
 
 /***/ }),
-/* 531 */
+/* 527 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -66849,7 +65153,7 @@ module.exports = _curry2(function pair(fst, snd) { return [fst, snd]; });
 
 
 /***/ }),
-/* 532 */
+/* 528 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _concat = __webpack_require__(21);
@@ -66888,7 +65192,7 @@ module.exports = _createPartialApplicator(_concat);
 
 
 /***/ }),
-/* 533 */
+/* 529 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _concat = __webpack_require__(21);
@@ -66924,7 +65228,7 @@ module.exports = _createPartialApplicator(flip(_concat));
 
 
 /***/ }),
-/* 534 */
+/* 530 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var filter = __webpack_require__(87);
@@ -66959,7 +65263,7 @@ module.exports = juxt([filter, reject]);
 
 
 /***/ }),
-/* 535 */
+/* 531 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -66997,7 +65301,7 @@ module.exports = _curry3(function pathEq(_path, val, obj) {
 
 
 /***/ }),
-/* 536 */
+/* 532 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -67030,7 +65334,7 @@ module.exports = _curry3(function pathOr(d, p, obj) {
 
 
 /***/ }),
-/* 537 */
+/* 533 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -67062,7 +65366,7 @@ module.exports = _curry3(function pathSatisfies(pred, propPath, obj) {
 
 
 /***/ }),
-/* 538 */
+/* 534 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -67100,7 +65404,7 @@ module.exports = _curry2(function pick(names, obj) {
 
 
 /***/ }),
-/* 539 */
+/* 535 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -67138,7 +65442,7 @@ module.exports = _curry2(function pickBy(test, obj) {
 
 
 /***/ }),
-/* 540 */
+/* 536 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var composeK = __webpack_require__(272);
@@ -67187,7 +65491,7 @@ module.exports = function pipeK() {
 
 
 /***/ }),
-/* 541 */
+/* 537 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var multiply = __webpack_require__(304);
@@ -67213,7 +65517,7 @@ module.exports = reduce(multiply, 1);
 
 
 /***/ }),
-/* 542 */
+/* 538 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _map = __webpack_require__(66);
@@ -67245,7 +65549,7 @@ module.exports = useWith(_map, [pickAll, identity]); // passing `identity` gives
 
 
 /***/ }),
-/* 543 */
+/* 539 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -67282,7 +65586,7 @@ module.exports = _curry3(function propEq(name, val, obj) {
 
 
 /***/ }),
-/* 544 */
+/* 540 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -67315,7 +65619,7 @@ module.exports = _curry3(function propIs(type, name, obj) {
 
 
 /***/ }),
-/* 545 */
+/* 541 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -67354,7 +65658,7 @@ module.exports = _curry3(function propOr(val, p, obj) {
 
 
 /***/ }),
-/* 546 */
+/* 542 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -67384,7 +65688,7 @@ module.exports = _curry3(function propSatisfies(pred, name, obj) {
 
 
 /***/ }),
-/* 547 */
+/* 543 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -67425,7 +65729,7 @@ module.exports = _curry2(function props(ps, obj) {
 
 
 /***/ }),
-/* 548 */
+/* 544 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -67463,7 +65767,7 @@ module.exports = _curry2(function range(from, to) {
 
 
 /***/ }),
-/* 549 */
+/* 545 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curryN = __webpack_require__(62);
@@ -67508,7 +65812,7 @@ module.exports = _curryN(4, [], function _reduceWhile(pred, fn, a, list) {
 
 
 /***/ }),
-/* 550 */
+/* 546 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -67542,7 +65846,7 @@ module.exports = _curry1(_reduced);
 
 
 /***/ }),
-/* 551 */
+/* 547 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -67575,11 +65879,11 @@ module.exports = _curry3(function remove(start, count, list) {
 
 
 /***/ }),
-/* 552 */
+/* 548 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
-var always = __webpack_require__(37);
+var always = __webpack_require__(38);
 var times = __webpack_require__(317);
 
 
@@ -67611,7 +65915,7 @@ module.exports = _curry2(function repeat(value, n) {
 
 
 /***/ }),
-/* 553 */
+/* 549 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -67643,7 +65947,7 @@ module.exports = _curry3(function replace(regex, replacement, str) {
 
 
 /***/ }),
-/* 554 */
+/* 550 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -67683,11 +65987,11 @@ module.exports = _curry3(function scan(fn, acc, list) {
 
 
 /***/ }),
-/* 555 */
+/* 551 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
-var always = __webpack_require__(37);
+var always = __webpack_require__(38);
 var over = __webpack_require__(308);
 
 
@@ -67719,7 +66023,7 @@ module.exports = _curry3(function set(lens, v, x) {
 
 
 /***/ }),
-/* 556 */
+/* 552 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -67751,7 +66055,7 @@ module.exports = _curry2(function sort(comparator, list) {
 
 
 /***/ }),
-/* 557 */
+/* 553 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -67799,7 +66103,7 @@ module.exports = _curry2(function sortBy(fn, list) {
 
 
 /***/ }),
-/* 558 */
+/* 554 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -67851,7 +66155,7 @@ module.exports = _curry2(function sortWith(fns, list) {
 
 
 /***/ }),
-/* 559 */
+/* 555 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var invoker = __webpack_require__(45);
@@ -67881,7 +66185,7 @@ module.exports = invoker(1, 'split');
 
 
 /***/ }),
-/* 560 */
+/* 556 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -67913,7 +66217,7 @@ module.exports = _curry2(function splitAt(index, array) {
 
 
 /***/ }),
-/* 561 */
+/* 557 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -67951,7 +66255,7 @@ module.exports = _curry2(function splitEvery(n, list) {
 
 
 /***/ }),
-/* 562 */
+/* 558 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -67991,7 +66295,7 @@ module.exports = _curry2(function splitWhen(pred, list) {
 
 
 /***/ }),
-/* 563 */
+/* 559 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -68026,7 +66330,7 @@ module.exports = _curry2(function subtract(a, b) {
 
 
 /***/ }),
-/* 564 */
+/* 560 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -68058,7 +66362,7 @@ module.exports = _curry2(function symmetricDifference(list1, list2) {
 
 
 /***/ }),
-/* 565 */
+/* 561 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -68094,7 +66398,7 @@ module.exports = _curry3(function symmetricDifferenceWith(pred, list1, list2) {
 
 
 /***/ }),
-/* 566 */
+/* 562 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -68129,7 +66433,7 @@ module.exports = _curry2(function takeLast(n, xs) {
 
 
 /***/ }),
-/* 567 */
+/* 563 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -68167,12 +66471,12 @@ module.exports = _curry2(function takeLastWhile(fn, list) {
 
 
 /***/ }),
-/* 568 */
+/* 564 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
 var _dispatchable = __webpack_require__(10);
-var _xtakeWhile = __webpack_require__(494);
+var _xtakeWhile = __webpack_require__(490);
 
 
 /**
@@ -68212,7 +66516,7 @@ module.exports = _curry2(_dispatchable(['takeWhile'], _xtakeWhile, function take
 
 
 /***/ }),
-/* 569 */
+/* 565 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -68243,12 +66547,12 @@ module.exports = _curry2(function tap(fn, x) {
 
 
 /***/ }),
-/* 570 */
+/* 566 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _cloneRegExp = __webpack_require__(284);
 var _curry2 = __webpack_require__(0);
-var _isRegExp = __webpack_require__(470);
+var _isRegExp = __webpack_require__(466);
 var toString = __webpack_require__(50);
 
 
@@ -68278,7 +66582,7 @@ module.exports = _curry2(function test(pattern, str) {
 
 
 /***/ }),
-/* 571 */
+/* 567 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var invoker = __webpack_require__(45);
@@ -68303,7 +66607,7 @@ module.exports = invoker(0, 'toLowerCase');
 
 
 /***/ }),
-/* 572 */
+/* 568 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -68340,7 +66644,7 @@ module.exports = _curry1(function toPairs(obj) {
 
 
 /***/ }),
-/* 573 */
+/* 569 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -68377,7 +66681,7 @@ module.exports = _curry1(function toPairsIn(obj) {
 
 
 /***/ }),
-/* 574 */
+/* 570 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var invoker = __webpack_require__(45);
@@ -68402,7 +66706,7 @@ module.exports = invoker(0, 'toUpperCase');
 
 
 /***/ }),
-/* 575 */
+/* 571 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _reduce = __webpack_require__(19);
@@ -68460,7 +66764,7 @@ module.exports = curryN(4, function transduce(xf, fn, acc, list) {
 
 
 /***/ }),
-/* 576 */
+/* 572 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -68511,7 +66815,7 @@ module.exports = _curry1(function transpose(outerlist) {
 
 
 /***/ }),
-/* 577 */
+/* 573 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -68551,7 +66855,7 @@ module.exports = _curry3(function traverse(of, f, traversable) {
 
 
 /***/ }),
-/* 578 */
+/* 574 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -68593,7 +66897,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 579 */
+/* 575 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _arity = __webpack_require__(23);
@@ -68634,7 +66938,7 @@ module.exports = _curry2(function _tryCatch(tryer, catcher) {
 
 
 /***/ }),
-/* 580 */
+/* 576 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -68672,7 +66976,7 @@ module.exports = _curry1(function unapply(fn) {
 
 
 /***/ }),
-/* 581 */
+/* 577 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -68712,7 +67016,7 @@ module.exports = _curry1(function unary(fn) {
 
 
 /***/ }),
-/* 582 */
+/* 578 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -68756,7 +67060,7 @@ module.exports = _curry2(function uncurryN(depth, fn) {
 
 
 /***/ }),
-/* 583 */
+/* 579 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -68799,7 +67103,7 @@ module.exports = _curry2(function unfold(fn, seed) {
 
 
 /***/ }),
-/* 584 */
+/* 580 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _concat = __webpack_require__(21);
@@ -68829,7 +67133,7 @@ module.exports = _curry2(compose(uniq, _concat));
 
 
 /***/ }),
-/* 585 */
+/* 581 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _concat = __webpack_require__(21);
@@ -68865,7 +67169,7 @@ module.exports = _curry3(function unionWith(pred, list1, list2) {
 
 
 /***/ }),
-/* 586 */
+/* 582 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -68902,7 +67206,7 @@ module.exports = _curry3(function unless(pred, whenFalseFn, x) {
 
 
 /***/ }),
-/* 587 */
+/* 583 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _identity = __webpack_require__(91);
@@ -68930,7 +67234,7 @@ module.exports = chain(_identity);
 
 
 /***/ }),
-/* 588 */
+/* 584 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -68965,7 +67269,7 @@ module.exports = _curry3(function until(pred, fn, init) {
 
 
 /***/ }),
-/* 589 */
+/* 585 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry1 = __webpack_require__(4);
@@ -69002,7 +67306,7 @@ module.exports = _curry1(function valuesIn(obj) {
 
 
 /***/ }),
-/* 590 */
+/* 586 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -69044,7 +67348,7 @@ module.exports = (function() {
 
 
 /***/ }),
-/* 591 */
+/* 587 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -69084,7 +67388,7 @@ module.exports = _curry3(function when(pred, whenTrueFn, x) {
 
 
 /***/ }),
-/* 592 */
+/* 588 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -69126,7 +67430,7 @@ module.exports = _curry2(function whereEq(spec, testObj) {
 
 
 /***/ }),
-/* 593 */
+/* 589 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _contains = __webpack_require__(32);
@@ -69160,7 +67464,7 @@ module.exports = _curry2(function(xs, list) {
 
 
 /***/ }),
-/* 594 */
+/* 590 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -69203,7 +67507,7 @@ module.exports = _curry2(function xprod(a, b) { // = xprodWith(prepend); (takes 
 
 
 /***/ }),
-/* 595 */
+/* 591 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -69241,7 +67545,7 @@ module.exports = _curry2(function zip(a, b) {
 
 
 /***/ }),
-/* 596 */
+/* 592 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry2 = __webpack_require__(0);
@@ -69277,7 +67581,7 @@ module.exports = _curry2(function zipObj(keys, values) {
 
 
 /***/ }),
-/* 597 */
+/* 593 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var _curry3 = __webpack_require__(6);
@@ -69320,7 +67624,7 @@ module.exports = _curry3(function zipWith(fn, a, b) {
 
 
 /***/ }),
-/* 598 */
+/* 594 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -69399,7 +67703,7 @@ var ARIADOMPropertyConfig = {
 module.exports = ARIADOMPropertyConfig;
 
 /***/ }),
-/* 599 */
+/* 595 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -69417,7 +67721,7 @@ module.exports = ARIADOMPropertyConfig;
 
 var ReactDOMComponentTree = __webpack_require__(11);
 
-var focusNode = __webpack_require__(144);
+var focusNode = __webpack_require__(145);
 
 var AutoFocusUtils = {
   focusDOMComponent: function () {
@@ -69428,7 +67732,7 @@ var AutoFocusUtils = {
 module.exports = AutoFocusUtils;
 
 /***/ }),
-/* 600 */
+/* 596 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -69446,9 +67750,9 @@ module.exports = AutoFocusUtils;
 
 var EventPropagators = __webpack_require__(52);
 var ExecutionEnvironment = __webpack_require__(13);
-var FallbackCompositionState = __webpack_require__(606);
-var SyntheticCompositionEvent = __webpack_require__(649);
-var SyntheticInputEvent = __webpack_require__(652);
+var FallbackCompositionState = __webpack_require__(602);
+var SyntheticCompositionEvent = __webpack_require__(645);
+var SyntheticInputEvent = __webpack_require__(648);
 
 var END_KEYCODES = [9, 13, 27, 32]; // Tab, Return, Esc, Space
 var START_KEYCODE = 229;
@@ -69818,7 +68122,7 @@ var BeforeInputEventPlugin = {
 module.exports = BeforeInputEventPlugin;
 
 /***/ }),
-/* 601 */
+/* 597 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -69838,10 +68142,10 @@ var CSSProperty = __webpack_require__(323);
 var ExecutionEnvironment = __webpack_require__(13);
 var ReactInstrumentation = __webpack_require__(20);
 
-var camelizeStyleName = __webpack_require__(384);
-var dangerousStyleValue = __webpack_require__(659);
-var hyphenateStyleName = __webpack_require__(391);
-var memoizeStringOnly = __webpack_require__(394);
+var camelizeStyleName = __webpack_require__(381);
+var dangerousStyleValue = __webpack_require__(655);
+var hyphenateStyleName = __webpack_require__(388);
+var memoizeStringOnly = __webpack_require__(391);
 var warning = __webpack_require__(7);
 
 var processStyleName = memoizeStringOnly(function (styleName) {
@@ -70033,7 +68337,7 @@ module.exports = CSSPropertyOperations;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 602 */
+/* 598 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -70384,7 +68688,7 @@ var ChangeEventPlugin = {
 module.exports = ChangeEventPlugin;
 
 /***/ }),
-/* 603 */
+/* 599 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -70402,10 +68706,10 @@ module.exports = ChangeEventPlugin;
 
 var _prodInvariant = __webpack_require__(8);
 
-var DOMLazyTree = __webpack_require__(39);
+var DOMLazyTree = __webpack_require__(40);
 var ExecutionEnvironment = __webpack_require__(13);
 
-var createNodesFromMarkup = __webpack_require__(387);
+var createNodesFromMarkup = __webpack_require__(384);
 var emptyFunction = __webpack_require__(18);
 var invariant = __webpack_require__(5);
 
@@ -70438,7 +68742,7 @@ module.exports = Danger;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 604 */
+/* 600 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -70469,7 +68773,7 @@ var DefaultEventPluginOrder = ['ResponderEventPlugin', 'SimpleEventPlugin', 'Tap
 module.exports = DefaultEventPluginOrder;
 
 /***/ }),
-/* 605 */
+/* 601 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -70574,7 +68878,7 @@ var EnterLeaveEventPlugin = {
 module.exports = EnterLeaveEventPlugin;
 
 /***/ }),
-/* 606 */
+/* 602 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -70674,7 +68978,7 @@ PooledClass.addPoolingTo(FallbackCompositionState);
 module.exports = FallbackCompositionState;
 
 /***/ }),
-/* 607 */
+/* 603 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -70915,7 +69219,7 @@ var HTMLDOMPropertyConfig = {
 module.exports = HTMLDOMPropertyConfig;
 
 /***/ }),
-/* 608 */
+/* 604 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -70931,7 +69235,7 @@ module.exports = HTMLDOMPropertyConfig;
 
 
 
-var ReactReconciler = __webpack_require__(40);
+var ReactReconciler = __webpack_require__(41);
 
 var instantiateReactComponent = __webpack_require__(340);
 var KeyEscapeUtils = __webpack_require__(101);
@@ -71075,7 +69379,7 @@ module.exports = ReactChildReconciler;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 609 */
+/* 605 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -71092,7 +69396,7 @@ module.exports = ReactChildReconciler;
 
 
 var DOMChildrenOperations = __webpack_require__(98);
-var ReactDOMIDOperations = __webpack_require__(616);
+var ReactDOMIDOperations = __webpack_require__(612);
 
 /**
  * Abstracts away all functionality of the reconciler that requires knowledge of
@@ -71110,7 +69414,7 @@ var ReactComponentBrowserEnvironment = {
 module.exports = ReactComponentBrowserEnvironment;
 
 /***/ }),
-/* 610 */
+/* 606 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -71129,22 +69433,22 @@ module.exports = ReactComponentBrowserEnvironment;
 var _prodInvariant = __webpack_require__(8),
     _assign = __webpack_require__(9);
 
-var React = __webpack_require__(41);
+var React = __webpack_require__(42);
 var ReactComponentEnvironment = __webpack_require__(103);
 var ReactCurrentOwner = __webpack_require__(27);
 var ReactErrorUtils = __webpack_require__(104);
 var ReactInstanceMap = __webpack_require__(53);
 var ReactInstrumentation = __webpack_require__(20);
 var ReactNodeTypes = __webpack_require__(333);
-var ReactReconciler = __webpack_require__(40);
+var ReactReconciler = __webpack_require__(41);
 
 if (process.env.NODE_ENV !== 'production') {
-  var checkReactTypeSpec = __webpack_require__(658);
+  var checkReactTypeSpec = __webpack_require__(654);
 }
 
-var emptyObject = __webpack_require__(42);
+var emptyObject = __webpack_require__(43);
 var invariant = __webpack_require__(5);
-var shallowEqual = __webpack_require__(82);
+var shallowEqual = __webpack_require__(81);
 var shouldUpdateReactComponent = __webpack_require__(111);
 var warning = __webpack_require__(7);
 
@@ -72018,7 +70322,7 @@ module.exports = ReactCompositeComponent;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 611 */
+/* 607 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -72037,15 +70341,15 @@ module.exports = ReactCompositeComponent;
 
 
 var ReactDOMComponentTree = __webpack_require__(11);
-var ReactDefaultInjection = __webpack_require__(628);
+var ReactDefaultInjection = __webpack_require__(624);
 var ReactMount = __webpack_require__(332);
-var ReactReconciler = __webpack_require__(40);
+var ReactReconciler = __webpack_require__(41);
 var ReactUpdates = __webpack_require__(26);
-var ReactVersion = __webpack_require__(643);
+var ReactVersion = __webpack_require__(639);
 
-var findDOMNode = __webpack_require__(660);
+var findDOMNode = __webpack_require__(656);
 var getHostComponentFromComposite = __webpack_require__(338);
-var renderSubtreeIntoContainer = __webpack_require__(667);
+var renderSubtreeIntoContainer = __webpack_require__(663);
 var warning = __webpack_require__(7);
 
 ReactDefaultInjection.inject();
@@ -72122,9 +70426,9 @@ if (process.env.NODE_ENV !== 'production') {
 
 if (process.env.NODE_ENV !== 'production') {
   var ReactInstrumentation = __webpack_require__(20);
-  var ReactDOMUnknownPropertyHook = __webpack_require__(625);
-  var ReactDOMNullInputValuePropHook = __webpack_require__(619);
-  var ReactDOMInvalidARIAHook = __webpack_require__(618);
+  var ReactDOMUnknownPropertyHook = __webpack_require__(621);
+  var ReactDOMNullInputValuePropHook = __webpack_require__(615);
+  var ReactDOMInvalidARIAHook = __webpack_require__(614);
 
   ReactInstrumentation.debugTool.addHook(ReactDOMUnknownPropertyHook);
   ReactInstrumentation.debugTool.addHook(ReactDOMNullInputValuePropHook);
@@ -72135,7 +70439,7 @@ module.exports = ReactDOM;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 612 */
+/* 608 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -72156,9 +70460,9 @@ module.exports = ReactDOM;
 var _prodInvariant = __webpack_require__(8),
     _assign = __webpack_require__(9);
 
-var AutoFocusUtils = __webpack_require__(599);
-var CSSPropertyOperations = __webpack_require__(601);
-var DOMLazyTree = __webpack_require__(39);
+var AutoFocusUtils = __webpack_require__(595);
+var CSSPropertyOperations = __webpack_require__(597);
+var DOMLazyTree = __webpack_require__(40);
 var DOMNamespaces = __webpack_require__(99);
 var DOMProperty = __webpack_require__(31);
 var DOMPropertyOperations = __webpack_require__(325);
@@ -72167,19 +70471,19 @@ var EventPluginRegistry = __webpack_require__(73);
 var ReactBrowserEventEmitter = __webpack_require__(74);
 var ReactDOMComponentFlags = __webpack_require__(326);
 var ReactDOMComponentTree = __webpack_require__(11);
-var ReactDOMInput = __webpack_require__(617);
-var ReactDOMOption = __webpack_require__(620);
+var ReactDOMInput = __webpack_require__(613);
+var ReactDOMOption = __webpack_require__(616);
 var ReactDOMSelect = __webpack_require__(327);
-var ReactDOMTextarea = __webpack_require__(623);
+var ReactDOMTextarea = __webpack_require__(619);
 var ReactInstrumentation = __webpack_require__(20);
-var ReactMultiChild = __webpack_require__(636);
-var ReactServerRenderingTransaction = __webpack_require__(641);
+var ReactMultiChild = __webpack_require__(632);
+var ReactServerRenderingTransaction = __webpack_require__(637);
 
 var emptyFunction = __webpack_require__(18);
 var escapeTextContentForBrowser = __webpack_require__(77);
 var invariant = __webpack_require__(5);
 var isEventSupported = __webpack_require__(110);
-var shallowEqual = __webpack_require__(82);
+var shallowEqual = __webpack_require__(81);
 var validateDOMNesting = __webpack_require__(112);
 var warning = __webpack_require__(7);
 
@@ -73142,7 +71446,7 @@ module.exports = ReactDOMComponent;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 613 */
+/* 609 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -73181,7 +71485,7 @@ module.exports = ReactDOMContainerInfo;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 614 */
+/* 610 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -73199,7 +71503,7 @@ module.exports = ReactDOMContainerInfo;
 
 var _assign = __webpack_require__(9);
 
-var DOMLazyTree = __webpack_require__(39);
+var DOMLazyTree = __webpack_require__(40);
 var ReactDOMComponentTree = __webpack_require__(11);
 
 var ReactDOMEmptyComponent = function (instantiate) {
@@ -73246,7 +71550,7 @@ _assign(ReactDOMEmptyComponent.prototype, {
 module.exports = ReactDOMEmptyComponent;
 
 /***/ }),
-/* 615 */
+/* 611 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -73270,7 +71574,7 @@ var ReactDOMFeatureFlags = {
 module.exports = ReactDOMFeatureFlags;
 
 /***/ }),
-/* 616 */
+/* 612 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -73309,7 +71613,7 @@ var ReactDOMIDOperations = {
 module.exports = ReactDOMIDOperations;
 
 /***/ }),
-/* 617 */
+/* 613 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -73600,7 +71904,7 @@ module.exports = ReactDOMInput;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 618 */
+/* 614 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -73699,7 +72003,7 @@ module.exports = ReactDOMInvalidARIAHook;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 619 */
+/* 615 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -73748,7 +72052,7 @@ module.exports = ReactDOMNullInputValuePropHook;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 620 */
+/* 616 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -73766,7 +72070,7 @@ module.exports = ReactDOMNullInputValuePropHook;
 
 var _assign = __webpack_require__(9);
 
-var React = __webpack_require__(41);
+var React = __webpack_require__(42);
 var ReactDOMComponentTree = __webpack_require__(11);
 var ReactDOMSelect = __webpack_require__(327);
 
@@ -73877,7 +72181,7 @@ module.exports = ReactDOMOption;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 621 */
+/* 617 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -73895,7 +72199,7 @@ module.exports = ReactDOMOption;
 
 var ExecutionEnvironment = __webpack_require__(13);
 
-var getNodeForCharacterOffset = __webpack_require__(664);
+var getNodeForCharacterOffset = __webpack_require__(660);
 var getTextContentAccessor = __webpack_require__(339);
 
 /**
@@ -74094,7 +72398,7 @@ var ReactDOMSelection = {
 module.exports = ReactDOMSelection;
 
 /***/ }),
-/* 622 */
+/* 618 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -74114,7 +72418,7 @@ var _prodInvariant = __webpack_require__(8),
     _assign = __webpack_require__(9);
 
 var DOMChildrenOperations = __webpack_require__(98);
-var DOMLazyTree = __webpack_require__(39);
+var DOMLazyTree = __webpack_require__(40);
 var ReactDOMComponentTree = __webpack_require__(11);
 
 var escapeTextContentForBrowser = __webpack_require__(77);
@@ -74264,7 +72568,7 @@ module.exports = ReactDOMTextComponent;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 623 */
+/* 619 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -74430,7 +72734,7 @@ module.exports = ReactDOMTextarea;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 624 */
+/* 620 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -74572,7 +72876,7 @@ module.exports = {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 625 */
+/* 621 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -74690,7 +72994,7 @@ module.exports = ReactDOMUnknownPropertyHook;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 626 */
+/* 622 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -74707,12 +73011,12 @@ module.exports = ReactDOMUnknownPropertyHook;
 
 
 
-var ReactInvalidSetStateWarningHook = __webpack_require__(634);
-var ReactHostOperationHistoryHook = __webpack_require__(632);
+var ReactInvalidSetStateWarningHook = __webpack_require__(630);
+var ReactHostOperationHistoryHook = __webpack_require__(628);
 var ReactComponentTreeHook = __webpack_require__(17);
 var ExecutionEnvironment = __webpack_require__(13);
 
-var performanceNow = __webpack_require__(396);
+var performanceNow = __webpack_require__(393);
 var warning = __webpack_require__(7);
 
 var hooks = [];
@@ -75055,7 +73359,7 @@ module.exports = ReactDebugTool;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 627 */
+/* 623 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -75128,7 +73432,7 @@ var ReactDefaultBatchingStrategy = {
 module.exports = ReactDefaultBatchingStrategy;
 
 /***/ }),
-/* 628 */
+/* 624 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -75144,25 +73448,25 @@ module.exports = ReactDefaultBatchingStrategy;
 
 
 
-var ARIADOMPropertyConfig = __webpack_require__(598);
-var BeforeInputEventPlugin = __webpack_require__(600);
-var ChangeEventPlugin = __webpack_require__(602);
-var DefaultEventPluginOrder = __webpack_require__(604);
-var EnterLeaveEventPlugin = __webpack_require__(605);
-var HTMLDOMPropertyConfig = __webpack_require__(607);
-var ReactComponentBrowserEnvironment = __webpack_require__(609);
-var ReactDOMComponent = __webpack_require__(612);
+var ARIADOMPropertyConfig = __webpack_require__(594);
+var BeforeInputEventPlugin = __webpack_require__(596);
+var ChangeEventPlugin = __webpack_require__(598);
+var DefaultEventPluginOrder = __webpack_require__(600);
+var EnterLeaveEventPlugin = __webpack_require__(601);
+var HTMLDOMPropertyConfig = __webpack_require__(603);
+var ReactComponentBrowserEnvironment = __webpack_require__(605);
+var ReactDOMComponent = __webpack_require__(608);
 var ReactDOMComponentTree = __webpack_require__(11);
-var ReactDOMEmptyComponent = __webpack_require__(614);
-var ReactDOMTreeTraversal = __webpack_require__(624);
-var ReactDOMTextComponent = __webpack_require__(622);
-var ReactDefaultBatchingStrategy = __webpack_require__(627);
-var ReactEventListener = __webpack_require__(631);
-var ReactInjection = __webpack_require__(633);
-var ReactReconcileTransaction = __webpack_require__(639);
-var SVGDOMPropertyConfig = __webpack_require__(644);
-var SelectEventPlugin = __webpack_require__(645);
-var SimpleEventPlugin = __webpack_require__(646);
+var ReactDOMEmptyComponent = __webpack_require__(610);
+var ReactDOMTreeTraversal = __webpack_require__(620);
+var ReactDOMTextComponent = __webpack_require__(618);
+var ReactDefaultBatchingStrategy = __webpack_require__(623);
+var ReactEventListener = __webpack_require__(627);
+var ReactInjection = __webpack_require__(629);
+var ReactReconcileTransaction = __webpack_require__(635);
+var SVGDOMPropertyConfig = __webpack_require__(640);
+var SelectEventPlugin = __webpack_require__(641);
+var SimpleEventPlugin = __webpack_require__(642);
 
 var alreadyInjected = false;
 
@@ -75219,7 +73523,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 629 */
+/* 625 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -75244,7 +73548,7 @@ var REACT_ELEMENT_TYPE = typeof Symbol === 'function' && Symbol['for'] && Symbol
 module.exports = REACT_ELEMENT_TYPE;
 
 /***/ }),
-/* 630 */
+/* 626 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -75282,7 +73586,7 @@ var ReactEventEmitterMixin = {
 module.exports = ReactEventEmitterMixin;
 
 /***/ }),
-/* 631 */
+/* 627 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -75300,14 +73604,14 @@ module.exports = ReactEventEmitterMixin;
 
 var _assign = __webpack_require__(9);
 
-var EventListener = __webpack_require__(143);
+var EventListener = __webpack_require__(144);
 var ExecutionEnvironment = __webpack_require__(13);
 var PooledClass = __webpack_require__(34);
 var ReactDOMComponentTree = __webpack_require__(11);
 var ReactUpdates = __webpack_require__(26);
 
 var getEventTarget = __webpack_require__(109);
-var getUnboundedScrollPosition = __webpack_require__(389);
+var getUnboundedScrollPosition = __webpack_require__(386);
 
 /**
  * Find the deepest React component completely containing the root of the
@@ -75442,7 +73746,7 @@ var ReactEventListener = {
 module.exports = ReactEventListener;
 
 /***/ }),
-/* 632 */
+/* 628 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -75481,7 +73785,7 @@ var ReactHostOperationHistoryHook = {
 module.exports = ReactHostOperationHistoryHook;
 
 /***/ }),
-/* 633 */
+/* 629 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -75520,7 +73824,7 @@ var ReactInjection = {
 module.exports = ReactInjection;
 
 /***/ }),
-/* 634 */
+/* 630 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -75563,7 +73867,7 @@ module.exports = ReactInvalidSetStateWarningHook;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 635 */
+/* 631 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -75579,7 +73883,7 @@ module.exports = ReactInvalidSetStateWarningHook;
 
 
 
-var adler32 = __webpack_require__(657);
+var adler32 = __webpack_require__(653);
 
 var TAG_END = /\/?>/;
 var COMMENT_START = /^<\!\-\-/;
@@ -75618,7 +73922,7 @@ var ReactMarkupChecksum = {
 module.exports = ReactMarkupChecksum;
 
 /***/ }),
-/* 636 */
+/* 632 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -75641,11 +73945,11 @@ var ReactInstanceMap = __webpack_require__(53);
 var ReactInstrumentation = __webpack_require__(20);
 
 var ReactCurrentOwner = __webpack_require__(27);
-var ReactReconciler = __webpack_require__(40);
-var ReactChildReconciler = __webpack_require__(608);
+var ReactReconciler = __webpack_require__(41);
+var ReactChildReconciler = __webpack_require__(604);
 
 var emptyFunction = __webpack_require__(18);
-var flattenChildren = __webpack_require__(661);
+var flattenChildren = __webpack_require__(657);
 var invariant = __webpack_require__(5);
 
 /**
@@ -76074,7 +74378,7 @@ module.exports = ReactMultiChild;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 637 */
+/* 633 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -76174,7 +74478,7 @@ module.exports = ReactOwner;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 638 */
+/* 634 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -76205,7 +74509,7 @@ module.exports = ReactPropTypeLocationNames;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 639 */
+/* 635 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -76389,7 +74693,7 @@ module.exports = ReactReconcileTransaction;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 640 */
+/* 636 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -76406,7 +74710,7 @@ module.exports = ReactReconcileTransaction;
 
 
 
-var ReactOwner = __webpack_require__(637);
+var ReactOwner = __webpack_require__(633);
 
 var ReactRef = {};
 
@@ -76483,7 +74787,7 @@ ReactRef.detachRefs = function (instance, element) {
 module.exports = ReactRef;
 
 /***/ }),
-/* 641 */
+/* 637 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -76504,7 +74808,7 @@ var _assign = __webpack_require__(9);
 var PooledClass = __webpack_require__(34);
 var Transaction = __webpack_require__(76);
 var ReactInstrumentation = __webpack_require__(20);
-var ReactServerUpdateQueue = __webpack_require__(642);
+var ReactServerUpdateQueue = __webpack_require__(638);
 
 /**
  * Executed within the scope of the `Transaction` instance. Consider these as
@@ -76579,7 +74883,7 @@ module.exports = ReactServerRenderingTransaction;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 642 */
+/* 638 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -76724,7 +75028,7 @@ module.exports = ReactServerUpdateQueue;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 643 */
+/* 639 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -76743,7 +75047,7 @@ module.exports = ReactServerUpdateQueue;
 module.exports = '15.5.4';
 
 /***/ }),
-/* 644 */
+/* 640 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -77050,7 +75354,7 @@ Object.keys(ATTRS).forEach(function (key) {
 module.exports = SVGDOMPropertyConfig;
 
 /***/ }),
-/* 645 */
+/* 641 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -77072,9 +75376,9 @@ var ReactDOMComponentTree = __webpack_require__(11);
 var ReactInputSelection = __webpack_require__(331);
 var SyntheticEvent = __webpack_require__(28);
 
-var getActiveElement = __webpack_require__(145);
+var getActiveElement = __webpack_require__(146);
 var isTextInputElement = __webpack_require__(341);
-var shallowEqual = __webpack_require__(82);
+var shallowEqual = __webpack_require__(81);
 
 var skipSelectionChangeEvent = ExecutionEnvironment.canUseDOM && 'documentMode' in document && document.documentMode <= 11;
 
@@ -77246,7 +75550,7 @@ var SelectEventPlugin = {
 module.exports = SelectEventPlugin;
 
 /***/ }),
-/* 646 */
+/* 642 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -77265,20 +75569,20 @@ module.exports = SelectEventPlugin;
 
 var _prodInvariant = __webpack_require__(8);
 
-var EventListener = __webpack_require__(143);
+var EventListener = __webpack_require__(144);
 var EventPropagators = __webpack_require__(52);
 var ReactDOMComponentTree = __webpack_require__(11);
-var SyntheticAnimationEvent = __webpack_require__(647);
-var SyntheticClipboardEvent = __webpack_require__(648);
+var SyntheticAnimationEvent = __webpack_require__(643);
+var SyntheticClipboardEvent = __webpack_require__(644);
 var SyntheticEvent = __webpack_require__(28);
-var SyntheticFocusEvent = __webpack_require__(651);
-var SyntheticKeyboardEvent = __webpack_require__(653);
+var SyntheticFocusEvent = __webpack_require__(647);
+var SyntheticKeyboardEvent = __webpack_require__(649);
 var SyntheticMouseEvent = __webpack_require__(75);
-var SyntheticDragEvent = __webpack_require__(650);
-var SyntheticTouchEvent = __webpack_require__(654);
-var SyntheticTransitionEvent = __webpack_require__(655);
+var SyntheticDragEvent = __webpack_require__(646);
+var SyntheticTouchEvent = __webpack_require__(650);
+var SyntheticTransitionEvent = __webpack_require__(651);
 var SyntheticUIEvent = __webpack_require__(54);
-var SyntheticWheelEvent = __webpack_require__(656);
+var SyntheticWheelEvent = __webpack_require__(652);
 
 var emptyFunction = __webpack_require__(18);
 var getEventCharCode = __webpack_require__(107);
@@ -77480,7 +75784,7 @@ module.exports = SimpleEventPlugin;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 647 */
+/* 643 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -77524,7 +75828,7 @@ SyntheticEvent.augmentClass(SyntheticAnimationEvent, AnimationEventInterface);
 module.exports = SyntheticAnimationEvent;
 
 /***/ }),
-/* 648 */
+/* 644 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -77567,7 +75871,7 @@ SyntheticEvent.augmentClass(SyntheticClipboardEvent, ClipboardEventInterface);
 module.exports = SyntheticClipboardEvent;
 
 /***/ }),
-/* 649 */
+/* 645 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -77608,7 +75912,7 @@ SyntheticEvent.augmentClass(SyntheticCompositionEvent, CompositionEventInterface
 module.exports = SyntheticCompositionEvent;
 
 /***/ }),
-/* 650 */
+/* 646 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -77649,7 +75953,7 @@ SyntheticMouseEvent.augmentClass(SyntheticDragEvent, DragEventInterface);
 module.exports = SyntheticDragEvent;
 
 /***/ }),
-/* 651 */
+/* 647 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -77690,7 +75994,7 @@ SyntheticUIEvent.augmentClass(SyntheticFocusEvent, FocusEventInterface);
 module.exports = SyntheticFocusEvent;
 
 /***/ }),
-/* 652 */
+/* 648 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -77732,7 +76036,7 @@ SyntheticEvent.augmentClass(SyntheticInputEvent, InputEventInterface);
 module.exports = SyntheticInputEvent;
 
 /***/ }),
-/* 653 */
+/* 649 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -77751,7 +76055,7 @@ module.exports = SyntheticInputEvent;
 var SyntheticUIEvent = __webpack_require__(54);
 
 var getEventCharCode = __webpack_require__(107);
-var getEventKey = __webpack_require__(662);
+var getEventKey = __webpack_require__(658);
 var getEventModifierState = __webpack_require__(108);
 
 /**
@@ -77821,7 +76125,7 @@ SyntheticUIEvent.augmentClass(SyntheticKeyboardEvent, KeyboardEventInterface);
 module.exports = SyntheticKeyboardEvent;
 
 /***/ }),
-/* 654 */
+/* 650 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -77871,7 +76175,7 @@ SyntheticUIEvent.augmentClass(SyntheticTouchEvent, TouchEventInterface);
 module.exports = SyntheticTouchEvent;
 
 /***/ }),
-/* 655 */
+/* 651 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -77915,7 +76219,7 @@ SyntheticEvent.augmentClass(SyntheticTransitionEvent, TransitionEventInterface);
 module.exports = SyntheticTransitionEvent;
 
 /***/ }),
-/* 656 */
+/* 652 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -77974,7 +76278,7 @@ SyntheticMouseEvent.augmentClass(SyntheticWheelEvent, WheelEventInterface);
 module.exports = SyntheticWheelEvent;
 
 /***/ }),
-/* 657 */
+/* 653 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -78023,7 +76327,7 @@ function adler32(data) {
 module.exports = adler32;
 
 /***/ }),
-/* 658 */
+/* 654 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -78041,7 +76345,7 @@ module.exports = adler32;
 
 var _prodInvariant = __webpack_require__(8);
 
-var ReactPropTypeLocationNames = __webpack_require__(638);
+var ReactPropTypeLocationNames = __webpack_require__(634);
 var ReactPropTypesSecret = __webpack_require__(334);
 
 var invariant = __webpack_require__(5);
@@ -78116,7 +76420,7 @@ module.exports = checkReactTypeSpec;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 659 */
+/* 655 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -78201,7 +76505,7 @@ module.exports = dangerousStyleValue;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 660 */
+/* 656 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -78267,7 +76571,7 @@ module.exports = findDOMNode;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 661 */
+/* 657 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -78349,7 +76653,7 @@ module.exports = flattenChildren;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 662 */
+/* 658 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -78456,7 +76760,7 @@ function getEventKey(nativeEvent) {
 module.exports = getEventKey;
 
 /***/ }),
-/* 663 */
+/* 659 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -78502,7 +76806,7 @@ function getIteratorFn(maybeIterable) {
 module.exports = getIteratorFn;
 
 /***/ }),
-/* 664 */
+/* 660 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -78581,7 +76885,7 @@ function getNodeForCharacterOffset(root, offset) {
 module.exports = getNodeForCharacterOffset;
 
 /***/ }),
-/* 665 */
+/* 661 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -78687,7 +76991,7 @@ function getVendorPrefixedEventName(eventName) {
 module.exports = getVendorPrefixedEventName;
 
 /***/ }),
-/* 666 */
+/* 662 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -78718,7 +77022,7 @@ function quoteAttributeValueForBrowser(value) {
 module.exports = quoteAttributeValueForBrowser;
 
 /***/ }),
-/* 667 */
+/* 663 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -78739,7 +77043,7 @@ var ReactMount = __webpack_require__(332);
 module.exports = ReactMount.renderSubtreeIntoContainer;
 
 /***/ }),
-/* 668 */
+/* 664 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -78803,7 +77107,7 @@ var KeyEscapeUtils = {
 module.exports = KeyEscapeUtils;
 
 /***/ }),
-/* 669 */
+/* 665 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -78921,7 +77225,7 @@ module.exports = PooledClass;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 670 */
+/* 666 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -78937,11 +77241,11 @@ module.exports = PooledClass;
 
 
 
-var PooledClass = __webpack_require__(669);
+var PooledClass = __webpack_require__(665);
 var ReactElement = __webpack_require__(35);
 
 var emptyFunction = __webpack_require__(18);
-var traverseAllChildren = __webpack_require__(680);
+var traverseAllChildren = __webpack_require__(676);
 
 var twoArgumentPooler = PooledClass.twoArgumentPooler;
 var fourArgumentPooler = PooledClass.fourArgumentPooler;
@@ -79117,7 +77421,7 @@ var ReactChildren = {
 module.exports = ReactChildren;
 
 /***/ }),
-/* 671 */
+/* 667 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -79141,7 +77445,7 @@ var ReactElement = __webpack_require__(35);
 var ReactPropTypeLocationNames = __webpack_require__(346);
 var ReactNoopUpdateQueue = __webpack_require__(114);
 
-var emptyObject = __webpack_require__(42);
+var emptyObject = __webpack_require__(43);
 var invariant = __webpack_require__(5);
 var warning = __webpack_require__(7);
 
@@ -79846,7 +78150,7 @@ module.exports = ReactClass;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 672 */
+/* 668 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -80022,7 +78326,7 @@ module.exports = ReactDOMFactories;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 673 */
+/* 669 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -80041,12 +78345,12 @@ module.exports = ReactDOMFactories;
 var _require = __webpack_require__(35),
     isValidElement = _require.isValidElement;
 
-var factory = __webpack_require__(262);
+var factory = __webpack_require__(263);
 
 module.exports = factory(isValidElement);
 
 /***/ }),
-/* 674 */
+/* 670 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -80068,7 +78372,7 @@ var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
 module.exports = ReactPropTypesSecret;
 
 /***/ }),
-/* 675 */
+/* 671 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -80089,7 +78393,7 @@ var _assign = __webpack_require__(9);
 var ReactComponent = __webpack_require__(113);
 var ReactNoopUpdateQueue = __webpack_require__(114);
 
-var emptyObject = __webpack_require__(42);
+var emptyObject = __webpack_require__(43);
 
 /**
  * Base class helpers for the updating state of a component.
@@ -80115,7 +78419,7 @@ ReactPureComponent.prototype.isPureReactComponent = true;
 module.exports = ReactPureComponent;
 
 /***/ }),
-/* 676 */
+/* 672 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -80134,7 +78438,7 @@ module.exports = ReactPureComponent;
 module.exports = '15.5.4';
 
 /***/ }),
-/* 677 */
+/* 673 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -80153,7 +78457,7 @@ module.exports = '15.5.4';
 var _prodInvariant = __webpack_require__(36);
 
 var ReactPropTypeLocationNames = __webpack_require__(346);
-var ReactPropTypesSecret = __webpack_require__(674);
+var ReactPropTypesSecret = __webpack_require__(670);
 
 var invariant = __webpack_require__(5);
 var warning = __webpack_require__(7);
@@ -80227,7 +78531,7 @@ module.exports = checkReactTypeSpec;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 678 */
+/* 674 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -80253,7 +78557,7 @@ function getNextDebugID() {
 module.exports = getNextDebugID;
 
 /***/ }),
-/* 679 */
+/* 675 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -80297,7 +78601,7 @@ module.exports = onlyChild;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 680 */
+/* 676 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -80320,7 +78624,7 @@ var REACT_ELEMENT_TYPE = __webpack_require__(344);
 
 var getIteratorFn = __webpack_require__(347);
 var invariant = __webpack_require__(5);
-var KeyEscapeUtils = __webpack_require__(668);
+var KeyEscapeUtils = __webpack_require__(664);
 var warning = __webpack_require__(7);
 
 var SEPARATOR = '.';
@@ -80479,7 +78783,7 @@ module.exports = traverseAllChildren;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)))
 
 /***/ }),
-/* 681 */
+/* 677 */
 /***/ (function(module, exports) {
 
 module.exports = {
@@ -81313,13 +79617,13 @@ module.exports = {
 };
 
 /***/ }),
-/* 682 */
+/* 678 */
 /***/ (function(module, exports, __webpack_require__) {
 
-module.exports.en = __webpack_require__(681);
+module.exports.en = __webpack_require__(677);
 
 /***/ }),
-/* 683 */
+/* 679 */
 /***/ (function(module, exports) {
 
 module.exports = {
@@ -83293,7 +81597,7 @@ module.exports = {
 };
 
 /***/ }),
-/* 684 */
+/* 680 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var map = {
@@ -83311,7 +81615,7 @@ var map = {
 	"./delta.json": 117,
 	"./discovery": 352,
 	"./discovery.json": 352,
-	"./external/geojson/README.txt": 685,
+	"./external/geojson/README.txt": 681,
 	"./external/geojson/bbox": 353,
 	"./external/geojson/bbox.json": 353,
 	"./external/geojson/crs": 354,
@@ -83373,16 +81677,16 @@ webpackContext.keys = function webpackContextKeys() {
 };
 webpackContext.resolve = webpackContextResolve;
 module.exports = webpackContext;
-webpackContext.id = 684;
+webpackContext.id = 680;
 
 /***/ }),
-/* 685 */
+/* 681 */
 /***/ (function(module, exports) {
 
-throw new Error("Module parse failed: /Users/tjk/git-workspace/signalk/playground-ng/node_modules/signalk-schema/schemas/external/geojson/README.txt Unexpected token (1:9)\nYou may need an appropriate loader to handle this file type.\n| Contents copied from https://github.com/fge/sample-json-schemas\n| Licence from there :\n| \"The licensing conditions are the same as they are for JSON Schema itself: content in this repository may be licensed under either of the AFL or BSD license.\"");
+throw new Error("Module parse failed: /Users/tjk/git-workspace/signalk/playground/node_modules/signalk-schema/schemas/external/geojson/README.txt Unexpected token (1:9)\nYou may need an appropriate loader to handle this file type.\n| Contents copied from https://github.com/fge/sample-json-schemas\n| Licence from there :\n| \"The licensing conditions are the same as they are for JSON Schema itself: content in this repository may be licensed under either of the AFL or BSD license.\"");
 
 /***/ }),
-/* 686 */
+/* 682 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -83403,9 +81707,9 @@ throw new Error("Module parse failed: /Users/tjk/git-workspace/signalk/playgroun
  */
 
 var _ = __webpack_require__(349);
-var signalkSchema = __webpack_require__(142);
+var signalkSchema = __webpack_require__(143);
 var getId;
-var debug = __webpack_require__(380)('signalk:fullsignalk');
+var debug = __webpack_require__(377)('signalk:fullsignalk');
 
 
 function FullSignalK(id, type, defaults) {
@@ -83427,7 +81731,7 @@ function FullSignalK(id, type, defaults) {
   this.lastModifieds = {};
 }
 
-__webpack_require__(748).inherits(FullSignalK, __webpack_require__(382).EventEmitter);
+__webpack_require__(744).inherits(FullSignalK, __webpack_require__(379).EventEmitter);
 
 FullSignalK.prototype.retrieve = function() {
   return this.root;
@@ -83641,7 +81945,7 @@ module.exports = FullSignalK;
 
 
 /***/ }),
-/* 687 */
+/* 683 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /*
@@ -83678,7 +81982,7 @@ var stylesInDom = {},
 	singletonElement = null,
 	singletonCounter = 0,
 	styleElementsInsertedAtTop = [],
-	fixUrls = __webpack_require__(688);
+	fixUrls = __webpack_require__(684);
 
 module.exports = function(list, options) {
 	if(typeof DEBUG !== "undefined" && DEBUG) {
@@ -83937,7 +82241,7 @@ function updateLink(linkElement, options, obj) {
 
 
 /***/ }),
-/* 688 */
+/* 684 */
 /***/ (function(module, exports) {
 
 
@@ -84032,7 +82336,7 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 689 */
+/* 685 */
 /***/ (function(module, exports, __webpack_require__) {
 
 (function () {
@@ -84040,21 +82344,21 @@ module.exports = function (css) {
 
     var validator,
         moment = __webpack_require__(1),
-        dateTimeRegExp = __webpack_require__(738),
-        uriRegExp = __webpack_require__(741),
-        durationRegExp = __webpack_require__(739),
-        timeOffsetRegExp = __webpack_require__(740),
+        dateTimeRegExp = __webpack_require__(734),
+        uriRegExp = __webpack_require__(737),
+        durationRegExp = __webpack_require__(735),
+        timeOffsetRegExp = __webpack_require__(736),
         dateRegExp = /^[0-9]{4,}-[0-9]{2}-[0-9]{2}$/,
         guidRegExp =
             /^\{?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\}?$/;
 
     try {
         /* NPM module name */
-        validator = __webpack_require__(690);
+        validator = __webpack_require__(686);
     }
     catch (e) {
         /* Bower module name */
-        validator = __webpack_require__(749);
+        validator = __webpack_require__(745);
     }
 
     exports.date = function (value) {
@@ -84123,7 +82427,7 @@ module.exports = function (css) {
 
 
 /***/ }),
-/* 690 */
+/* 686 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84141,23 +82445,23 @@ var _toFloat = __webpack_require__(368);
 
 var _toFloat2 = _interopRequireDefault(_toFloat);
 
-var _toInt = __webpack_require__(734);
+var _toInt = __webpack_require__(730);
 
 var _toInt2 = _interopRequireDefault(_toInt);
 
-var _toBoolean = __webpack_require__(733);
+var _toBoolean = __webpack_require__(729);
 
 var _toBoolean2 = _interopRequireDefault(_toBoolean);
 
-var _equals = __webpack_require__(692);
+var _equals = __webpack_require__(688);
 
 var _equals2 = _interopRequireDefault(_equals);
 
-var _contains = __webpack_require__(691);
+var _contains = __webpack_require__(687);
 
 var _contains2 = _interopRequireDefault(_contains);
 
-var _matches = __webpack_require__(730);
+var _matches = __webpack_require__(726);
 
 var _matches2 = _interopRequireDefault(_matches);
 
@@ -84165,11 +82469,11 @@ var _isEmail = __webpack_require__(361);
 
 var _isEmail2 = _interopRequireDefault(_isEmail);
 
-var _isURL = __webpack_require__(725);
+var _isURL = __webpack_require__(721);
 
 var _isURL2 = _interopRequireDefault(_isURL);
 
-var _isMACAddress = __webpack_require__(718);
+var _isMACAddress = __webpack_require__(714);
 
 var _isMACAddress2 = _interopRequireDefault(_isMACAddress);
 
@@ -84181,31 +82485,31 @@ var _isFQDN = __webpack_require__(136);
 
 var _isFQDN2 = _interopRequireDefault(_isFQDN);
 
-var _isBoolean = __webpack_require__(700);
+var _isBoolean = __webpack_require__(696);
 
 var _isBoolean2 = _interopRequireDefault(_isBoolean);
 
-var _isAlpha = __webpack_require__(695);
+var _isAlpha = __webpack_require__(691);
 
 var _isAlpha2 = _interopRequireDefault(_isAlpha);
 
-var _isAlphanumeric = __webpack_require__(696);
+var _isAlphanumeric = __webpack_require__(692);
 
 var _isAlphanumeric2 = _interopRequireDefault(_isAlphanumeric);
 
-var _isNumeric = __webpack_require__(723);
+var _isNumeric = __webpack_require__(719);
 
 var _isNumeric2 = _interopRequireDefault(_isNumeric);
 
-var _isLowercase = __webpack_require__(717);
+var _isLowercase = __webpack_require__(713);
 
 var _isLowercase2 = _interopRequireDefault(_isLowercase);
 
-var _isUppercase = __webpack_require__(727);
+var _isUppercase = __webpack_require__(723);
 
 var _isUppercase2 = _interopRequireDefault(_isUppercase);
 
-var _isAscii = __webpack_require__(697);
+var _isAscii = __webpack_require__(693);
 
 var _isAscii2 = _interopRequireDefault(_isAscii);
 
@@ -84217,27 +82521,27 @@ var _isHalfWidth = __webpack_require__(363);
 
 var _isHalfWidth2 = _interopRequireDefault(_isHalfWidth);
 
-var _isVariableWidth = __webpack_require__(728);
+var _isVariableWidth = __webpack_require__(724);
 
 var _isVariableWidth2 = _interopRequireDefault(_isVariableWidth);
 
-var _isMultibyte = __webpack_require__(722);
+var _isMultibyte = __webpack_require__(718);
 
 var _isMultibyte2 = _interopRequireDefault(_isMultibyte);
 
-var _isSurrogatePair = __webpack_require__(724);
+var _isSurrogatePair = __webpack_require__(720);
 
 var _isSurrogatePair2 = _interopRequireDefault(_isSurrogatePair);
 
-var _isInt = __webpack_require__(714);
+var _isInt = __webpack_require__(710);
 
 var _isInt2 = _interopRequireDefault(_isInt);
 
-var _isFloat = __webpack_require__(707);
+var _isFloat = __webpack_require__(703);
 
 var _isFloat2 = _interopRequireDefault(_isFloat);
 
-var _isDecimal = __webpack_require__(704);
+var _isDecimal = __webpack_require__(700);
 
 var _isDecimal2 = _interopRequireDefault(_isDecimal);
 
@@ -84245,27 +82549,27 @@ var _isHexadecimal = __webpack_require__(364);
 
 var _isHexadecimal2 = _interopRequireDefault(_isHexadecimal);
 
-var _isDivisibleBy = __webpack_require__(705);
+var _isDivisibleBy = __webpack_require__(701);
 
 var _isDivisibleBy2 = _interopRequireDefault(_isDivisibleBy);
 
-var _isHexColor = __webpack_require__(708);
+var _isHexColor = __webpack_require__(704);
 
 var _isHexColor2 = _interopRequireDefault(_isHexColor);
 
-var _isMD = __webpack_require__(719);
+var _isMD = __webpack_require__(715);
 
 var _isMD2 = _interopRequireDefault(_isMD);
 
-var _isJSON = __webpack_require__(715);
+var _isJSON = __webpack_require__(711);
 
 var _isJSON2 = _interopRequireDefault(_isJSON);
 
-var _isEmpty = __webpack_require__(706);
+var _isEmpty = __webpack_require__(702);
 
 var _isEmpty2 = _interopRequireDefault(_isEmpty);
 
-var _isLength = __webpack_require__(716);
+var _isLength = __webpack_require__(712);
 
 var _isLength2 = _interopRequireDefault(_isLength);
 
@@ -84273,59 +82577,59 @@ var _isByteLength = __webpack_require__(360);
 
 var _isByteLength2 = _interopRequireDefault(_isByteLength);
 
-var _isUUID = __webpack_require__(726);
+var _isUUID = __webpack_require__(722);
 
 var _isUUID2 = _interopRequireDefault(_isUUID);
 
-var _isMongoId = __webpack_require__(721);
+var _isMongoId = __webpack_require__(717);
 
 var _isMongoId2 = _interopRequireDefault(_isMongoId);
 
-var _isAfter = __webpack_require__(694);
+var _isAfter = __webpack_require__(690);
 
 var _isAfter2 = _interopRequireDefault(_isAfter);
 
-var _isBefore = __webpack_require__(699);
+var _isBefore = __webpack_require__(695);
 
 var _isBefore2 = _interopRequireDefault(_isBefore);
 
-var _isIn = __webpack_require__(713);
+var _isIn = __webpack_require__(709);
 
 var _isIn2 = _interopRequireDefault(_isIn);
 
-var _isCreditCard = __webpack_require__(701);
+var _isCreditCard = __webpack_require__(697);
 
 var _isCreditCard2 = _interopRequireDefault(_isCreditCard);
 
-var _isISIN = __webpack_require__(710);
+var _isISIN = __webpack_require__(706);
 
 var _isISIN2 = _interopRequireDefault(_isISIN);
 
-var _isISBN = __webpack_require__(709);
+var _isISBN = __webpack_require__(705);
 
 var _isISBN2 = _interopRequireDefault(_isISBN);
 
-var _isISSN = __webpack_require__(712);
+var _isISSN = __webpack_require__(708);
 
 var _isISSN2 = _interopRequireDefault(_isISSN);
 
-var _isMobilePhone = __webpack_require__(720);
+var _isMobilePhone = __webpack_require__(716);
 
 var _isMobilePhone2 = _interopRequireDefault(_isMobilePhone);
 
-var _isCurrency = __webpack_require__(702);
+var _isCurrency = __webpack_require__(698);
 
 var _isCurrency2 = _interopRequireDefault(_isCurrency);
 
-var _isISO = __webpack_require__(711);
+var _isISO = __webpack_require__(707);
 
 var _isISO2 = _interopRequireDefault(_isISO);
 
-var _isBase = __webpack_require__(698);
+var _isBase = __webpack_require__(694);
 
 var _isBase2 = _interopRequireDefault(_isBase);
 
-var _isDataURI = __webpack_require__(703);
+var _isDataURI = __webpack_require__(699);
 
 var _isDataURI2 = _interopRequireDefault(_isDataURI);
 
@@ -84337,23 +82641,23 @@ var _rtrim = __webpack_require__(367);
 
 var _rtrim2 = _interopRequireDefault(_rtrim);
 
-var _trim = __webpack_require__(735);
+var _trim = __webpack_require__(731);
 
 var _trim2 = _interopRequireDefault(_trim);
 
-var _escape = __webpack_require__(693);
+var _escape = __webpack_require__(689);
 
 var _escape2 = _interopRequireDefault(_escape);
 
-var _unescape = __webpack_require__(736);
+var _unescape = __webpack_require__(732);
 
 var _unescape2 = _interopRequireDefault(_unescape);
 
-var _stripLow = __webpack_require__(732);
+var _stripLow = __webpack_require__(728);
 
 var _stripLow2 = _interopRequireDefault(_stripLow);
 
-var _whitelist = __webpack_require__(737);
+var _whitelist = __webpack_require__(733);
 
 var _whitelist2 = _interopRequireDefault(_whitelist);
 
@@ -84361,11 +82665,11 @@ var _blacklist = __webpack_require__(359);
 
 var _blacklist2 = _interopRequireDefault(_blacklist);
 
-var _isWhitelisted = __webpack_require__(729);
+var _isWhitelisted = __webpack_require__(725);
 
 var _isWhitelisted2 = _interopRequireDefault(_isWhitelisted);
 
-var _normalizeEmail = __webpack_require__(731);
+var _normalizeEmail = __webpack_require__(727);
 
 var _normalizeEmail2 = _interopRequireDefault(_normalizeEmail);
 
@@ -84445,7 +82749,7 @@ exports.default = validator;
 module.exports = exports['default'];
 
 /***/ }),
-/* 691 */
+/* 687 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84473,7 +82777,7 @@ function contains(str, elem) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 692 */
+/* 688 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84497,7 +82801,7 @@ function equals(str, comparison) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 693 */
+/* 689 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84521,7 +82825,7 @@ function escape(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 694 */
+/* 690 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84553,7 +82857,7 @@ function isAfter(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 695 */
+/* 691 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84584,7 +82888,7 @@ function isAlpha(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 696 */
+/* 692 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84615,7 +82919,7 @@ function isAlphanumeric(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 697 */
+/* 693 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84643,7 +82947,7 @@ function isAscii(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 698 */
+/* 694 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84674,7 +82978,7 @@ function isBase64(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 699 */
+/* 695 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84706,7 +83010,7 @@ function isBefore(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 700 */
+/* 696 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84730,7 +83034,7 @@ function isBoolean(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 701 */
+/* 697 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84781,7 +83085,7 @@ function isCreditCard(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 702 */
+/* 698 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84875,7 +83179,7 @@ function isCurrency(str, options) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 703 */
+/* 699 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84901,7 +83205,7 @@ function isDataURI(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 704 */
+/* 700 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84927,7 +83231,7 @@ function isDecimal(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 705 */
+/* 701 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84955,7 +83259,7 @@ function isDivisibleBy(str, num) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 706 */
+/* 702 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -84979,7 +83283,7 @@ function isEmpty(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 707 */
+/* 703 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85009,7 +83313,7 @@ function isFloat(str, options) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 708 */
+/* 704 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85035,7 +83339,7 @@ function isHexColor(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 709 */
+/* 705 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85098,7 +83402,7 @@ function isISBN(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 710 */
+/* 706 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85152,7 +83456,7 @@ function isISIN(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 711 */
+/* 707 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85180,7 +83484,7 @@ var iso8601 = exports.iso8601 = /^([\+-]?\d{4}(?!\d{2}\b))((-?)((0[1-9]|1[0-2])(
 /* eslint-enable max-len */
 
 /***/ }),
-/* 712 */
+/* 708 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85244,7 +83548,7 @@ function isISSN(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 713 */
+/* 709 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85289,7 +83593,7 @@ function isIn(str, options) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 714 */
+/* 710 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85328,7 +83632,7 @@ function isInt(str, options) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 715 */
+/* 711 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85359,7 +83663,7 @@ function isJSON(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 716 */
+/* 712 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85399,7 +83703,7 @@ function isLength(str, options) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 717 */
+/* 713 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85423,7 +83727,7 @@ function isLowercase(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 718 */
+/* 714 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85449,7 +83753,7 @@ function isMACAddress(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 719 */
+/* 715 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85475,7 +83779,7 @@ function isMD5(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 720 */
+/* 716 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85550,7 +83854,7 @@ function isMobilePhone(str, locale) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 721 */
+/* 717 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85578,7 +83882,7 @@ function isMongoId(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 722 */
+/* 718 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85606,7 +83910,7 @@ function isMultibyte(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 723 */
+/* 719 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85632,7 +83936,7 @@ function isNumeric(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 724 */
+/* 720 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85658,7 +83962,7 @@ function isSurrogatePair(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 725 */
+/* 721 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85806,7 +84110,7 @@ function isURL(url, options) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 726 */
+/* 722 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85840,7 +84144,7 @@ function isUUID(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 727 */
+/* 723 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85864,7 +84168,7 @@ function isUppercase(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 728 */
+/* 724 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85892,7 +84196,7 @@ function isVariableWidth(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 729 */
+/* 725 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85921,7 +84225,7 @@ function isWhitelisted(str, chars) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 730 */
+/* 726 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -85948,7 +84252,7 @@ function matches(str, pattern, modifiers) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 731 */
+/* 727 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -86091,7 +84395,7 @@ function normalizeEmail(email, options) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 732 */
+/* 728 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -86120,7 +84424,7 @@ function stripLow(str, keep_new_lines) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 733 */
+/* 729 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -86147,7 +84451,7 @@ function toBoolean(str, strict) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 734 */
+/* 730 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -86171,7 +84475,7 @@ function toInt(str, radix) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 735 */
+/* 731 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -86198,7 +84502,7 @@ function trim(str, chars) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 736 */
+/* 732 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -86222,7 +84526,7 @@ function unescape(str) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 737 */
+/* 733 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -86246,7 +84550,7 @@ function whitelist(str, chars) {
 module.exports = exports['default'];
 
 /***/ }),
-/* 738 */
+/* 734 */
 /***/ (function(module, exports) {
 
 /* jshint maxlen:false */
@@ -86254,7 +84558,7 @@ module.exports = /^[0-9]{4,}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0
 
 
 /***/ }),
-/* 739 */
+/* 735 */
 /***/ (function(module, exports, __webpack_require__) {
 
 (function () {
@@ -86267,7 +84571,7 @@ module.exports = /^[0-9]{4,}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0
 
 
 /***/ }),
-/* 740 */
+/* 736 */
 /***/ (function(module, exports, __webpack_require__) {
 
 (function () {
@@ -86280,7 +84584,7 @@ module.exports = /^[0-9]{4,}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0
 
 
 /***/ }),
-/* 741 */
+/* 737 */
 /***/ (function(module, exports) {
 
 // Source: http://jmrware.com/articles/2009/uri_regexp/URI_regex.html
@@ -86291,31 +84595,31 @@ module.exports = /^(?:[A-Za-z][A-Za-z0-9+\-.]*:(?:\/\/(?:(?:[A-Za-z0-9\-._~!$&'(
 
 
 /***/ }),
-/* 742 */
+/* 738 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__.p + "fa2772327f55d8198301fdb8bcfc8158.woff";
 
 /***/ }),
-/* 743 */
+/* 739 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__.p + "448c34a56d699c29117adc64c43affeb.woff2";
 
 /***/ }),
-/* 744 */
+/* 740 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__.p + "e18bbf611f2a2e43afc071aa2f4e1512.ttf";
 
 /***/ }),
-/* 745 */
+/* 741 */
 /***/ (function(module, exports, __webpack_require__) {
 
 module.exports = __webpack_require__.p + "89889688147bd7575d6327160d64e760.svg";
 
 /***/ }),
-/* 746 */
+/* 742 */
 /***/ (function(module, exports) {
 
 if (typeof Object.create === 'function') {
@@ -86344,7 +84648,7 @@ if (typeof Object.create === 'function') {
 
 
 /***/ }),
-/* 747 */
+/* 743 */
 /***/ (function(module, exports) {
 
 module.exports = function isBuffer(arg) {
@@ -86355,7 +84659,7 @@ module.exports = function isBuffer(arg) {
 }
 
 /***/ }),
-/* 748 */
+/* 744 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, process) {// Copyright Joyent, Inc. and other Node contributors.
@@ -86883,7 +85187,7 @@ function isPrimitive(arg) {
 }
 exports.isPrimitive = isPrimitive;
 
-exports.isBuffer = __webpack_require__(747);
+exports.isBuffer = __webpack_require__(743);
 
 function objectToString(o) {
   return Object.prototype.toString.call(o);
@@ -86927,7 +85231,7 @@ exports.log = function() {
  *     prototype.
  * @param {function} superCtor Constructor function to inherit prototype from.
  */
-exports.inherits = __webpack_require__(746);
+exports.inherits = __webpack_require__(742);
 
 exports._extend = function(origin, add) {
   // Don't do anything if add isn't an object
@@ -86945,10 +85249,10 @@ function hasOwnProperty(obj, prop) {
   return Object.prototype.hasOwnProperty.call(obj, prop);
 }
 
-/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(80), __webpack_require__(2)))
+/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(140), __webpack_require__(2)))
 
 /***/ }),
-/* 749 */
+/* 745 */
 /***/ (function(module, exports) {
 
 module.exports = validator-js;

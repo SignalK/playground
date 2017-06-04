@@ -13,7 +13,7 @@ const deltaData = {
             "type": "NMEA2000",
             "src": "017",
             "pgn": 127488,
-            "label": "N2000-01.017"
+            "label": "N2000-01"
         },
         "timestamp": "2010-01-07T07:18:44Z",
         "values": [{
