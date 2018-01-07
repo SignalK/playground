@@ -4,7 +4,7 @@ import Bootstrap from 'bootstrap/dist/css/bootstrap.css'
 import Atom from 'kefir.atom'
 import L from 'partial.lenses'
 import K from 'karet.util'
-import SignalK from 'signalk-schema'
+import SignalK from '@signalk/signalk-schema'
 
 const deltaData = {
     "context": "vessels.urn:mrn:imo:mmsi:230099999",
